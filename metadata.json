@@ -1,0 +1,8 @@
+{
+  "name": "Nikah Circle",
+  "description": "Trusted Islamic Matrimony Progressive Web App with verified profiles, privacy controls, admin management, and offline support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

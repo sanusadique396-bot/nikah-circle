@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nikah Circle Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--p:#4b001f;--pd:#350016;--pk:#f7dce8;--gold:#c9973e;--bg:#fff8fb;--b:#eadfe4;--t:#202020;--muted:#777;--green:#16845a;--red:#c53b4b}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--t)}
+button,input,select,textarea{font:inherit}.hidden{display:none!important}.btn{border:0;border-radius:10px;padding:11px 16px;font-weight:700;cursor:pointer}.primary{background:var(--p);color:white}.light{background:white;border:1px solid var(--b);color:var(--p)}
+.login{min-height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,#fff,#f7dce8)}.loginbox{width:min(420px,92%);background:#fff;padding:35px;border-radius:22px;box-shadow:0 15px 45px #4b001f1a;border:1px solid var(--b)}
+.logo{display:flex;align-items:center;gap:12px;margin-bottom:25px}.mark{width:48px;height:48px;background:var(--p);color:#fff;border-radius:14px;display:grid;place-items:center;font-size:23px;font-weight:700}.logo h1{margin:0;color:var(--p);font-family:Georgia}.field{margin:12px 0}.field label{display:block;font-size:13px;font-weight:bold;margin-bottom:6px}.field input,.field select,.field textarea{width:100%;padding:11px;border:1px solid var(--b);border-radius:10px;background:#fff}.err{padding:10px;background:#fff0f2;color:var(--red);border-radius:9px;margin:10px 0}
+.app{min-height:100vh}.side{position:fixed;inset:0 auto 0 0;width:245px;background:#fff;border-right:1px solid var(--b);padding:18px;z-index:5}.side .logo{padding-bottom:20px;border-bottom:1px solid var(--b)}.nav button{display:block;width:100%;text-align:left;border:0;background:none;padding:12px;border-radius:10px;margin:4px 0;color:#62575c;cursor:pointer}.nav button.active,.nav button:hover{background:var(--bg);color:var(--p);font-weight:bold}.logout{position:absolute;bottom:18px;left:18px;right:18px;border:1px solid #f0d0d8;background:#fff1f3;color:var(--red);padding:11px;border-radius:10px;font-weight:bold}
+.main{margin-left:245px}.top{height:70px;background:#fff;border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 25px;gap:15px;position:sticky;top:0;z-index:4}.top input{width:min(400px,60vw);padding:10px 13px;border:1px solid var(--b);border-radius:10px}.admin{margin-left:auto}.content{padding:25px}.page{display:none}.page.active{display:block}.head{display:flex;justify-content:space-between;gap:15px;align-items:center;margin-bottom:20px}.head h2{margin:0;color:var(--p);font-family:Georgia;font-size:30px}.head p{margin:5px 0;color:var(--muted)}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:15px}.card{background:#fff;border:1px solid var(--b);border-radius:17px;padding:20px}.num{font-size:30px;font-weight:bold;color:var(--p);margin-top:8px}.muted{color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:1.5fr 1fr;gap:18px;margin-top:18px}.tablebox{background:#fff;border:1px solid var(--b);border-radius:17px;overflow:auto}.tabletitle{padding:17px;border-bottom:1px solid var(--b);font-weight:bold;color:var(--p);font-family:Georgia}table{border-collapse:collapse;width:100%;min-width:720px}th,td{padding:12px 14px;border-bottom:1px solid #f0e8ec;text-align:left;font-size:13px}th{font-size:11px;color:#927e87;text-transform:uppercase}.avatar{width:36px;height:36px;border-radius:50%;background:var(--pk);color:var(--p);display:inline-grid;place-items:center;font-weight:bold;margin-right:8px}.badge{padding:5px 8px;border-radius:999px;font-size:10px;font-weight:bold}.ok{background:#e8f7ef;color:var(--green)}.bad{background:#fff0f2;color:var(--red)}.gold{background:#fff6df;color:#946b17}.gray{background:#eee9ec;color:#6d6468}
+.formbox{background:#fff;border:1px solid var(--b);border-radius:17px;padding:22px}.formgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.actions{display:flex;gap:8px;justify-content:flex-end;border-top:1px solid var(--b);margin-top:18px;padding-top:18px}.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.filters input,.filters select{padding:10px;border:1px solid var(--b);border-radius:9px;background:#fff}
+.modal{position:fixed;inset:0;background:#21091388;display:none;place-items:center;z-index:20;padding:20px}.modal.open{display:grid}.modalbox{width:min(800px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;padding:22px}
+@media(max-width:900px){.side{transform:translateX(-100%);transition:.2s}.side.open{transform:none}.main{margin-left:0}.cards{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.formgrid{grid-template-columns:1fr 1fr}.menu{display:block!important}}
+@media(max-width:600px){.cards{grid-template-columns:1fr}.formgrid{grid-template-columns:1fr}.content{padding:15px}.head{align-items:flex-start;flex-direction:column}.admin{display:none}}
+.menu{display:none;border:0;background:#fff;font-size:22px}
+</style></head>
+<body>
+
+<div id="login" class="login">
+<div class="loginbox">
+<div class="logo"><div class="mark">N</div><div><h1>Nikah Circle</h1><small>Admin Panel</small></div></div>
+<h2>Admin Login</h2><p class="muted">Use your Supabase admin account.</p>
+<div id="loginErr" class="err hidden"></div>
+<form id="loginForm"><div class="field"><label>Email</label><input id="email" type="email" value="nikahcircle01@gmail.com" required></div>
+<div class="field"><label>Password</label><input id="password" type="password" required></div>
+<button class="btn primary" style="width:100%">Login</button></form>
+</div></div>
+
+<div id="app" class="app hidden">
+<aside id="side" class="side">
+<div class="logo"><div class="mark">N</div><div><h1>Nikah Circle</h1><small>Admin</small></div></div>
+<div class="nav">
+<button class="active" data-page="dashboard">⌂ Dashboard</button>
+<button data-page="profiles">👤 Profiles</button>
+<button data-page="add">＋ Add Profile</button>
+<button data-page="payments">₹ Payments</button>
+<button data-page="premium">★ Premium Users</button>
+<button data-page="reports">▥ Reports</button>
+<button data-page="settings">⚙ Settings</button></div>
+<button id="logout" class="logout">↪ Logout</button>
+</aside>
+
+<main class="main"><header class="top"><button id="menu" class="menu">☰</button><input id="search" placeholder="Search profiles..."><div class="admin">Nikah Circle Admin</div></header>
+<div class="content">
+
+<section id="dashboard" class="page active">
+<div class="head"><div><h2>Dashboard</h2><p>Manage every Nikah Circle profile from one place.</p></div><button class="btn primary" onclick="page('add')">＋ Add Profile</button></div>
+<div class="cards">
+<div class="card"><div class="muted">Total Profiles</div><div id="total" class="num">0</div></div>
+<div class="card"><div class="muted">Active Premium</div><div id="prem" class="num">0</div></div>
+<div class="card"><div class="muted">Pending</div><div id="pending" class="num">0</div></div>
+<div class="card"><div class="muted">Cash Payments</div><div id="cash" class="num">0</div></div></div>
+<div class="grid"><div class="tablebox"><div class="tabletitle">Recent Profiles</div><table><thead><tr><th>Profile</th><th>Location</th><th>Type</th><th>Premium</th><th>Status</th><th>Action</th></tr></thead><tbody id="recent"></tbody></table></div>
+<div class="card"><h3 style="font-family:Georgia;color:var(--p)">Quick Actions</h3><p><button class="btn light" onclick="page('add')">＋ Create Cash Profile</button></p><p><button class="btn light" onclick="page('profiles')">👤 Manage Profiles</button></p><p><button class="btn light" onclick="page('payments')">₹ View Payments</button></p></div></div>
+</section>
+
+<section id="profiles" class="page"><div class="head"><div><h2>Profile Management</h2><p>View, edit, verify, activate or delete every profile.</p></div><button class="btn primary" onclick="page('add')">＋ Add Profile</button></div>
+<div class="filters"><input id="pf" placeholder="Search name/mobile/location"><select id="sf"><option value="">All status</option><option>PENDING</option><option>APPROVED</option><option>REJECTED</option><option>INACTIVE</option></select><select id="tf"><option value="">All registration</option><option>ONLINE</option><option>CASH_ADMIN</option></select></div>
+<div class="tablebox"><table><thead><tr><th>Profile</th><th>Gender</th><th>Location</th><th>Registration</th><th>Premium</th><th>Status</th><th>Manage</th></tr></thead><tbody id="ptable"></tbody></table></div></section>
+
+<section id="add" class="page"><div class="head"><div><h2 id="formTitle">Add Profile</h2><p>Cash/manual profile or online profile.</p></div></div>
+<form id="profileForm" class="formbox"><input id="editId" type="hidden"><div class="formgrid">
+<div class="field"><label>Full Name *</label><input id="name" required></div><div class="field"><label>Email</label><input id="mail" type="email"></div><div class="field"><label>Mobile</label><input id="mobile"></div>
+<div class="field"><label>Gender</label><select id="gender"><option>Male</option><option>Female</option></select></div><div class="field"><label>Date of Birth</label><input id="dob" type="date"></div><div class="field"><label>Location</label><input id="location"></div>
+<div class="field"><label>Education</label><input id="education"></div><div class="field"><label>Profession</label><input id="profession"></div><div class="field"><label>Marital Status</label><select id="marital"><option>Never Married</option><option>Divorced</option><option>Widowed</option></select></div>
+<div class="field"><label>Registration Type</label><select id="reg"><option>CASH_ADMIN</option><option>ONLINE</option></select></div><div class="field"><label>Premium Plan</label><select id="plan"><option value="">Free</option><option>1 Month</option><option>3 Months</option><option>6 Months</option><option>1 Year</option></select></div><div class="field"><label>Amount</label><input id="amount" type="number"></div>
+<div class="field"><label>Premium Start</label><input id="start" type="date"></div><div class="field"><label>Premium End</label><input id="end" type="date"></div><div class="field"><label>Status</label><select id="status"><option>APPROVED</option><option>PENDING</option><option>REJECTED</option><option>INACTIVE</option></select></div>
+<div class="field"><label>Payment Method</label><select id="method"><option>CASH</option><option>ONLINE</option></select></div><div class="field"><label>Payment Status</label><select id="paystatus"><option>PAID</option><option>PENDING</option><option>FAILED</option></select></div><div class="field"><label>Profile Photo URL</label><input id="photo"></div>
+<div class="field" style="grid-column:1/-1"><label>About</label><textarea id="about" rows="4"></textarea></div>
+<div><label><input id="verified" type="checkbox"> Verified</label></div><div><label><input id="premium" type="checkbox"> Premium Active</label></div>
+</div><div class="actions"><button type="button" class="btn light" onclick="page('profiles')">Cancel</button><button class="btn primary">Save Profile</button></div></form></section>
+
+<section id="payments" class="page"><div class="head"><div><h2>Payments</h2><p>Online and cash payment records.</p></div></div><div class="tablebox"><table><thead><tr><th>User</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th><th>Reference</th></tr></thead><tbody id="paytable"></tbody></table></div></section>
+
+<section id="premium" class="page"><div class="head"><div><h2>Premium Users</h2><p>Manage active and expired memberships.</p></div></div><div class="tablebox"><table><thead><tr><th>User</th><th>Plan</th><th>Start</th><th>End</th><th>Status</th><th>Manage</th></tr></thead><tbody id="premiumtable"></tbody></table></div></section>
+
+<section id="reports" class="page"><div class="head"><div><h2>Reports</h2><p>Quick statistics.</p></div></div><div class="cards"><div class="card"><div class="muted">Online</div><div id="ronline" class="num">0</div></div><div class="card"><div class="muted">Cash</div><div id="rcash" class="num">0</div></div><div class="card"><div class="muted">Verified</div><div id="rverified" class="num">0</div></div><div class="card"><div class="muted">Paid</div><div id="rpaid" class="num">0</div></div></div></section>
+
+<section id="settings" class="page"><div class="head"><div><h2>Settings</h2><p>Admin account information.</p></div></div><div class="formbox"><p><b>Admin:</b> nikahcircle01@gmail.com</p><p class="muted">Supabase authentication controls the admin login. Never put the Supabase secret key in this file.</p></div></section>
+</div></main></div>
+
+<div id="modal" class="modal"><div class="modalbox"><div style="display:flex;justify-content:space-between"><h2 id="mtitle" style="color:var(--p);font-family:Georgia"></h2><button class="btn light" onclick="closeModal()">×</button></div><div id="mbody"></div></div></div>
+
+<script>
+const URL="https://trmrgyitpvvytomdvsnt.supabase.co";
+const KEY="sb_publishable_uknxpHEk4mpd29mH2Tcn8A_dkzFJrcg";
+const sb=supabase.createClient(URL,KEY);
+let P=[],PAY=[],USER;
+
+const $=x=>document.getElementById(x);
+const esc=x=>String(x??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+const today=()=>new Date().toISOString().slice(0,10);
+const date=x=>x?new Date(x).toLocaleDateString("en-IN"):"-";
+const badge=(x,c="gray")=>`<span class="badge ${c}">${esc(x||"-")}</span>`;
+
+async function login(){
+ const {data,error}=await sb.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});
+ if(error){$("loginErr").textContent=error.message;$("loginErr").classList.remove("hidden");return}
+ USER=data.user; await boot();
+}
+$("loginForm").onsubmit=e=>{e.preventDefault();login()};
+$("logout").onclick=async()=>{await sb.auth.signOut();location.reload()};
+
+async function boot(){
+ const {data:a,error}=await sb.from("admin_users").select("*").eq("user_id",USER.id).maybeSingle();
+ if(error||!a||!a.is_active){await sb.auth.signOut();$("loginErr").textContent="This account is not an active admin.";$("loginErr").classList.remove("hidden");return}
+ $("login").classList.add("hidden");$("app").classList.remove("hidden");await load();
+}
+async function load(){
+ const p=await sb.from("profiles").select("*").order("created_at",{ascending:false});
+ const q=await sb.from("payments").select("*").order("payment_date",{ascending:false});
+ if(p.error){alert(p.error.message);return} P=p.data||[];PAY=q.data||[];render();
+}
+function render(){
+ $("total").textContent=P.length;
+ $("prem").textContent=P.filter(x=>x.is_premium&&(!x.premium_end||x.premium_end>=today())).length;
+ $("pending").textContent=P.filter(x=>x.profile_status==="PENDING").length;
+ $("cash").textContent=PAY.filter(x=>x.payment_method==="CASH").length;
+ $("recent").innerHTML=P.slice(0,8).map(row).join("")||`<tr><td colspan=6 style="text-align:center;padding:30px">No profiles yet. Click Add Profile.</td></tr>`;
+ $("ronline").textContent=P.filter(x=>x.registration_type==="ONLINE").length;
+ $("rcash").textContent=P.filter(x=>x.registration_type==="CASH_ADMIN").length;
+ $("rverified").textContent=P.filter(x=>x.is_verified).length;
+ $("rpaid").textContent=PAY.filter(x=>x.payment_status==="PAID").length;
+ drawProfiles();drawPayments();drawPremium();
+}
+function row(x){return `<tr><td><span class="avatar">${esc((x.full_name||"?")[0])}</span><b>${esc(x.full_name)}</b><br><small>${esc(x.mobile||x.email||"")}</small></td><td>${esc(x.gender||"-")}</td><td>${esc(x.location||"-")}</td><td>${badge(x.registration_type,x.registration_type==="CASH_ADMIN"?"gold":"ok")}</td><td>${x.is_premium?badge("PREMIUM","gold"):badge("FREE")}</td><td>${badge(x.profile_status,x.profile_status==="APPROVED"?"ok":x.profile_status==="REJECTED"?"bad":"gray")}</td><td><button class="btn light" onclick="view('${x.id}')">Manage</button></td></tr>`}
+function drawProfiles(){
+ let q=($("pf")?.value||$("search").value).toLowerCase(),s=$("sf")?.value||"",t=$("tf")?.value||"";
+ let a=P.filter(x=>(!q||[x.full_name,x.mobile,x.location,x.email].join(" ").toLowerCase().includes(q))&&(!s||x.profile_status===s)&&(!t||x.registration_type===t));
+ $("ptable").innerHTML=a.map(row).join("")||`<tr><td colspan=7 style="text-align:center;padding:30px">No profiles found.</td></tr>`;
+}
+function drawPayments(){$("paytable").innerHTML=PAY.map(x=>{let u=P.find(y=>y.id===x.profile_id);return `<tr><td>${esc(u?.full_name||"Unknown")}</td><td>₹${Number(x.amount||0).toLocaleString("en-IN")}</td><td>${badge(x.payment_method,"gold")}</td><td>${badge(x.payment_status,x.payment_status==="PAID"?"ok":"bad")}</td><td>${date(x.payment_date)}</td><td>${esc(x.transaction_reference||"-")}</td></tr>`}).join("")||`<tr><td colspan=6 style="text-align:center;padding:30px">No payments.</td></tr>`}
+function drawPremium(){$("premiumtable").innerHTML=P.filter(x=>x.is_premium).map(x=>{let a=!x.premium_end||x.premium_end>=today();return `<tr><td>${esc(x.full_name)}</td><td>${esc(x.premium_plan||"-")}</td><td>${date(x.premium_start)}</td><td>${date(x.premium_end)}</td><td>${badge(a?"ACTIVE":"EXPIRED",a?"ok":"bad")}</td><td><button class="btn light" onclick="edit('${x.id}')">Manage</button></td></tr>`}).join("")||`<tr><td colspan=6 style="text-align:center;padding:30px">No premium users.</td></tr>`}
+
+function page(id){document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));$(id).classList.add("active");document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===id));$("side").classList.remove("open");if(id==="add"&&!$("editId").value)resetForm()}
+document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>page(b.dataset.page));
+$("menu").onclick=()=>$("side").classList.toggle("open");
+["search","pf","sf","tf"].forEach(id=>$(id)?.addEventListener("input",drawProfiles));
+["sf","tf"].forEach(id=>$(id)?.addEventListener("change",drawProfiles));
+
+function resetForm(){$("profileForm").reset();$("editId").value="";$("formTitle").textContent="Add Profile";$("reg").value="CASH_ADMIN";$("status").value="APPROVED";$("method").value="CASH";$("paystatus").value="PAID"}
+function edit(id){let x=P.find(a=>a.id===id);if(!x)return;page("add");$("formTitle").textContent="Edit Profile";$("editId").value=id;
+const m={name:x.full_name,mail:x.email,mobile:x.mobile,gender:x.gender,dob:x.date_of_birth,location:x.location,education:x.education,profession:x.profession,marital:x.marital_status,reg:x.registration_type,plan:x.premium_plan,start:x.premium_start,end:x.premium_end,status:x.profile_status,photo:x.profile_photo,about:x.about};for(let k in m)$(k).value=m[k]||"";$("premium").checked=!!x.is_premium;$("verified").checked=!!x.is_verified}
+function view(id){let x=P.find(a=>a.id===id);if(!x)return;$("mtitle").textContent=x.full_name;$("mbody").innerHTML=`<p><b>Mobile:</b> ${esc(x.mobile||"-")}</p><p><b>Email:</b> ${esc(x.email||"-")}</p><p><b>Gender:</b> ${esc(x.gender||"-")}</p><p><b>Location:</b> ${esc(x.location||"-")}</p><p><b>Education:</b> ${esc(x.education||"-")}</p><p><b>Profession:</b> ${esc(x.profession||"-")}</p><p><b>Registration:</b> ${esc(x.registration_type)}</p><p>${badge(x.profile_status)} ${x.is_verified?badge("VERIFIED","ok"):""} ${x.is_premium?badge("PREMIUM","gold"):""}</p><p>${esc(x.about||"")}</p><div class="actions"><button class="btn light" onclick="closeModal()">Close</button><button class="btn primary" onclick="closeModal();edit('${x.id}')">Edit</button><button class="btn" style="background:#fff0f2;color:#c53b4b" onclick="del('${x.id}')">Delete</button></div>`;$("modal").classList.add("open")}
+function closeModal(){$("modal").classList.remove("open")}
+
+$("profileForm").onsubmit=async e=>{
+ e.preventDefault();let id=$("editId").value;
+ let data={full_name:$("name").value.trim(),email:$("mail").value.trim()||null,mobile:$("mobile").value.trim()||null,gender:$("gender").value,date_of_birth:$("dob").value||null,location:$("location").value.trim()||null,education:$("education").value.trim()||null,profession:$("profession").value.trim()||null,marital_status:$("marital").value,registration_type:$("reg").value,premium_plan:$("premium").checked?$("plan").value:null,premium_start:$("premium").checked?($("start").value||null):null,premium_end:$("premium").checked?($("end").value||null):null,profile_status:$("status").value,is_premium:$("premium").checked,is_verified:$("verified").checked,profile_photo:$("photo").value.trim()||null,about:$("about").value.trim()||null,updated_at:new Date().toISOString()};
+ let r=id?await sb.from("profiles").update(data).eq("id",id).select().single():await sb.from("profiles").insert(data).select().single();
+ if(r.error){alert(r.error.message);return}
+ let amount=Number($("amount").value||0);
+ if(amount>0){let pay={profile_id:r.data.id,amount,payment_method:$("method").value,payment_status:$("paystatus").value,transaction_reference:($("reg").value==="CASH_ADMIN"?"CASH-":"ONLINE-")+Date.now(),created_by:USER.id};await sb.from("payments").insert(pay)}
+ alert(id?"Profile updated":"Profile created");resetForm();await load();page("profiles");
+};
+async function del(id){if(!confirm("Delete this profile?"))return;let r=await sb.from("profiles").delete().eq("id",id);if(r.error){alert(r.error.message);return}closeModal();await load()}
+
+(async()=>{let {data}=await sb.auth.getSession();if(data.session){USER=data.session.user;await boot()}})();
+</script></body></html>

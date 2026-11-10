@@ -1,0 +1,2273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Nikah Circle | Islamic Matrimony</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+
+<style>
+
+:root{
+    --primary:#4b001f;
+    --primary-dark:#350016;
+    --pink:#f7dce8;
+    --pink-light:#fff6fa;
+    --gold:#c9973e;
+    --text:#202020;
+    --muted:#777;
+    --white:#fff;
+    --border:#eadfe4;
+    --shadow:0 15px 45px rgba(75,0,31,.10);
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+    font-family:"DM Sans",sans-serif;
+    color:var(--text);
+    background:#fff;
+}
+
+a{
+    text-decoration:none;
+    color:inherit;
+}
+
+button,
+input,
+select{
+    font-family:inherit;
+}
+
+.container{
+    width:min(1180px,92%);
+    margin:auto;
+}
+
+/* HEADER */
+
+header{
+    position:sticky;
+    top:0;
+    z-index:1000;
+    background:rgba(255,255,255,.96);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);
+}
+
+.navbar{
+    height:76px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+}
+
+.logo{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.logo-mark{
+    width:44px;
+    height:44px;
+    border-radius:13px;
+    background:var(--primary);
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:22px;
+    font-weight:700;
+}
+
+.logo-text{
+    font-family:"Playfair Display",serif;
+    font-size:22px;
+    color:var(--primary);
+    font-weight:700;
+}
+
+.nav-links{
+    display:flex;
+    gap:28px;
+    align-items:center;
+}
+
+.nav-links a{
+    color:#555;
+    font-size:14px;
+    font-weight:600;
+}
+
+.nav-links a:hover{
+    color:var(--primary);
+}
+
+.nav-buttons{
+    display:flex;
+    gap:10px;
+}
+
+.btn{
+    border:none;
+    padding:12px 19px;
+    border-radius:10px;
+    font-weight:700;
+    cursor:pointer;
+    transition:.2s;
+}
+
+.btn-primary{
+    background:var(--primary);
+    color:#fff;
+}
+
+.btn-primary:hover{
+    background:var(--primary-dark);
+}
+
+.btn-outline{
+    background:#fff;
+    color:var(--primary);
+    border:1px solid var(--primary);
+}
+
+.btn-outline:hover{
+    background:var(--pink-light);
+}
+
+.menu-btn{
+    display:none;
+    border:none;
+    background:none;
+    font-size:25px;
+    cursor:pointer;
+}
+
+/* HERO */
+
+.hero{
+    background:
+    radial-gradient(circle at 80% 20%,#f7dce8 0,transparent 32%),
+    linear-gradient(135deg,#fff 0%,#fff6fa 100%);
+    padding:85px 0 90px;
+    overflow:hidden;
+}
+
+.hero-grid{
+    display:grid;
+    grid-template-columns:1.1fr .9fr;
+    gap:50px;
+    align-items:center;
+}
+
+.hero-small{
+    display:inline-block;
+    background:var(--pink);
+    color:var(--primary);
+    padding:8px 14px;
+    border-radius:30px;
+    font-size:13px;
+    font-weight:700;
+    margin-bottom:18px;
+}
+
+.hero h1{
+    font-family:"Playfair Display",serif;
+    color:var(--primary);
+    font-size:58px;
+    line-height:1.08;
+    margin-bottom:20px;
+}
+
+.hero h1 span{
+    color:var(--gold);
+}
+
+.hero p{
+    color:var(--muted);
+    font-size:17px;
+    line-height:1.8;
+    max-width:600px;
+}
+
+.hero-buttons{
+    display:flex;
+    gap:12px;
+    margin-top:28px;
+}
+
+.hero-image{
+    position:relative;
+    min-height:430px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.hero-circle{
+    width:350px;
+    height:350px;
+    border-radius:50%;
+    background:var(--pink);
+    position:absolute;
+}
+
+.hero-card{
+    position:relative;
+    width:280px;
+    min-height:340px;
+    background:#fff;
+    border-radius:25px;
+    box-shadow:var(--shadow);
+    border:1px solid var(--border);
+    padding:22px;
+    z-index:2;
+    text-align:center;
+}
+
+.hero-avatar{
+    width:150px;
+    height:150px;
+    border-radius:50%;
+    margin:auto;
+    background:var(--pink);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:55px;
+    color:var(--primary);
+    overflow:hidden;
+}
+
+.hero-avatar img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+.hero-card h3{
+    font-family:"Playfair Display",serif;
+    color:var(--primary);
+    margin-top:18px;
+}
+
+.hero-card p{
+    font-size:13px;
+    margin-top:5px;
+}
+
+.float-card{
+    position:absolute;
+    background:#fff;
+    box-shadow:var(--shadow);
+    border:1px solid var(--border);
+    padding:13px 17px;
+    border-radius:12px;
+    font-size:13px;
+    font-weight:700;
+    z-index:4;
+}
+
+.float-one{
+    top:50px;
+    right:0;
+}
+
+.float-two{
+    bottom:55px;
+    left:0;
+}
+
+/* SEARCH */
+
+.search-section{
+    margin-top:-40px;
+    position:relative;
+    z-index:5;
+}
+
+.search-box{
+    background:#fff;
+    border:1px solid var(--border);
+    box-shadow:var(--shadow);
+    border-radius:20px;
+    padding:25px;
+}
+
+.search-title{
+    color:var(--primary);
+    font-family:"Playfair Display",serif;
+    font-size:24px;
+    margin-bottom:18px;
+}
+
+.search-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr) auto;
+    gap:12px;
+}
+
+.input{
+    width:100%;
+    padding:13px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    outline:none;
+    background:#fff;
+}
+
+.input:focus{
+    border-color:var(--primary);
+}
+
+/* SECTION */
+
+section{
+    padding:80px 0;
+}
+
+.section-heading{
+    text-align:center;
+    margin-bottom:45px;
+}
+
+.section-heading span{
+    color:var(--gold);
+    font-size:13px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:1px;
+}
+
+.section-heading h2{
+    font-family:"Playfair Display",serif;
+    color:var(--primary);
+    font-size:38px;
+    margin-top:8px;
+}
+
+.section-heading p{
+    color:var(--muted);
+    margin-top:10px;
+}
+
+/* HOW IT WORKS */
+
+.steps{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:20px;
+}
+
+.step{
+    text-align:center;
+    padding:30px;
+    background:var(--pink-light);
+    border:1px solid var(--border);
+    border-radius:18px;
+}
+
+.step-icon{
+    width:58px;
+    height:58px;
+    border-radius:50%;
+    margin:auto;
+    background:var(--primary);
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:22px;
+}
+
+.step h3{
+    color:var(--primary);
+    margin:18px 0 8px;
+}
+
+.step p{
+    color:var(--muted);
+    line-height:1.7;
+}
+
+/* PROFILES */
+
+.profile-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:20px;
+}
+
+.profile-card{
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 8px 30px rgba(75,0,31,.06);
+    transition:.25s;
+}
+
+.profile-card:hover{
+    transform:translateY(-5px);
+    box-shadow:var(--shadow);
+}
+
+.profile-photo{
+    height:250px;
+    background:var(--pink);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+}
+
+.profile-photo img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+.profile-placeholder{
+    font-size:65px;
+    color:var(--primary);
+}
+
+.profile-info{
+    padding:17px;
+}
+
+.profile-name{
+    color:var(--primary);
+    font-family:"Playfair Display",serif;
+    font-size:20px;
+}
+
+.profile-location{
+    color:var(--muted);
+    font-size:13px;
+    margin:5px 0 12px;
+}
+
+.profile-tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:5px;
+}
+
+.tag{
+    background:var(--pink-light);
+    border:1px solid var(--border);
+    padding:5px 8px;
+    border-radius:20px;
+    font-size:10px;
+    color:var(--primary);
+}
+
+.profile-actions{
+    display:flex;
+    gap:7px;
+    margin-top:15px;
+}
+
+.profile-actions button{
+    flex:1;
+}
+
+/* ABOUT */
+
+.about{
+    background:var(--pink-light);
+}
+
+.about-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:50px;
+    align-items:center;
+}
+
+.about-box{
+    background:#fff;
+    padding:35px;
+    border-radius:22px;
+    border:1px solid var(--border);
+}
+
+.about-box h2{
+    font-family:"Playfair Display",serif;
+    color:var(--primary);
+    font-size:38px;
+    margin-bottom:15px;
+}
+
+.about-box p{
+    color:var(--muted);
+    line-height:1.9;
+}
+
+/* CTA */
+
+.cta{
+    background:var(--primary);
+    color:#fff;
+    text-align:center;
+    padding:65px 20px;
+}
+
+.cta h2{
+    font-family:"Playfair Display",serif;
+    font-size:38px;
+}
+
+.cta p{
+    color:#e8ccd8;
+    margin:12px 0 25px;
+}
+
+/* FOOTER */
+
+footer{
+    background:var(--primary-dark);
+    color:#fff;
+    padding:45px 0 20px;
+}
+
+.footer-grid{
+    display:grid;
+    grid-template-columns:1.5fr 1fr 1fr 1fr;
+    gap:30px;
+}
+
+footer h3{
+    margin-bottom:15px;
+}
+
+footer p,
+footer a{
+    color:#d9bdc8;
+    font-size:13px;
+    line-height:2;
+}
+
+.copyright{
+    border-top:1px solid #5a263e;
+    margin-top:30px;
+    padding-top:18px;
+    text-align:center;
+    color:#cdb0bc;
+    font-size:12px;
+}
+
+/* MODAL */
+
+.modal{
+    position:fixed;
+    inset:0;
+    background:rgba(25,5,15,.75);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:2000;
+    padding:20px;
+}
+
+.modal.active{
+    display:flex;
+}
+
+.modal-box{
+    width:min(650px,100%);
+    max-height:90vh;
+    overflow:auto;
+    background:#fff;
+    border-radius:20px;
+    padding:25px;
+    position:relative;
+}
+
+.modal-close{
+    position:absolute;
+    right:18px;
+    top:15px;
+    border:none;
+    background:none;
+    font-size:25px;
+    cursor:pointer;
+}
+
+.modal-head{
+    display:flex;
+    gap:20px;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.modal-photo{
+    width:110px;
+    height:110px;
+    border-radius:15px;
+    overflow:hidden;
+    background:var(--pink);
+}
+
+.modal-photo img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+.detail-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+}
+
+.detail{
+    padding:13px;
+    background:var(--pink-light);
+    border-radius:10px;
+}
+
+.detail small{
+    display:block;
+    color:var(--muted);
+    margin-bottom:3px;
+}
+
+.detail strong{
+    color:var(--primary);
+}
+
+/* LOGIN */
+
+.login-modal{
+    position:fixed;
+    inset:0;
+    background:rgba(40,5,20,.75);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:3000;
+    padding:20px;
+}
+
+.login-modal.active{
+    display:flex;
+}
+
+.login-box{
+    width:min(420px,100%);
+    background:#fff;
+    border-radius:20px;
+    padding:30px;
+}
+
+.login-box h2{
+    font-family:"Playfair Display",serif;
+    color:var(--primary);
+    margin-bottom:10px;
+}
+
+.form-group{
+    margin:15px 0;
+}
+
+.form-group label{
+    display:block;
+    font-size:13px;
+    font-weight:700;
+    margin-bottom:6px;
+}
+
+.message{
+    padding:10px;
+    border-radius:8px;
+    margin:10px 0;
+    font-size:13px;
+    display:none;
+}
+
+.message.error{
+    background:#fff0f2;
+    color:#b21f35;
+    display:block;
+}
+
+.message.success{
+    background:#e9f8ef;
+    color:#167246;
+    display:block;
+}
+
+/* PREMIUM */
+
+.premium-lock{
+    text-align:center;
+    padding:30px;
+    background:var(--pink-light);
+    border-radius:15px;
+    margin-top:20px;
+}
+
+.premium-lock h3{
+    color:var(--primary);
+    font-family:"Playfair Display",serif;
+}
+
+@media(max-width:1000px){
+
+    .profile-grid{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .search-grid{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .hero h1{
+        font-size:45px;
+    }
+
+}
+
+@media(max-width:800px){
+
+    .nav-links,
+    .nav-buttons{
+        display:none;
+    }
+
+    .menu-btn{
+        display:block;
+    }
+
+    .nav-mobile{
+        display:flex!important;
+    }
+
+    .hero-grid,
+    .about-grid{
+        grid-template-columns:1fr;
+    }
+
+    .steps{
+        grid-template-columns:1fr;
+    }
+
+    .footer-grid{
+        grid-template-columns:1fr 1fr;
+    }
+
+}
+
+@media(max-width:600px){
+
+    .hero{
+        padding:60px 0;
+    }
+
+    .hero h1{
+        font-size:38px;
+    }
+
+    .hero-buttons{
+        flex-direction:column;
+    }
+
+    .search-grid{
+        grid-template-columns:1fr;
+    }
+
+    .profile-grid{
+        grid-template-columns:1fr;
+    }
+
+    .detail-grid{
+        grid-template-columns:1fr;
+    }
+
+    .footer-grid{
+        grid-template-columns:1fr;
+    }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+
+<header>
+
+<div class="container navbar">
+
+<a href="#" class="logo">
+
+<div class="logo-mark">N</div>
+
+<div class="logo-text">
+Nikah Circle
+</div>
+
+</a>
+
+<nav class="nav-links">
+
+<a href="#home">Home</a>
+<a href="#about">About</a>
+<a href="#profiles">Profiles</a>
+<a href="#how">How It Works</a>
+<a href="#contact">Contact</a>
+
+</nav>
+
+<div class="nav-buttons">
+
+<button class="btn btn-outline" onclick="openLogin()">
+Login
+</button>
+
+<button class="btn btn-primary" onclick="premiumMessage()">
+Premium
+</button>
+
+</div>
+
+<button class="menu-btn" onclick="toggleMenu()">☰</button>
+
+</div>
+
+<div id="mobileMenu" style="display:none;background:#fff;border-top:1px solid var(--border);padding:15px">
+
+<div class="container" style="display:flex;flex-direction:column;gap:12px">
+
+<a href="#home">Home</a>
+<a href="#about">About</a>
+<a href="#profiles">Profiles</a>
+<a href="#how">How It Works</a>
+<a href="#contact">Contact</a>
+
+</div>
+
+</div>
+
+</header>
+
+
+<!-- HERO -->
+
+<section class="hero" id="home">
+
+<div class="container hero-grid">
+
+<div>
+
+<span class="hero-small">
+ISLAMIC MATRIMONY PLATFORM
+</span>
+
+<h1>
+Find Your Life Partner
+<span>with Trust.</span>
+</h1>
+
+<p>
+A trusted Islamic matrimony platform designed to help you
+find a compatible life partner with privacy, respect and
+verified profiles.
+</p>
+
+<div class="hero-buttons">
+
+<a href="#profiles" class="btn btn-primary">
+Find Your Match
+</a>
+
+<button class="btn btn-outline" onclick="premiumMessage()">
+Explore Premium
+</button>
+
+</div>
+
+</div>
+
+
+<div class="hero-image">
+
+<div class="hero-circle"></div>
+
+<div class="float-card float-one">
+✓ Verified Profiles
+</div>
+
+<div class="float-card float-two">
+🔒 100% Privacy
+</div>
+
+<div class="hero-card">
+
+<div class="hero-avatar">
+❤
+</div>
+
+<h3>
+Your Perfect Match
+</h3>
+
+<p>
+A meaningful journey starts here.
+</p>
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- SEARCH -->
+
+<div class="search-section">
+
+<div class="container">
+
+<div class="search-box">
+
+<div class="search-title">
+Find Your Perfect Match
+</div>
+
+<div class="search-grid">
+
+<select class="input" id="searchGender">
+
+<option value="">Looking For</option>
+<option value="Male">Male</option>
+<option value="Female">Female</option>
+
+</select>
+
+<select class="input" id="searchAge">
+
+<option value="">Age</option>
+<option value="18-25">18 - 25</option>
+<option value="26-30">26 - 30</option>
+<option value="31-35">31 - 35</option>
+<option value="36-45">36 - 45</option>
+
+</select>
+
+<input
+class="input"
+id="searchLocation"
+placeholder="Location">
+
+<select class="input" id="searchMarital">
+
+<option value="">Marital Status</option>
+<option>Never Married</option>
+<option>Divorced</option>
+<option>Widowed</option>
+
+</select>
+
+<button class="btn btn-primary" onclick="searchProfiles()">
+Search
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- HOW IT WORKS -->
+
+<section id="how">
+
+<div class="container">
+
+<div class="section-heading">
+
+<span>Simple & Secure</span>
+
+<h2>How It Works</h2>
+
+<p>
+Finding your life partner can be simple.
+</p>
+
+</div>
+
+<div class="steps">
+
+<div class="step">
+
+<div class="step-icon">
+1
+</div>
+
+<h3>
+Discover
+</h3>
+
+<p>
+Browse compatible profiles and discover people
+who match your preferences.
+</p>
+
+</div>
+
+
+<div class="step">
+
+<div class="step-icon">
+2
+</div>
+
+<h3>
+Connect
+</h3>
+
+<p>
+Send an interest to someone you feel is compatible.
+</p>
+
+</div>
+
+
+<div class="step">
+
+<div class="step-icon">
+3
+</div>
+
+<h3>
+Begin Your Journey
+</h3>
+
+<p>
+Once your interest is accepted, connect and
+take the next step.
+</p>
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- PROFILES -->
+
+<section id="profiles">
+
+<div class="container">
+
+<div class="section-heading">
+
+<span>Our Members</span>
+
+<h2>Featured Profiles</h2>
+
+<p>
+Discover verified profiles from Nikah Circle.
+</p>
+
+</div>
+
+<div id="profileGrid" class="profile-grid">
+
+<div style="grid-column:1/-1;text-align:center;padding:40px">
+Loading profiles...
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- ABOUT -->
+
+<section class="about" id="about">
+
+<div class="container about-grid">
+
+<div class="about-box">
+
+<h2>
+About Nikah Circle
+</h2>
+
+<p>
+Nikah Circle is designed to make the journey of finding
+a life partner simple, respectful and trustworthy.
+Our platform focuses on privacy, genuine profiles and
+meaningful connections.
+</p>
+
+<br>
+
+<p>
+We believe marriage is not just about finding a person,
+but finding someone who shares your values, faith and
+vision for life.
+</p>
+
+</div>
+
+
+<div>
+
+<div class="section-heading" style="text-align:left;margin-bottom:20px">
+
+<span>Why Nikah Circle?</span>
+
+<h2>
+Trust. Privacy. Compatibility.
+</h2>
+
+</div>
+
+<p style="color:var(--muted);line-height:1.9">
+
+Our platform is built with privacy and user safety in mind.
+Basic profile information can be explored freely while
+premium members can access additional profile information
+and connection features.
+
+</p>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- CTA -->
+
+<section class="cta">
+
+<div class="container">
+
+<h2>
+Ready to Find Your Life Partner?
+</h2>
+
+<p>
+Start exploring genuine profiles today.
+</p>
+
+<button class="btn" style="background:#fff;color:var(--primary)" onclick="document.getElementById('profiles').scrollIntoView()">
+Explore Profiles
+</button>
+
+</div>
+
+</section>
+
+
+<!-- FOOTER -->
+
+<footer id="contact">
+
+<div class="container">
+
+<div class="footer-grid">
+
+<div>
+
+<div class="logo">
+
+<div class="logo-mark" style="background:#fff;color:var(--primary)">
+N
+</div>
+
+<div class="logo-text" style="color:#fff">
+Nikah Circle
+</div>
+
+</div>
+
+<p style="margin-top:15px">
+A trusted Islamic matrimony platform
+for meaningful relationships.
+</p>
+
+</div>
+
+
+<div>
+
+<h3>
+Quick Links
+</h3>
+
+<p><a href="#home">Home</a></p>
+<p><a href="#profiles">Profiles</a></p>
+<p><a href="#about">About</a></p>
+
+</div>
+
+
+<div>
+
+<h3>
+Support
+</h3>
+
+<p>Privacy Policy</p>
+<p>Terms & Conditions</p>
+<p>Help Center</p>
+
+</div>
+
+
+<div>
+
+<h3>
+Contact
+</h3>
+
+<p>nikahcircle01@gmail.com</p>
+<p>Kerala, India</p>
+
+</div>
+
+</div>
+
+<div class="copyright">
+
+© 2026 Nikah Circle. All Rights Reserved.
+
+</div>
+
+</div>
+
+</footer>
+
+
+<!-- PROFILE MODAL -->
+
+<div id="profileModal" class="modal">
+
+<div class="modal-box">
+
+<button class="modal-close" onclick="closeProfile()">
+×
+</button>
+
+<div id="profileDetails"></div>
+
+</div>
+
+</div>
+
+
+<!-- LOGIN -->
+
+<div id="loginModal" class="login-modal">
+
+<div class="login-box">
+
+<button class="modal-close" onclick="closeLogin()">
+×
+</button>
+
+<h2>
+Welcome Back
+</h2>
+
+<p style="color:var(--muted);font-size:13px">
+Login to your Nikah Circle account.
+</p>
+
+<div id="loginMessage" class="message"></div>
+
+<form id="loginForm">
+
+<div class="form-group">
+
+<label>
+Email
+</label>
+
+<input
+class="input"
+type="email"
+id="loginEmail"
+required>
+
+</div>
+
+<div class="form-group">
+
+<label>
+Password
+</label>
+
+<input
+class="input"
+type="password"
+id="loginPassword"
+required>
+
+</div>
+
+<button
+class="btn btn-primary"
+style="width:100%">
+Login
+</button>
+
+</form>
+
+</div>
+
+</div>
+
+
+<script>
+
+/* ==============================
+   SUPABASE
+============================== */
+
+const SUPABASE_URL =
+"https://trmrgyitpvvytomdvsnt.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_uknxpHEk4mpd29mH2Tcn8A_dkzFJrcg";
+
+const supabaseClient =
+supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
+
+
+/* ==============================
+   GLOBAL
+============================== */
+
+let allProfiles = [];
+let currentUser = null;
+
+
+/* ==============================
+   LOAD USER
+============================== */
+
+async function checkUser(){
+
+    const {
+        data
+    } = await supabaseClient.auth.getSession();
+
+    if(data.session){
+
+        currentUser =
+        data.session.user;
+
+        updateLoginButton();
+
+    }
+
+}
+
+
+/* ==============================
+   LOAD PROFILES
+============================== */
+
+async function loadProfiles(){
+
+    const {
+        data,
+        error
+    } = await supabaseClient
+        .from("profiles")
+        .select("*")
+        .eq("profile_status","APPROVED")
+        .order("created_at",{
+            ascending:false
+        });
+
+    if(error){
+
+        console.error(error);
+
+        document.getElementById("profileGrid").innerHTML = `
+
+        <div style="grid-column:1/-1;text-align:center;padding:40px">
+
+        <h3 style="color:#4b001f">
+        Unable to load profiles
+        </h3>
+
+        <p style="color:#777;margin-top:8px">
+        Please check your Supabase connection.
+        </p>
+
+        </div>
+
+        `;
+
+        return;
+
+    }
+
+    allProfiles =
+    data || [];
+
+    displayProfiles(
+        allProfiles.slice(0,8)
+    );
+
+}
+
+
+/* ==============================
+   DISPLAY
+============================== */
+
+function displayProfiles(profiles){
+
+    const grid =
+    document.getElementById(
+        "profileGrid"
+    );
+
+    if(!profiles.length){
+
+        grid.innerHTML = `
+
+        <div style="
+        grid-column:1/-1;
+        text-align:center;
+        padding:50px">
+
+        <div style="
+        font-size:45px;
+        color:#4b001f">
+        ♡
+        </div>
+
+        <h3 style="
+        color:#4b001f;
+        margin-top:10px">
+        No profiles found
+        </h3>
+
+        <p style="
+        color:#777;
+        margin-top:8px">
+        Try changing your search.
+        </p>
+
+        </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    grid.innerHTML =
+    profiles.map(profile => {
+
+        let photo =
+        profile.profile_photo;
+
+        return `
+
+        <div class="profile-card">
+
+            <div class="profile-photo">
+
+                ${
+                    photo
+
+                    ?
+
+                    `<img
+                    src="${escapeHtml(photo)}"
+                    alt="${escapeHtml(profile.full_name)}"
+                    onerror="this.style.display='none';this.parentElement.innerHTML='<div class=profile-placeholder>♡</div>'"
+                    >`
+
+                    :
+
+                    `<div class="profile-placeholder">
+                    ♡
+                    </div>`
+                }
+
+            </div>
+
+
+            <div class="profile-info">
+
+                <div class="profile-name">
+                    ${escapeHtml(profile.full_name)}
+                </div>
+
+                <div class="profile-location">
+                    📍 ${escapeHtml(profile.location || "Kerala")}
+                </div>
+
+                <div class="profile-tags">
+
+                    ${
+                        profile.gender
+                        ?
+                        `<span class="tag">
+                        ${escapeHtml(profile.gender)}
+                        </span>`
+                        :
+                        ""
+                    }
+
+                    ${
+                        profile.education
+                        ?
+                        `<span class="tag">
+                        ${escapeHtml(profile.education)}
+                        </span>`
+                        :
+                        ""
+                    }
+
+                    ${
+                        profile.marital_status
+                        ?
+                        `<span class="tag">
+                        ${escapeHtml(profile.marital_status)}
+                        </span>`
+                        :
+                        ""
+                    }
+
+                </div>
+
+
+                <div class="profile-actions">
+
+                    <button
+                    class="btn btn-outline"
+                    onclick="viewProfile('${profile.id}')">
+
+                    View
+
+                    </button>
+
+                    <button
+                    class="btn btn-primary"
+                    onclick="sendInterest('${profile.id}')">
+
+                    Interest
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        `;
+
+    }).join("");
+
+}
+
+
+/* ==============================
+   SEARCH
+============================== */
+
+function searchProfiles(){
+
+    const gender =
+    document.getElementById(
+        "searchGender"
+    ).value;
+
+    const location =
+    document.getElementById(
+        "searchLocation"
+    ).value
+    .toLowerCase()
+    .trim();
+
+    const marital =
+    document.getElementById(
+        "searchMarital"
+    ).value;
+
+
+    let result =
+    allProfiles.filter(profile => {
+
+        if(
+            gender &&
+            profile.gender !== gender
+        ){
+            return false;
+        }
+
+        if(
+            location &&
+            !(profile.location || "")
+            .toLowerCase()
+            .includes(location)
+        ){
+            return false;
+        }
+
+        if(
+            marital &&
+            profile.marital_status !== marital
+        ){
+            return false;
+        }
+
+        return true;
+
+    });
+
+
+    displayProfiles(result);
+
+}
+
+
+/* ==============================
+   VIEW PROFILE
+============================== */
+
+async function viewProfile(id){
+
+    const profile =
+    allProfiles.find(
+        p => p.id === id
+    );
+
+    if(!profile) return;
+
+
+    let isPremium =
+    profile.is_premium === true;
+
+    let premiumEnd =
+    profile.premium_end;
+
+    if(
+        premiumEnd &&
+        premiumEnd < new Date()
+        .toISOString()
+        .slice(0,10)
+    ){
+        isPremium = false;
+    }
+
+
+    const modal =
+    document.getElementById(
+        "profileModal"
+    );
+
+    const details =
+    document.getElementById(
+        "profileDetails"
+    );
+
+
+    details.innerHTML = `
+
+    <div class="modal-head">
+
+        <div class="modal-photo">
+
+            ${
+                profile.profile_photo
+
+                ?
+
+                `<img
+                src="${escapeHtml(profile.profile_photo)}"
+                >`
+
+                :
+
+                `<div class="profile-placeholder">
+                ♡
+                </div>`
+            }
+
+        </div>
+
+        <div>
+
+            <h2 style="
+            color:#4b001f;
+            font-family:'Playfair Display',serif">
+
+            ${escapeHtml(profile.full_name)}
+
+            </h2>
+
+            <p style="
+            color:#777;
+            margin-top:5px">
+
+            📍 ${escapeHtml(profile.location || "-")}
+
+            </p>
+
+            ${
+                profile.is_verified
+                ?
+                `<span class="tag"
+                style="display:inline-block;margin-top:8px">
+                ✓ Verified
+                </span>`
+                :
+                ""
+            }
+
+        </div>
+
+    </div>
+
+
+    <div class="detail-grid">
+
+        ${detail(
+            "Gender",
+            profile.gender
+        )}
+
+        ${detail(
+            "Date of Birth",
+            isPremium
+            ? formatDate(profile.date_of_birth)
+            : "Premium only"
+        )}
+
+        ${detail(
+            "Education",
+            isPremium
+            ? profile.education
+            : "Premium only"
+        )}
+
+        ${detail(
+            "Profession",
+            isPremium
+            ? profile.profession
+            : "Premium only"
+        )}
+
+        ${detail(
+            "Marital Status",
+            profile.marital_status
+        )}
+
+        ${detail(
+            "Location",
+            profile.location
+        )}
+
+    </div>
+
+
+    ${
+        isPremium
+
+        ?
+
+        `
+
+        <div style="
+        margin-top:20px;
+        padding:20px;
+        background:#fff6fa;
+        border-radius:12px">
+
+        <h3 style="
+        color:#4b001f;
+        font-family:'Playfair Display',serif;
+        margin-bottom:8px">
+
+        About
+
+        </h3>
+
+        <p style="
+        color:#777;
+        line-height:1.8">
+
+        ${escapeHtml(
+            profile.about ||
+            "No information available."
+        )}
+
+        </p>
+
+        </div>
+
+        `
+
+        :
+
+        `
+
+        <div class="premium-lock">
+
+        <h3>
+        🔒 Premium Profile
+        </h3>
+
+        <p style="
+        color:#777;
+        margin:10px 0 18px">
+
+        Upgrade to Premium to view
+        complete profile information,
+        more photos and partner preferences.
+
+        </p>
+
+        <button
+        class="btn btn-primary"
+        onclick="premiumMessage()">
+
+        Unlock Premium
+
+        </button>
+
+        </div>
+
+        `
+    }
+
+
+    <div style="
+    display:flex;
+    gap:10px;
+    margin-top:20px">
+
+    <button
+    class="btn btn-primary"
+    onclick="sendInterest('${profile.id}')">
+
+    Send Interest
+
+    </button>
+
+    </div>
+
+    `;
+
+    modal.classList.add("active");
+
+}
+
+
+/* ==============================
+   DETAIL
+============================== */
+
+function detail(label,value){
+
+    return `
+
+    <div class="detail">
+
+    <small>
+    ${label}
+    </small>
+
+    <strong>
+    ${escapeHtml(value || "-")}
+    </strong>
+
+    </div>
+
+    `;
+
+}
+
+
+/* ==============================
+   INTEREST
+============================== */
+
+async function sendInterest(receiverId){
+
+    if(!currentUser){
+
+        openLogin();
+
+        showLoginMessage(
+            "Please login to send interest.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    /*
+       IMPORTANT:
+
+       interests table should be created
+       in Supabase before enabling this.
+    */
+
+
+    const {
+        error
+    } = await supabaseClient
+        .from("interests")
+        .insert({
+
+            sender_id:
+            currentUser.id,
+
+            receiver_id:
+            receiverId,
+
+            status:
+            "pending"
+
+        });
+
+
+    if(error){
+
+        if(
+            error.code === "42P01"
+        ){
+
+            alert(
+                "Interests table is not created yet in Supabase."
+            );
+
+        }else{
+
+            alert(
+                error.message
+            );
+
+        }
+
+        return;
+
+    }
+
+
+    alert(
+        "Interest sent successfully ❤️"
+    );
+
+}
+
+
+/* ==============================
+   LOGIN
+============================== */
+
+function openLogin(){
+
+    document
+    .getElementById("loginModal")
+    .classList.add("active");
+
+}
+
+
+function closeLogin(){
+
+    document
+    .getElementById("loginModal")
+    .classList.remove("active");
+
+}
+
+
+function showLoginMessage(text,type){
+
+    const box =
+    document.getElementById(
+        "loginMessage"
+    );
+
+    box.textContent =
+    text;
+
+    box.className =
+    "message " + type;
+
+}
+
+
+document
+.getElementById("loginForm")
+.addEventListener(
+"submit",
+async function(e){
+
+    e.preventDefault();
+
+
+    const email =
+    document.getElementById(
+        "loginEmail"
+    ).value;
+
+    const password =
+    document.getElementById(
+        "loginPassword"
+    ).value;
+
+
+    const {
+        data,
+        error
+    } =
+    await supabaseClient.auth
+    .signInWithPassword({
+
+        email,
+        password
+
+    });
+
+
+    if(error){
+
+        showLoginMessage(
+            error.message,
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    currentUser =
+    data.user;
+
+    showLoginMessage(
+        "Login successful!",
+        "success"
+    );
+
+
+    updateLoginButton();
+
+
+    setTimeout(
+        closeLogin,
+        700
+    );
+
+});
+
+
+/* ==============================
+   LOGOUT
+============================== */
+
+async function logout(){
+
+    await supabaseClient
+    .auth
+    .signOut();
+
+    currentUser =
+    null;
+
+    updateLoginButton();
+
+}
+
+
+/* ==============================
+   LOGIN BUTTON
+============================== */
+
+function updateLoginButton(){
+
+    const buttons =
+    document.querySelectorAll(
+        ".nav-buttons .btn"
+    );
+
+    if(!buttons.length)
+    return;
+
+
+    if(currentUser){
+
+        buttons[0].textContent =
+        "Logout";
+
+        buttons[0].onclick =
+        logout;
+
+    }else{
+
+        buttons[0].textContent =
+        "Login";
+
+        buttons[0].onclick =
+        openLogin;
+
+    }
+
+}
+
+
+/* ==============================
+   PREMIUM
+============================== */
+
+function premiumMessage(){
+
+    if(!currentUser){
+
+        openLogin();
+
+        showLoginMessage(
+            "Please login first to continue.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    alert(
+        "Premium registration/payment page will be connected next."
+    );
+
+}
+
+
+/* ==============================
+   MOBILE MENU
+============================== */
+
+function toggleMenu(){
+
+    const menu =
+    document.getElementById(
+        "mobileMenu"
+    );
+
+    menu.style.display =
+    menu.style.display === "none"
+    ?
+    "block"
+    :
+    "none";
+
+}
+
+
+/* ==============================
+   UTILITIES
+============================== */
+
+function formatDate(date){
+
+    if(!date)
+    return "-";
+
+    return new Date(date)
+    .toLocaleDateString(
+        "en-IN"
+    );
+
+}
+
+
+function escapeHtml(value){
+
+    return String(
+        value ?? ""
+    ).replace(
+        /[&<>"']/g,
+        function(m){
+
+            return {
+
+                "&":"&amp;",
+                "<":"&lt;",
+                ">":"&gt;",
+                '"':"&quot;",
+                "'":"&#039;"
+
+            }[m];
+
+        }
+    );
+
+}
+
+
+/* ==============================
+   INIT
+============================== */
+
+document.addEventListener(
+"DOMContentLoaded",
+async function(){
+
+    await checkUser();
+
+    await loadProfiles();
+
+});
+
+</script>
+
+</body>
+</html>
