@@ -40,6 +40,7 @@ interface Props {
   onRejectProfile: (id: string) => Promise<void>;
   onApprovePremiumRequest: (id: string) => Promise<void>;
   onRejectPremiumRequest: (id: string) => Promise<void>;
+  onDeactivatePremium?: (profileIdOrPhone: string) => Promise<void>;
   onExitAdmin: () => void;
   adminEmail: string;
 }
@@ -56,6 +57,7 @@ export const AdminPortal: React.FC<Props> = ({
   onRejectProfile,
   onApprovePremiumRequest,
   onRejectPremiumRequest,
+  onDeactivatePremium,
   onExitAdmin,
   adminEmail,
 }) => {
@@ -710,13 +712,13 @@ export const AdminPortal: React.FC<Props> = ({
                       <span
                         className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase ${
                           req.status === 'APPROVED'
-                            ? 'bg-emerald-100 text-emerald-800'
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                             : req.status === 'PENDING'
                             ? 'bg-amber-100 text-amber-800 animate-pulse'
                             : 'bg-red-100 text-red-800'
                         }`}
                       >
-                        {req.status === 'APPROVED' && '✓ APPROVED'}
+                        {req.status === 'APPROVED' && '✓ ADMIN APPROVED'}
                         {req.status === 'PENDING' && '⏳ PENDING'}
                         {req.status === 'REJECTED' && '✗ REJECTED'}
                       </span>
@@ -843,18 +845,31 @@ export const AdminPortal: React.FC<Props> = ({
                       </div>
                     ) : (
                       <div className="flex items-center justify-between text-xs pt-2 border-t border-stone-100">
-                        <span className="text-stone-500 font-semibold">
-                          തീരുമാനം: {req.status === 'APPROVED' ? 'അക്സെപ്റ്റ് ചെയ്തു (Approved)' : 'നിരസിച്ചു (Rejected)'}
+                        <span className="text-emerald-800 font-bold flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>തീരുമാനം: {req.status === 'APPROVED' ? 'Admin Approved (അക്സെപ്റ്റ് ചെയ്തു)' : 'നിരസിച്ചു (Rejected)'}</span>
                         </span>
-                        {req.status === 'REJECTED' && (
-                          <button
-                            type="button"
-                            onClick={() => onApprovePremiumRequest(req.id)}
-                            className="px-3 py-1 rounded-lg border border-emerald-600 text-emerald-700 hover:bg-emerald-50 text-[11px] font-bold cursor-pointer"
-                          >
-                            വീണ്ടും അപ്രൂവ് ചെയ്യുക
-                          </button>
-                        )}
+                        <div className="flex items-center gap-1.5">
+                          {req.status === 'APPROVED' && onDeactivatePremium && (
+                            <button
+                              type="button"
+                              onClick={() => onDeactivatePremium(req.phone_number)}
+                              className="px-2.5 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-[11px] font-bold cursor-pointer"
+                              title="Turn off premium plan (Admin Off)"
+                            >
+                              Admin Off
+                            </button>
+                          )}
+                          {req.status === 'REJECTED' && (
+                            <button
+                              type="button"
+                              onClick={() => onApprovePremiumRequest(req.id)}
+                              className="px-3 py-1 rounded-lg border border-emerald-600 text-emerald-700 hover:bg-emerald-50 text-[11px] font-bold cursor-pointer"
+                            >
+                              വീണ്ടും അപ്രൂവ് ചെയ്യുക
+                            </button>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1405,12 +1420,21 @@ export const AdminPortal: React.FC<Props> = ({
                       <td className="p-3 text-stone-700">{p.guardian_mobile || p.mobile}</td>
                       <td className="p-3 text-stone-600">{p.premium_end || '2026-12-31'}</td>
                       <td className="p-3 text-right">
-                        <button
-                          onClick={() => handleEditClick(p)}
-                          className="px-2.5 py-1 rounded-lg border border-stone-200 hover:bg-stone-100 text-stone-700 font-semibold cursor-pointer"
-                        >
-                          Manage
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handleEditClick(p)}
+                            className="px-2.5 py-1 rounded-lg border border-stone-200 hover:bg-stone-100 text-stone-700 font-semibold cursor-pointer"
+                          >
+                            Manage
+                          </button>
+                          <button
+                            onClick={() => onDeactivatePremium?.(p.id)}
+                            className="px-2.5 py-1 rounded-lg bg-red-50 border border-red-200 text-red-700 hover:bg-red-100 text-[11px] font-bold cursor-pointer"
+                            title="Turn off premium plan (Admin Off)"
+                          >
+                            Admin Off
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

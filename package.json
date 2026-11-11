@@ -1,14 +1,19 @@
 {
-  "name": "react-example",
+  "name": "nikah-circle",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
+    "dev:turbo": "vite --port=3000 --host=0.0.0.0 --force",
+    "turbo": "turbo run dev",
     "build": "vite build",
+    "build:turbo": "turbo run build",
     "preview": "vite preview",
-    "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "clean": "rm -rf dist dev-dist",
+    "lint": "tsc --noEmit",
+    "push": "git add -A && git commit -m \"chore: auto update code\" && git push origin main",
+    "sync": "node scripts/sync.js"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -34,6 +39,7 @@
     "esbuild": "^0.25.0",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.21.0",
+    "turbo": "^2.11.10",
     "typescript": "^7.0.2",
     "vite-plugin-pwa": "^2.0.0"
   }

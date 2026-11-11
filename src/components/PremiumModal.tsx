@@ -14,7 +14,9 @@ import {
   Copy,
   CheckCircle2,
   Tag,
-  Key
+  Key,
+  Smartphone,
+  ExternalLink
 } from 'lucide-react';
 import { PremiumRequest } from '../types';
 import { isReferralCodeUsed, markReferralCodeUsed } from '../lib/supabase';
@@ -315,15 +317,29 @@ export const PremiumModal: React.FC<Props> = ({
 
                   {/* QR SCANNER CARD (Official image uploaded by user) */}
                   <div className="p-5 rounded-2xl bg-[#fff6fa] border border-[#eadfe4] flex flex-col md:flex-row items-center gap-6">
-                    <div className="w-48 sm:w-56 shrink-0 bg-white p-2.5 rounded-2xl shadow-md border border-[#eadfe4] text-center">
+                    <div className="w-48 sm:w-56 shrink-0 bg-white p-2.5 rounded-2xl shadow-md border border-[#eadfe4] text-center space-y-2">
                       <img
                         src="/assets/aistudio/WhatsApp_Image_2026-10-06_at_6.11.23_PM_c01376c7.jpeg"
                         alt="Google Pay UPI Scanner - Jimshad Vk"
                         className="w-full rounded-xl object-contain"
                       />
-                      <span className="text-[11px] font-bold text-[#4b001f] block mt-1.5">
+                      <span className="text-[11px] font-bold text-[#4b001f] block">
                         Pay ₹{currentPlan.price.toLocaleString('en-IN')}
                       </span>
+
+                      {/* Button right below payment scanner QR code */}
+                      <a
+                        href={`upi://pay?pa=jimshadvk6@okaxis&pn=Jimshad%20Vk&am=${currentPlan.price}&cu=INR&tn=Nikah%20Circle%20${encodeURIComponent(currentPlan.name)}`}
+                        onClick={(e) => {
+                          const upiUrl = `upi://pay?pa=jimshadvk6@okaxis&pn=Jimshad%20Vk&am=${currentPlan.price}&cu=INR&tn=Nikah%20Circle%20${encodeURIComponent(currentPlan.name)}`;
+                          window.location.href = upiUrl;
+                        }}
+                        className="w-full py-2.5 px-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center"
+                        title="Click to open Google Pay, PhonePe, Paytm, or your UPI payment app"
+                      >
+                        <Smartphone className="w-4 h-4 shrink-0" />
+                        <span>Pay with your payment app</span>
+                      </a>
                     </div>
 
                     <div className="space-y-3 flex-1 text-xs">

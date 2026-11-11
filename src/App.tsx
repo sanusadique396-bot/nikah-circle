@@ -49,11 +49,24 @@ export default function App() {
     getStoredInterestsMap()
   );
 
-  // Authentication State
-  const [currentUser, setCurrentUser] = useState<{ email?: string; id?: string } | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  // Authentication State: Auto-restore or check authentication
+  const [currentUser, setCurrentUser] = useState<{ email?: string; id?: string } | null>(() => {
+    try {
+      const stored = localStorage.getItem('nikah_circle_user');
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return null;
+  });
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('nikah_circle_is_admin') === 'true';
+    } catch {}
+    return false;
+  });
   const [isUserPremium, setIsUserPremium] = useState<boolean>(() => {
     try {
+      const adminStatus = localStorage.getItem('nikah_circle_premium_admin_status');
+      if (adminStatus === 'ADMIN_OFF' || adminStatus === 'EXPIRED') return false;
       const stored = localStorage.getItem('nikah_circle_user_is_premium');
       if (stored !== null) return stored === 'true';
     } catch {}
@@ -64,8 +77,15 @@ export default function App() {
     localStorage.setItem('nikah_circle_user_is_premium', String(isUserPremium));
   }, [isUserPremium]);
 
-  // Modals
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  // Modals: 1. Auto-open Login as soon as the app is opened if the user is not authenticated
+  const [isLoginOpen, setIsLoginOpen] = useState<boolean>(() => {
+    try {
+      const stored = localStorage.getItem('nikah_circle_user');
+      return !stored; // Auto-opens login modal immediately if user is not authenticated
+    } catch {
+      return true;
+    }
+  });
   const [loginMode, setLoginMode] = useState<'member' | 'admin'>('member');
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isPremiumOpen, setIsPremiumOpen] = useState(false);
@@ -82,12 +102,32 @@ export default function App() {
     verifiedOnly: false,
   });
 
-  // Notification Toast
+  // Notification Toast & Screen Status Banners
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [adminApprovedBanner, setAdminApprovedBanner] = useState<{
+    status: string;
+    message: string;
+    planName?: string;
+  } | null>(() => {
+    try {
+      const status = localStorage.getItem('nikah_circle_premium_admin_status');
+      if (status === 'APPROVED') {
+        return {
+          status: 'Admin Approved',
+          message: 'Premium plan successfully activated',
+        };
+      }
+    } catch {}
+    return null;
+  });
+  const [planAlertBanner, setPlanAlertBanner] = useState<{
+    status: string;
+    message: string;
+  } | null>(null);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+    setTimeout(() => setToastMessage(null), 3500);
   };
 
   // Sync Supabase on Mount
@@ -321,13 +361,94 @@ export default function App() {
       await supabase.from('payments').insert(payPayload);
     } catch {}
 
-    showToast(`അക്സെപ്റ്റ് ചെയ്തു! ${target.user_name} പ്രീമിയം ആക്റ്റീവ് ആയി.`);
+    // Store approval status and trigger notification
+    localStorage.setItem('nikah_circle_user_is_premium', 'true');
+    localStorage.setItem('nikah_circle_premium_admin_status', 'APPROVED');
+    localStorage.setItem('nikah_circle_premium_expiry', new Date(Date.now() + 90 * 86400000).toISOString());
+
+    // Show 'Admin Approved' on screen and trigger required notification
+    showToast('Premium plan successfully activated');
+    setAdminApprovedBanner({
+      status: 'Admin Approved',
+      message: 'Premium plan successfully activated',
+      planName: target.plan_name,
+    });
+    setPlanAlertBanner(null);
+
     confetti({
       particleCount: 60,
       spread: 70,
       origin: { y: 0.6 },
     });
   };
+
+  // Admin turns off premium plan (Admin Off) or plan expires
+  const handleDeactivatePremium = async (profileIdOrIdentifier?: string) => {
+    setIsUserPremium(false);
+    localStorage.setItem('nikah_circle_user_is_premium', 'false');
+    localStorage.setItem('nikah_circle_premium_admin_status', 'ADMIN_OFF');
+    setAdminApprovedBanner(null);
+
+    if (profileIdOrIdentifier) {
+      const updated = profiles.map((p) =>
+        p.id === profileIdOrIdentifier || p.mobile === profileIdOrIdentifier || p.guardian_mobile === profileIdOrIdentifier
+          ? {
+              ...p,
+              is_premium: false,
+              premium_end: new Date(Date.now() - 86400000).toISOString().slice(0, 10),
+            }
+          : p
+      );
+      setProfiles(updated);
+      saveStoredProfiles(updated);
+    }
+
+    // Trigger required notification and on-screen banner: 'Replan or update your premium plan'
+    showToast('Replan or update your premium plan');
+    setPlanAlertBanner({
+      status: 'Admin Off',
+      message: 'Replan or update your premium plan',
+    });
+  };
+
+  // Plan Expiry & Admin Off Monitoring
+  useEffect(() => {
+    const checkPlanStatus = () => {
+      const adminStatus = localStorage.getItem('nikah_circle_premium_admin_status');
+      const expiryStr = localStorage.getItem('nikah_circle_premium_expiry');
+
+      if (adminStatus === 'ADMIN_OFF') {
+        if (isUserPremium) {
+          setIsUserPremium(false);
+          localStorage.setItem('nikah_circle_user_is_premium', 'false');
+          showToast('Replan or update your premium plan');
+          setPlanAlertBanner({
+            status: 'Admin Off',
+            message: 'Replan or update your premium plan',
+          });
+        }
+        return;
+      }
+
+      if (expiryStr) {
+        const expiryTime = new Date(expiryStr).getTime();
+        if (!isNaN(expiryTime) && Date.now() > expiryTime) {
+          if (isUserPremium) {
+            setIsUserPremium(false);
+            localStorage.setItem('nikah_circle_user_is_premium', 'false');
+            localStorage.setItem('nikah_circle_premium_admin_status', 'EXPIRED');
+            showToast('Replan or update your premium plan');
+            setPlanAlertBanner({
+              status: 'Expired',
+              message: 'Replan or update your premium plan',
+            });
+          }
+        }
+      }
+    };
+
+    checkPlanStatus();
+  }, [isUserPremium]);
 
   // Admin rejects premium request
   const handleRejectPremiumRequest = async (id: string) => {
@@ -487,7 +608,11 @@ export default function App() {
     } catch {}
     setCurrentUser(null);
     setIsAdmin(false);
+    localStorage.removeItem('nikah_circle_user');
+    localStorage.removeItem('nikah_circle_is_admin');
     showToast('Logged out successfully.');
+    // As soon as unauthenticated, auto-open login modal
+    setIsLoginOpen(true);
   };
 
   const handleResetFilters = () => {
@@ -602,6 +727,7 @@ export default function App() {
           onRejectProfile={handleRejectProfile}
           onApprovePremiumRequest={handleApprovePremiumRequest}
           onRejectPremiumRequest={handleRejectPremiumRequest}
+          onDeactivatePremium={handleDeactivatePremium}
           onExitAdmin={() => setActiveView('home')}
           adminEmail="nikahcircle01@gmail.com"
         />
@@ -614,7 +740,7 @@ export default function App() {
       {/* Offline Toast */}
       <OfflineBanner />
 
-      {/* Navigation Bar with Clean 3-Dot Dropdown and Separated Tabs */}
+      {/* Navigation Bar with Clean 3-Dot Dropdown, Separated Tabs, and Plan Button */}
       <Navbar
         activeView={activeView}
         onNavigate={(view) => {
@@ -636,7 +762,62 @@ export default function App() {
         onLogout={handleLogout}
         savedCount={bookmarks.length}
         interestsCount={Object.keys(interestsMap).length}
+        isUserPremium={isUserPremium}
+        currentPlanName={isUserPremium ? 'Premium Plan' : 'Free Plan'}
       />
+
+      {/* On-Screen Status Banner: Admin Approved & Premium Activated */}
+      {adminApprovedBanner && (
+        <div className="bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 text-white px-4 py-2.5 shadow-md border-b border-emerald-500/40 text-xs sm:text-sm animate-in slide-in-from-top-2 duration-300">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 font-bold">
+              <span className="px-2.5 py-0.5 rounded-full bg-white text-emerald-900 text-[11px] font-black uppercase tracking-wider shadow-2xs">
+                Admin Approved
+              </span>
+              <span>Premium plan successfully activated</span>
+            </div>
+            <button
+              onClick={() => setAdminApprovedBanner(null)}
+              className="p-1 rounded-md hover:bg-white/10 text-white/80 hover:text-white cursor-pointer"
+              title="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* On-Screen Status Banner: Expiry / Admin Off Notification */}
+      {planAlertBanner && (
+        <div className="bg-gradient-to-r from-amber-600 via-orange-600 to-red-600 text-white px-4 py-2.5 shadow-md border-b border-amber-400/40 text-xs sm:text-sm animate-in slide-in-from-top-2 duration-300">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 font-bold">
+              <span className="px-2.5 py-0.5 rounded-full bg-white text-amber-950 text-[11px] font-black uppercase tracking-wider shadow-2xs">
+                {planAlertBanner.status}
+              </span>
+              <span>Replan or update your premium plan</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setPlanAlertBanner(null);
+                  setIsPremiumOpen(true);
+                }}
+                className="px-3 py-1 rounded-lg bg-white text-[#4b001f] text-xs font-bold hover:bg-stone-100 cursor-pointer shadow-xs"
+              >
+                Replan / Upgrade
+              </button>
+              <button
+                onClick={() => setPlanAlertBanner(null)}
+                className="p-1 rounded-md hover:bg-white/10 text-white/80 hover:text-white cursor-pointer"
+                title="Dismiss"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast Notification */}
       {toastMessage && (
@@ -1050,6 +1231,9 @@ export default function App() {
         onSuccess={(user, isAdminUser) => {
           setCurrentUser(user);
           setIsAdmin(isAdminUser);
+          localStorage.setItem('nikah_circle_user', JSON.stringify(user));
+          localStorage.setItem('nikah_circle_is_admin', String(isAdminUser));
+          setIsLoginOpen(false);
           if (isAdminUser) {
             showToast('Admin login successful!');
             setActiveView('admin');

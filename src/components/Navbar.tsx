@@ -25,6 +25,8 @@ interface Props {
   onLogout: () => void;
   savedCount: number;
   interestsCount: number;
+  isUserPremium?: boolean;
+  currentPlanName?: string | null;
 }
 
 export const Navbar: React.FC<Props> = ({
@@ -38,6 +40,8 @@ export const Navbar: React.FC<Props> = ({
   onLogout,
   savedCount,
   interestsCount,
+  isUserPremium = false,
+  currentPlanName,
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -138,17 +142,41 @@ export const Navbar: React.FC<Props> = ({
               <span>Interests ({interestsCount})</span>
             </button>
 
+            {/* Prominent Plan Button at Top Navbar (Free Plan or Premium Plan) */}
             <button
               onClick={onOpenPremium}
-              className="text-[#946b17] hover:text-[#4b001f] transition-colors whitespace-nowrap cursor-pointer py-1 flex items-center gap-1 font-semibold"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-2xs ${
+                isUserPremium
+                  ? 'bg-gradient-to-r from-amber-500 via-[#c9973e] to-amber-600 text-white border border-amber-300 hover:shadow-sm'
+                  : 'bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-200'
+              }`}
+              title={isUserPremium ? 'Active Premium Plan - Click to manage' : 'Current: Free Plan - Click to upgrade'}
             >
-              <Sparkles className="w-3.5 h-3.5 text-[#c9973e]" />
-              <span>Premium</span>
+              <Sparkles className={`w-3.5 h-3.5 ${isUserPremium ? 'text-white' : 'text-[#c9973e]'}`} />
+              <span>{isUserPremium ? (currentPlanName || 'Premium Plan') : 'Free Plan'}</span>
+              {!isUserPremium && (
+                <span className="text-[10px] bg-[#4b001f] text-white px-1.5 py-0.2 rounded font-semibold ml-0.5">
+                  Upgrade
+                </span>
+              )}
             </button>
           </nav>
 
-          {/* Zone 3: Three-Dot Menu (⋮) containing Admin Panel, Register, Install App, and Login */}
+          {/* Zone 3: Three-Dot Menu (⋮) & Quick Actions */}
           <div className="flex items-center gap-2 relative shrink-0" ref={dropdownRef}>
+            {/* Mobile / Tablet Quick Plan Badge */}
+            <button
+              onClick={onOpenPremium}
+              className={`md:hidden flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold cursor-pointer ${
+                isUserPremium
+                  ? 'bg-gradient-to-r from-amber-500 to-[#c9973e] text-white'
+                  : 'bg-stone-100 text-stone-700 border border-stone-200'
+              }`}
+            >
+              <Sparkles className="w-3 h-3 text-[#c9973e]" />
+              <span>{isUserPremium ? 'Premium Plan' : 'Free Plan'}</span>
+            </button>
+
             {/* Direct Quick Login state indication */}
             {currentUser && (
               <span className="hidden xl:inline text-xs font-semibold text-stone-600 max-w-[120px] truncate">
@@ -299,9 +327,19 @@ export const Navbar: React.FC<Props> = ({
               onOpenPremium();
               setMobileMenuOpen(false);
             }}
-            className="w-full text-left px-3 py-2 text-sm font-bold text-[#946b17] hover:bg-[#fff6fa] rounded-lg"
+            className={`w-full text-left px-3 py-2 text-sm font-bold rounded-lg flex items-center justify-between ${
+              isUserPremium
+                ? 'bg-[#fff6fa] text-[#946b17] border border-[#eadfe4]'
+                : 'text-stone-700 hover:bg-[#fff6fa]'
+            }`}
           >
-            ★ Premium Plans
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#c9973e]" />
+              <span>Current Plan: {isUserPremium ? (currentPlanName || 'Premium Plan') : 'Free Plan'}</span>
+            </div>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-[#4b001f] text-white">
+              {isUserPremium ? 'Active' : 'Upgrade'}
+            </span>
           </button>
         </div>
       )}
