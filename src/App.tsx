@@ -225,7 +225,7 @@ export default function App() {
 
   const handleSendInterest = async (profileId: string) => {
     if (interestsMap[profileId]) {
-      showToast('ഈ പ്രൊഫൈലിലേക്ക് ഇതിനകം ഇൻട്രസ്റ്റ് അയച്ചിട്ടുണ്ട്.');
+      showToast('Interest has already been sent to this profile.');
       return;
     }
 
@@ -233,7 +233,7 @@ export default function App() {
     setInterestsMap(updated);
     saveStoredInterestsMap(updated);
 
-    showToast('ഇൻട്രസ്റ്റ് വിജയകരമായി അയച്ചു! അവർ അക്സെപ്റ്റ് ചെയ്യുമ്പോൾ ബയോഡാറ്റ അൺലോക്ക് ആകും.');
+    showToast('Interest sent successfully! Biodata will unlock once accepted.');
     confetti({
       particleCount: 50,
       spread: 50,
@@ -246,7 +246,7 @@ export default function App() {
     delete updated[profileId];
     setInterestsMap(updated);
     saveStoredInterestsMap(updated);
-    showToast('ഇൻട്രസ്റ്റ് ക്യാൻസൽ ചെയ്തു (Interest cancelled).');
+    showToast('Interest cancelled successfully.');
   };
 
   const handleSaveUserProfile = async (data: UserProfileData) => {
@@ -305,7 +305,7 @@ export default function App() {
 
     setIsCreateAccountOpen(false);
     setIsEditingProfile(false);
-    showToast('പ്രൊഫൈൽ അക്കൗണ്ട് വിജയകരമായി സേവ് ചെയ്തു!');
+    showToast('Profile account saved successfully!');
     confetti({
       particleCount: 60,
       spread: 60,
@@ -317,7 +317,7 @@ export default function App() {
     const updated = { ...interestsMap, [profileId]: 'accepted' as const };
     setInterestsMap(updated);
     saveStoredInterestsMap(updated);
-    showToast('മ്യൂച്വൽ ഇൻട്രസ്റ്റ് അക്സെപ്റ്റ് ചെയ്തു! പൂർണ്ണ ബയോഡാറ്റയും രക്ഷിതാവിന്റെ നമ്പറും അൺലോക്ക് ആയി.');
+    showToast('Mutual interest accepted! Complete biodata & guardian contact unlocked.');
     confetti({
       particleCount: 70,
       spread: 60,
@@ -340,7 +340,7 @@ export default function App() {
     const updated = [newReq, ...premiumRequests];
     setPremiumRequests(updated);
     saveStoredPremiumRequests(updated);
-    showToast('പ്രീമിയം റിക്വസ്റ്റ് അഡ്മിന് സമർപ്പിച്ചു!');
+    showToast('Premium request submitted to admin!');
 
     try {
       const payload: any = {
@@ -553,13 +553,13 @@ export default function App() {
     try {
       await supabase.from('premium_requests').update({ status: 'REJECTED' }).eq('id', id);
     } catch {}
-    showToast('റിക്വസ്റ്റ് നിരസിച്ചു (Rejected).');
+    showToast('Request rejected.');
   };
 
   // Profile Registration Gating: Only Premium members can register, others are directed to Premium plans
   const handleOpenRegister = () => {
     if (!isUserPremium && !isAdmin) {
-      showToast('പ്രൊഫൈൽ രജിസ്ട്രേഷൻ പ്രീമിയം മെമ്പർമാർക്ക് മാത്രമാണ്. ദയവായി പ്രീമിയം തിരഞ്ഞെടുക്കുക.');
+      showToast('Profile registration requires premium membership. Please choose a plan.');
       setIsPremiumOpen(true);
     } else {
       setIsRegisterOpen(true);
@@ -680,7 +680,7 @@ export default function App() {
     try {
       await supabase.from('profiles').update({ profile_status: 'APPROVED', is_verified: true }).eq('id', id);
     } catch {}
-    showToast('പ്രൊഫൈൽ അക്സെപ്റ്റ് ചെയ്തു! ലൈവ് ആയി.');
+    showToast('Profile accepted and published live!');
   };
 
   const handleRejectProfile = async (id: string) => {
@@ -692,7 +692,7 @@ export default function App() {
     try {
       await supabase.from('profiles').update({ profile_status: 'REJECTED' }).eq('id', id);
     } catch {}
-    showToast('റിക്വസ്റ്റ് നിരസിച്ചു (Rejected).');
+    showToast('Request rejected.');
   };
 
   const handleLogout = async () => {
@@ -1019,7 +1019,7 @@ export default function App() {
                   }}
                   className="px-8 py-3.5 rounded-2xl bg-[#4b001f] hover:bg-[#350016] text-white font-bold text-sm shadow-md hover:shadow-lg transition-all cursor-pointer inline-flex items-center gap-2"
                 >
-                  <span>കൂടുതൽ പ്രൊഫൈലുകൾ കാണുക (View More Profiles)</span>
+                  <span>View More Profiles</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
@@ -1089,7 +1089,7 @@ export default function App() {
           <div className="flex items-center justify-between pb-3 border-b border-[#eadfe4]">
             <div>
               <h2 className="font-serif text-3xl font-bold text-[#4b001f]">
-                All Profiles (എല്ലാ പ്രൊഫൈലുകളും)
+                All Profiles
               </h2>
               <p className="text-xs text-stone-500 mt-0.5">
                 Showing all verified candidates. Total: {approvedProfiles.length} active profiles.
@@ -1289,7 +1289,7 @@ export default function App() {
                         ) : (
                           <div className="flex items-center justify-between">
                             <span className="text-stone-500">
-                              ബയോഡാറ്റ ലോക്ക് ചെയ്തിരിക്കുന്നു.
+                              Biodata is locked.
                             </span>
                             <button
                               onClick={() => handleAcceptInterest(p.id)}
@@ -1374,7 +1374,7 @@ export default function App() {
         onClose={() => setIsRegisterOpen(false)}
         onSubmit={async (newProfile) => {
           await handleSaveProfile(newProfile);
-          showToast('പ്രൊഫൈൽ അഡ്മിൻ റിക്വസ്റ്റായി സമർപ്പിച്ചു!');
+          showToast('Profile submitted for admin approval!');
         }}
         isUserPremium={isUserPremium || isAdmin}
         onOpenPremium={() => {

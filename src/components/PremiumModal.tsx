@@ -116,18 +116,18 @@ export const PremiumModal: React.FC<Props> = ({
     e.preventDefault();
 
     if (!name.trim()) {
-      alert('ദയവായി താങ്കളുടെ പേര് രേഖപ്പെടുത്തുക (Please enter your name).');
+      alert('Please enter your name.');
       return;
     }
     if (!phone.trim()) {
-      alert('ദയവായി മൊബൈൽ നമ്പർ രേഖപ്പെടുത്തുക (Please enter phone number).');
+      alert('Please enter your phone number.');
       return;
     }
 
     if (activeTab === 'upi_qr') {
-      // UTR അല്ലെങ്കിൽ SCREENSHOT രണ്ടിൽ ഒന്ന് മതി
+      // UTR or SCREENSHOT (either one is sufficient)
       if (!utrNumber.trim() && !screenshot) {
-        alert('ശ്രദ്ധിക്കുക: 12-അക്ക UTR നമ്പർ അല്ലെങ്കിൽ പേയ്മെന്റ് സ്ക്രീൻഷോട്ട് (രണ്ടിൽ ഒന്ന്) നൽകുക.');
+        alert('Please provide either the 12-digit UTR number or upload a payment screenshot.');
         return;
       }
     }
@@ -135,17 +135,17 @@ export const PremiumModal: React.FC<Props> = ({
     const cleanReferralCode = referralCode.trim().toUpperCase();
 
     if (activeTab === 'free_request') {
-      // കാരണം അല്ലെങ്കിൽ റെഫറൽ കോഡ് - രണ്ടിൽ ഏതെങ്കിലും ഒന്ന് മതി
+      // Reason or Referral Code - either one is sufficient
       if (!notes.trim() && !cleanReferralCode) {
-        alert('ശ്രദ്ധിക്കുക: ദയവായി കാരണം (Reason) അല്ലെങ്കിൽ റെഫറൽ കോഡ് (Referral Code) - രണ്ടിൽ ഏതെങ്കിലും ഒന്ന് നൽകുക.');
+        alert('Please provide either a Reason or a Referral Code.');
         return;
       }
 
-      // ഒരുവട്ടം വന്ന കോഡ് പിന്നെ വരാൻ പാടില്ല
+      // Single-use referral code check
       if (cleanReferralCode) {
         if (isReferralCodeUsed(cleanReferralCode)) {
-          setReferralError('ഈ റെഫറൽ കോഡ് ഇതിനകം ഉപയോഗിച്ചതാണ്! ഒരു കോഡ് ഒരു തവണ മാത്രമേ ഉപയോഗിക്കാൻ സാധിക്കൂ.');
-          alert('ഈ റെഫറൽ കോഡ് ഇതിനകം ഉപയോഗിച്ചതാണ്! ഒരു കോഡ് ഒരു തവണ മാത്രമേ ഉപയോഗിക്കാൻ സാധിക്കൂ.');
+          setReferralError('This referral code has already been used! Referral codes are single-use only.');
+          alert('This referral code has already been used! Referral codes are single-use only.');
           return;
         }
       }
@@ -185,7 +185,7 @@ export const PremiumModal: React.FC<Props> = ({
 
       setIsSubmitting(false);
       setSuccessMessage(
-        'അൽഹംദുലില്ലാഹ്! താങ്കളുടെ പ്രീമിയം റിക്വസ്റ്റ് അഡ്മിന് സമർപ്പിച്ചു. അഡ്മിൻ പരിശോധിച്ച് അക്സെപ്റ്റ് (Approve) ചെയ്യുമ്പോൾ താങ്കളുടെ പ്രീമിയം ആക്റ്റീവ് ആകുന്നതാണ്.'
+        'Alhamdulillah! Your premium upgrade request has been submitted. It will become active once approved by the Admin.'
       );
 
       setTimeout(() => {
@@ -216,7 +216,7 @@ export const PremiumModal: React.FC<Props> = ({
               Get Premium Membership
             </h2>
             <p className="text-xs sm:text-sm text-stone-300">
-              യഥാർത്ഥ UPI സ്കാനർ വഴിയോ, ഓഫീസ് ക്യാഷ് വഴിയോ, സൗജന്യ റിക്വസ്റ്റ് വഴിയോ പ്രീമിയം ആക്റ്റീവ് ആക്കാം.
+              Upgrade via UPI QR scanner, Cash/Office payment, or Free Premium request.
             </p>
           </div>
         </div>
@@ -229,7 +229,7 @@ export const PremiumModal: React.FC<Props> = ({
                 <Check className="w-8 h-8 stroke-[3]" />
               </div>
               <h3 className="font-serif text-2xl font-bold text-[#4b001f]">
-                റിക്വസ്റ്റ് അഡ്മിന് സമർപ്പിച്ചു!
+                Request Submitted to Admin!
               </h3>
               <p className="text-sm text-stone-700 max-w-md mx-auto leading-relaxed">
                 {successMessage}
@@ -249,7 +249,7 @@ export const PremiumModal: React.FC<Props> = ({
                   }`}
                 >
                   <QrCode className="w-4 h-4 text-[#c9973e]" />
-                  <span>UPI QR Scan (സ്കാനർ)</span>
+                  <span>UPI QR Scanner</span>
                 </button>
 
                 <button
@@ -262,7 +262,7 @@ export const PremiumModal: React.FC<Props> = ({
                   }`}
                 >
                   <Banknote className="w-4 h-4 text-emerald-600" />
-                  <span>Cash / Office (ഓഫീസ്)</span>
+                  <span>Cash / Office Payment</span>
                 </button>
 
                 <button
@@ -285,7 +285,7 @@ export const PremiumModal: React.FC<Props> = ({
                   {/* Select Plan */}
                   <div>
                     <label className="block text-xs font-bold text-stone-700 mb-2">
-                      1. Select Plan (പാക്കേജ് തിരഞ്ഞെടുക്കുക):
+                      1. Select Plan:
                     </label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                       {PREMIUM_PLANS.map((plan) => {
@@ -366,9 +366,9 @@ export const PremiumModal: React.FC<Props> = ({
                       </div>
 
                       <div className="p-3 rounded-xl bg-white border border-stone-200 space-y-1 text-stone-600 text-[11px] leading-relaxed">
-                        <p><strong>ഘട്ടം 1:</strong> മുകളിലെ സ്കാനർ Google Pay / PhonePe / Paytm വഴി സ്കാൻ ചെയ്ത് <strong>₹{currentPlan.price}</strong> അയക്കുക.</p>
-                        <p><strong>ഘട്ടം 2:</strong> പേയ്മെന്റ് ചെയ്ത ശേഷം കിട്ടുന്ന <strong>12-അക്ക UTR നമ്പർ</strong> താഴെ നൽകുക അല്ലെങ്കിൽ <strong>സ്ക്രീൻഷോട്ട്</strong> അപ്‌ലോഡ് ചെയ്യുക.</p>
-                        <p><strong>ഘട്ടം 3:</strong> അഡ്മിൻ പരിശോധിച്ച് അക്സെപ്റ്റ് (Approve) ചെയ്ത ഉടൻ താങ്കളുടെ പ്രീമിയം തത്സമയം ആക്റ്റീവ് ആകും.</p>
+                        <p><strong>Step 1:</strong> Scan the QR code above using Google Pay, PhonePe, or Paytm and pay <strong>₹{currentPlan.price}</strong>.</p>
+                        <p><strong>Step 2:</strong> Enter the <strong>12-digit UTR / Transaction number</strong> below or upload payment <strong>screenshot</strong>.</p>
+                        <p><strong>Step 3:</strong> Admin will verify and activate your premium membership promptly.</p>
                       </div>
                     </div>
                   </div>
@@ -378,7 +378,7 @@ export const PremiumModal: React.FC<Props> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                       <div>
                         <label className="block text-xs font-bold text-stone-700 mb-1">
-                          നിങ്ങളുടെ പേര് (Your Name) *
+                          Your Full Name *
                         </label>
                         <input
                           type="text"
@@ -392,7 +392,7 @@ export const PremiumModal: React.FC<Props> = ({
 
                       <div>
                         <label className="block text-xs font-bold text-stone-700 mb-1">
-                          ഫോൺ നമ്പർ (Mobile Number) *
+                          Mobile Number *
                         </label>
                         <input
                           type="tel"
@@ -408,7 +408,7 @@ export const PremiumModal: React.FC<Props> = ({
                     {/* Notice pill: Either UTR or Screenshot is sufficient */}
                     <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200/80 text-[11px] text-amber-900 font-semibold flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
-                      <span>ശ്രദ്ധിക്കുക: 12-അക്ക UTR നമ്പറോ അല്ലെങ്കിൽ സ്ക്രീൻഷോട്ടോ (രണ്ടിൽ ഒന്ന്) നൽകിയാൽ മതിയാകും.</span>
+                      <span>Note: Either 12-digit UTR number or screenshot is sufficient.</span>
                     </div>
 
                     <div>
@@ -417,7 +417,7 @@ export const PremiumModal: React.FC<Props> = ({
                           12-Digit UTR / Transaction Reference Number
                         </label>
                         <span className="text-[10px] text-stone-500 font-medium">
-                          UTR അല്ലെങ്കിൽ സ്ക്രീൻഷോട്ട്
+                          UTR or Screenshot
                         </span>
                       </div>
                       <input
@@ -433,10 +433,10 @@ export const PremiumModal: React.FC<Props> = ({
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-xs font-bold text-stone-700">
-                          പേയ്മെന്റ് സ്ക്രീൻഷോട്ട് (സ്ക്രീൻഷോട്ട് അല്ലെങ്കിൽ UTR നൽകുക)
+                          Payment Screenshot (Upload Screenshot or Enter UTR)
                         </label>
                         <span className="text-[10px] text-stone-500 font-medium">
-                          രണ്ടിൽ ഒന്ന് മതി
+                          Either one is sufficient
                         </span>
                       </div>
 
@@ -458,7 +458,7 @@ export const PremiumModal: React.FC<Props> = ({
                           <div className="space-y-1 flex-1">
                             <span className="text-xs font-bold text-emerald-800 flex items-center gap-1">
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                              സ്ക്രീൻഷോട്ട് തിരഞ്ഞെടുത്തു (Screenshot Attached)
+                              Screenshot Attached
                             </span>
                             <div className="flex items-center gap-2 pt-1">
                               <button
@@ -466,7 +466,7 @@ export const PremiumModal: React.FC<Props> = ({
                                 onClick={() => fileInputRef.current?.click()}
                                 className="text-[11px] font-semibold text-[#4b001f] hover:underline cursor-pointer"
                               >
-                                ഫോട്ടോ മാറ്റുക (Change)
+                                Change Photo
                               </button>
                               <span>·</span>
                               <button
@@ -474,7 +474,7 @@ export const PremiumModal: React.FC<Props> = ({
                                 onClick={() => setScreenshot('')}
                                 className="text-[11px] font-semibold text-red-600 hover:underline cursor-pointer"
                               >
-                                ഒഴിവാക്കുക (Remove)
+                                Remove
                               </button>
                             </div>
                           </div>
@@ -486,10 +486,10 @@ export const PremiumModal: React.FC<Props> = ({
                         >
                           <Camera className="w-6 h-6 text-[#4b001f] mx-auto" />
                           <p className="text-xs font-bold text-[#4b001f]">
-                            ഗാലറിയിൽ നിന്ന് സ്ക്രീൻഷോട്ട് തിരഞ്ഞെടുക്കുക (Choose from Gallery)
+                            Choose Screenshot from Gallery
                           </p>
                           <p className="text-[11px] text-stone-500">
-                            ഗൂഗിൾപേ / ഫോൺപേ പേയ്മെന്റ് രസീത് ഫോട്ടോ അറ്റാച്ച് ചെയ്യുക
+                            Attach payment receipt screenshot from GPay / PhonePe / Paytm
                           </p>
                         </div>
                       )}
@@ -503,7 +503,7 @@ export const PremiumModal: React.FC<Props> = ({
                       <Send className="w-4 h-4 text-[#c9973e]" />
                       <span>
                         {isSubmitting
-                          ? 'സമർപ്പിക്കുന്നു...'
+                          ? 'Submitting...'
                           : 'SUBMIT TO ADMIN'}
                       </span>
                     </button>
@@ -518,11 +518,11 @@ export const PremiumModal: React.FC<Props> = ({
                     <div className="flex items-center gap-2">
                       <Banknote className="w-5 h-5 text-emerald-600" />
                       <h4 className="font-serif font-bold text-base text-[#4b001f]">
-                        ഓഫീസ് / ഡയറക്റ്റ് കൗണ്ടർ പേയ്മെന്റ് (Cash Office Option)
+                        Office / Counter Direct Payment
                       </h4>
                     </div>
                     <p className="text-xs text-stone-600 leading-relaxed">
-                      ഓഫീസിൽ നേരിട്ട് എത്തി ക്യാഷ് അടച്ചവർക്കോ, കൗണ്ടർ വഴി പ്രീമിയം എടുക്കാൻ ആഗ്രഹിക്കുന്നവർക്കോ ഇവിടെ വിവരങ്ങൾ നൽകി അഡ്മിൻ റിക്വസ്റ്റ് സമർപ്പിക്കാം.
+                      For members paying cash directly at our office/counter. Submit your details for manual admin approval.
                     </p>
                   </div>
 
@@ -552,7 +552,7 @@ export const PremiumModal: React.FC<Props> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                       <div>
                         <label className="block text-xs font-bold text-stone-700 mb-1">
-                          പേര് (Name) *
+                          Full Name *
                         </label>
                         <input
                           type="text"
@@ -566,7 +566,7 @@ export const PremiumModal: React.FC<Props> = ({
 
                       <div>
                         <label className="block text-xs font-bold text-stone-700 mb-1">
-                          ഫോൺ നമ്പർ (Phone Number) *
+                          Phone Number *
                         </label>
                         <input
                           type="tel"
@@ -582,7 +582,7 @@ export const PremiumModal: React.FC<Props> = ({
                     {/* Photo / Cash receipt upload */}
                     <div>
                       <label className="block text-xs font-bold text-stone-700 mb-1">
-                        ക്യാഷ് രസീത് / ഫോട്ടോ അപ്‌ലോഡ് (Upload Receipt Photo from Gallery)
+                        Upload Cash Receipt Photo from Gallery
                       </label>
                       <input
                         type="file"
@@ -601,7 +601,7 @@ export const PremiumModal: React.FC<Props> = ({
                           />
                           <div className="space-y-1 flex-1">
                             <span className="text-xs font-bold text-emerald-800">
-                              ✓ രസീത് ഫോട്ടോ അറ്റാച്ച് ചെയ്തു
+                              ✓ Receipt photo attached
                             </span>
                             <div className="flex items-center gap-2 pt-1 text-[11px]">
                               <button
@@ -609,7 +609,7 @@ export const PremiumModal: React.FC<Props> = ({
                                 onClick={() => fileInputRef.current?.click()}
                                 className="font-semibold text-[#4b001f] hover:underline cursor-pointer"
                               >
-                                മാറ്റുക
+                                Change
                               </button>
                               <span>·</span>
                               <button
@@ -617,7 +617,7 @@ export const PremiumModal: React.FC<Props> = ({
                                 onClick={() => setScreenshot('')}
                                 className="font-semibold text-red-600 hover:underline cursor-pointer"
                               >
-                                ഒഴിവാക്കുക
+                                Remove
                               </button>
                             </div>
                           </div>
@@ -629,7 +629,7 @@ export const PremiumModal: React.FC<Props> = ({
                         >
                           <Camera className="w-6 h-6 text-[#4b001f] mx-auto" />
                           <p className="text-xs font-bold text-[#4b001f]">
-                            ഗാലറിയിൽ നിന്ന് രസീത് ഫോട്ടോ അപ്‌ലോഡ് ചെയ്യുക
+                            Upload receipt photo from device gallery
                           </p>
                         </div>
                       )}
@@ -637,7 +637,7 @@ export const PremiumModal: React.FC<Props> = ({
 
                     <div>
                       <label className="block text-xs font-bold text-stone-700 mb-1">
-                        ഓഫീസ് / നോട്ടുകൾ (Notes)
+                        Office Notes (Optional)
                       </label>
                       <input
                         type="text"
@@ -656,7 +656,7 @@ export const PremiumModal: React.FC<Props> = ({
                       <Banknote className="w-4 h-4 text-[#c9973e]" />
                       <span>
                         {isSubmitting
-                          ? 'സമർപ്പിക്കുന്നു...'
+                          ? 'Submitting...'
                           : 'SUBMIT TO ADMIN'}
                       </span>
                     </button>
@@ -676,7 +676,7 @@ export const PremiumModal: React.FC<Props> = ({
                         PREMIUM FREE (GIRLS & OTHER)
                       </h4>
                       <p className="text-xs text-stone-600 leading-relaxed">
-                        പെൺകുട്ടികൾക്കും സാമ്പത്തിക പ്രയാസമുള്ളവർക്കും വേണ്ടിയുള്ള സൗജന്യ പ്രീമിയം റിക്വസ്റ്റ്. പ്രീമിയം ഫ്രീ എന്നാൽ പ്രീമിയം തന്നെയാണ്! പ്രീമിയത്തിന്റെ എല്ലാ ഫീച്ചറുകളും ഇതിലൂടെ ലഭിക്കും. അഡ്മിൻ പരിശോധിച്ച് അക്സെപ്റ്റ് (Approve) ചെയ്താൽ മാത്രമേ സൗജന്യ പ്രീമിയം ആക്റ്റീവ് ആകൂ.
+                        Free Premium program for eligible candidates and brides. Free Premium provides all premium features with complete access upon admin approval.
                       </p>
                     </div>
                   </div>
@@ -685,7 +685,7 @@ export const PremiumModal: React.FC<Props> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                       <div>
                         <label className="block text-xs font-bold text-stone-700 mb-1">
-                          നിങ്ങളുടെ പേര് (Name) *
+                          Your Name *
                         </label>
                         <input
                           type="text"
@@ -699,7 +699,7 @@ export const PremiumModal: React.FC<Props> = ({
 
                       <div>
                         <label className="block text-xs font-bold text-stone-700 mb-1">
-                          മൊബൈൽ നമ്പർ (Mobile Number) *
+                          Mobile Number *
                         </label>
                         <input
                           type="tel"
@@ -715,17 +715,17 @@ export const PremiumModal: React.FC<Props> = ({
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-xs font-bold text-stone-700">
-                          സൗജന്യ പ്രീമിയം ആവശ്യപ്പെടാനുള്ള കാരണം / വിവരണം (Reason)
+                          Reason for Free Premium Request
                         </label>
                         <span className="text-[10px] text-stone-500 font-medium">
-                          കാരണം അല്ലെങ്കിൽ റെഫറൽ കോഡ്
+                          Reason or Referral Code
                         </span>
                       </div>
                       <textarea
                         rows={2}
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
-                        placeholder="സൗജന്യ പ്രീമിയം ആക്സസിനായുള്ള കാരണം..."
+                        placeholder="Describe your reason or situation..."
                         className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:border-[#4b001f] bg-white"
                       />
                     </div>
@@ -737,7 +737,7 @@ export const PremiumModal: React.FC<Props> = ({
                       </div>
                       <div className="relative flex justify-center text-[10px] font-bold">
                         <span className="bg-[#fff6fa] px-3 text-stone-500 uppercase tracking-wider">
-                          അല്ലെങ്കിൽ (OR)
+                          OR
                         </span>
                       </div>
                     </div>
@@ -747,10 +747,10 @@ export const PremiumModal: React.FC<Props> = ({
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-xs font-bold text-stone-700 flex items-center gap-1.5">
                           <Tag className="w-3.5 h-3.5 text-[#c9973e]" />
-                          <span>റെഫറൽ കോഡ് (Referral Code - Single Use)</span>
+                          <span>Single-Use Referral Code</span>
                         </label>
                         <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-md">
-                          രണ്ടിൽ ഏതെങ്കിലും ഒന്ന് നൽകിയാൽ മതി
+                          Either reason or referral code is sufficient
                         </span>
                       </div>
                       <input
@@ -766,7 +766,7 @@ export const PremiumModal: React.FC<Props> = ({
                         <p className="text-[11px] text-red-600 mt-1 font-semibold">{referralError}</p>
                       )}
                       <p className="text-[11px] text-stone-500 mt-1">
-                        🔒 ശ്രദ്ധിക്കുക: ഒരു വട്ടം ഉപയോഗിച്ച റെഫറൽ കോഡ് പിന്നീട് മറ്റൊരാൾക്ക് ഉപയോഗിക്കാൻ സാധിക്കില്ല (Single-Use Only).
+                        🔒 Note: Each referral code can only be used once (Single-Use Only).
                       </p>
                     </div>
 
@@ -778,7 +778,7 @@ export const PremiumModal: React.FC<Props> = ({
                       <Send className="w-4 h-4 text-[#c9973e]" />
                       <span>
                         {isSubmitting
-                          ? 'സമർപ്പിക്കുന്നു...'
+                          ? 'Submitting...'
                           : 'SUBMIT TO ADMIN'}
                       </span>
                     </button>

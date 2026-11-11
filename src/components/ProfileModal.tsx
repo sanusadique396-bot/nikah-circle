@@ -131,10 +131,10 @@ export const ProfileModal: React.FC<Props> = ({
 
               <div className="space-y-1.5 max-w-md mx-auto">
                 <h3 className="font-serif font-bold text-lg text-[#4b001f]">
-                  ബയോഡാറ്റ ഹൈഡ് ചെയ്തിരിക്കുന്നു
+                  Biodata Hidden
                 </h3>
                 <p className="text-xs text-stone-600 leading-relaxed">
-                  ഈ പ്രൊഫൈലിന്റെ വിശദമായ ബയോഡാറ്റയും രക്ഷിതാവിന്റെ (Guardian) ഫോൺ നമ്പറും കാണുന്നതിന് താങ്കൾ ആദ്യം <strong>ഇൻട്രസ്റ്റ്</strong> അയക്കേണ്ടതുണ്ട്. അവർ ഇൻട്രസ്റ്റ് <strong>അക്സെപ്റ്റ്</strong> ചെയ്താൽ മാത്രമേ ഇവരുടെ പൂർണ്ണ വിവരങ്ങൾ ലഭ്യമാകൂ.
+                  To view the complete biodata and guardian phone number of this profile, you must first send an <strong>Interest</strong>. Full contact details will be unlocked once they accept your interest.
                 </p>
               </div>
 
@@ -143,7 +143,7 @@ export const ProfileModal: React.FC<Props> = ({
                   <div className="flex flex-wrap items-center justify-center gap-2">
                     <div className="px-5 py-2.5 rounded-xl bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold flex items-center gap-2">
                       <Clock className="w-4 h-4 text-amber-700" />
-                      <span>ഇൻട്രസ്റ്റ് അയച്ചിട്ടുണ്ട് (അക്സെപ്റ്റൻസിനായി കാത്തിരിക്കുന്നു)</span>
+                      <span>Interest Sent (Awaiting Acceptance)</span>
                     </div>
                     {onCancelInterest && (
                       <button
@@ -151,7 +151,7 @@ export const ProfileModal: React.FC<Props> = ({
                         onClick={() => onCancelInterest(profile.id)}
                         className="px-4 py-2.5 rounded-xl border border-red-300 bg-red-50 hover:bg-red-100 text-red-800 text-xs font-bold transition-colors cursor-pointer"
                       >
-                        Cancel Interest (ക്യാൻസൽ ചെയ്യുക)
+                        Cancel Interest
                       </button>
                     )}
                   </div>
@@ -189,7 +189,7 @@ export const ProfileModal: React.FC<Props> = ({
               <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>
-                  മ്യൂച്വൽ ഇൻട്രസ്റ്റ് അക്സെപ്റ്റ് ചെയ്തു. ഈ വ്യക്തിയുടെ പൂർണ്ണ ബയോഡാറ്റയും രക്ഷിതാവിന്റെ നമ്പറും അൺലോക്ക് ആയിരിക്കുന്നു.
+                  Mutual interest accepted! Full biodata and guardian contact details are now unlocked.
                 </span>
               </div>
 
@@ -269,11 +269,11 @@ export const ProfileModal: React.FC<Props> = ({
 
                 {hasGuardianNumber ? (
                   <p className="text-[11px] text-emerald-800 font-medium pt-1 border-t border-emerald-200/60">
-                    ✓ രക്ഷിതാവിന്റെ (Guardian) നമ്പർ നൽകിയിട്ടുള്ളതിനാൽ അത് മാത്രമാണ് പ്രദർശിപ്പിക്കുന്നത്. വ്യക്തിഗത നമ്പർ ഹൈഡ് ചെയ്തിരിക്കുന്നു.
+                    ✓ Verified guardian contact number is displayed. Personal number is kept private for modesty.
                   </p>
                 ) : (
                   <p className="text-[11px] text-stone-600 font-medium pt-1 border-t border-stone-200">
-                    * രക്ഷിതാവിന്റെ പ്രത്യേക നമ്പർ രേഖപ്പെടുത്താത്തതിനാൽ കാൻഡിഡേറ്റിന്റെ നേരിട്ടുള്ള കോൺടാക്റ്റ് നമ്പർ കാണിക്കുന്നു.
+                    * Showing direct contact number as no separate guardian number was specified.
                   </p>
                 )}
               </div>

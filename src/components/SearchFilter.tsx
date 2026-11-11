@@ -80,10 +80,10 @@ export const SearchFilter: React.FC<Props> = ({
           </div>
           <div>
             <h2 className="font-serif text-lg font-bold text-[#4b001f] leading-none">
-              ഫിൽട്ടർ & സെർച്ച് (Advanced Filters)
+              Filter & Search Profiles
             </h2>
             <span className="text-[11px] text-stone-500 font-medium">
-              ആകെ {totalCount} പ്രൊഫൈലുകളിൽ {filteredCount} എണ്ണം പൊരുത്തപ്പെടുന്നു
+              Showing {filteredCount} matching of {totalCount} total profiles
             </span>
           </div>
         </div>
@@ -114,7 +114,7 @@ export const SearchFilter: React.FC<Props> = ({
         {/* 1. Keyword / Name / Place Search */}
         <div>
           <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1">
-            പേര് / കീവേഡ് (Keyword Search)
+            Keyword Search
           </label>
           <div className="relative">
             <input
@@ -131,23 +131,23 @@ export const SearchFilter: React.FC<Props> = ({
         {/* 2. Looking For (Gender) */}
         <div>
           <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1">
-            ലിംഗം (Looking For)
+            Looking For
           </label>
           <select
             value={filters.gender}
             onChange={(e) => onFilterChange({ ...filters, gender: e.target.value })}
             className="w-full px-3 py-2 text-xs rounded-xl border border-[#eadfe4] focus:outline-none focus:border-[#4b001f] bg-white text-stone-800"
           >
-            <option value="">All Genders (എല്ലാം)</option>
-            <option value="Female">Bride (പെൺകുട്ടി / Female)</option>
-            <option value="Male">Groom (ആൺകുട്ടി / Male)</option>
+            <option value="">All Genders</option>
+            <option value="Female">Bride (Female)</option>
+            <option value="Male">Groom (Male)</option>
           </select>
         </div>
 
         {/* 3. District / Region */}
         <div>
           <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1">
-            ജില്ല (District)
+            District
           </label>
           <select
             value={filters.district}
@@ -165,7 +165,7 @@ export const SearchFilter: React.FC<Props> = ({
         {/* 4. Place / City Specific Filter */}
         <div>
           <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1">
-            സ്ഥലം / നഗരം (Place / Town)
+            Place / Town
           </label>
           <div className="relative">
             <input
@@ -182,7 +182,7 @@ export const SearchFilter: React.FC<Props> = ({
         {/* 5. Profession / Job Filter */}
         <div>
           <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1">
-            തൊഴിൽ / ജോലി (Profession / Job)
+            Profession / Job
           </label>
           <div className="relative">
             <select
@@ -202,7 +202,7 @@ export const SearchFilter: React.FC<Props> = ({
         {/* 6. Education Qualification */}
         <div>
           <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1">
-            വിദ്യാഭ്യാസം (Education)
+            Education
           </label>
           <div className="relative">
             <select
@@ -222,14 +222,14 @@ export const SearchFilter: React.FC<Props> = ({
         {/* 7. Age Bracket */}
         <div>
           <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1">
-            പ്രായം (Age Bracket)
+            Age Bracket
           </label>
           <select
             value={filters.ageRange}
             onChange={(e) => onFilterChange({ ...filters, ageRange: e.target.value })}
             className="w-full px-3 py-2 text-xs rounded-xl border border-[#eadfe4] focus:outline-none focus:border-[#4b001f] bg-white text-stone-800"
           >
-            <option value="">Any Age (എല്ലാ പ്രായവും)</option>
+            <option value="">Any Age</option>
             <option value="18-24">18 – 24 Years</option>
             <option value="25-29">25 – 29 Years</option>
             <option value="30-34">30 – 34 Years</option>
@@ -241,17 +241,17 @@ export const SearchFilter: React.FC<Props> = ({
         {/* 8. Marital Status */}
         <div>
           <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1">
-            വൈവാഹികാവസ്ഥ (Marital Status)
+            Marital Status
           </label>
           <select
             value={filters.maritalStatus}
             onChange={(e) => onFilterChange({ ...filters, maritalStatus: e.target.value })}
             className="w-full px-3 py-2 text-xs rounded-xl border border-[#eadfe4] focus:outline-none focus:border-[#4b001f] bg-white text-stone-800"
           >
-            <option value="">Any Status (എല്ലാം)</option>
-            <option value="Never Married">Never Married (വിവാഹം കഴിക്കാത്തവർ)</option>
-            <option value="Divorced">Divorced (വിവാഹമോചിതർ)</option>
-            <option value="Widowed">Widowed (വിധവ / വിഭാര്യൻ)</option>
+            <option value="">Any Status</option>
+            <option value="Never Married">Never Married</option>
+            <option value="Divorced">Divorced</option>
+            <option value="Widowed">Widowed</option>
           </select>
         </div>
       </div>

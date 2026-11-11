@@ -192,28 +192,15 @@ export const Navbar: React.FC<Props> = ({
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={onEditProfile}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#fff6fa] border border-[#4b001f]/30 text-[#4b001f] text-xs font-bold hover:bg-[#f7dce8] transition-all cursor-pointer shadow-2xs"
-                  title="Create profile"
-                >
-                  <UserPlus className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Create Profile</span>
-                </button>
-
-                {/* Quick Login button if unauthenticated */}
-                <button
-                  type="button"
-                  onClick={() => onOpenLogin('member')}
-                  className="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-full border border-stone-200 text-stone-600 hover:text-[#4b001f] hover:bg-stone-50 text-xs font-semibold transition-colors cursor-pointer"
-                  title="Login"
-                >
-                  <LogIn className="w-3.5 h-3.5" />
-                  <span>Login</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={onEditProfile}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#fff6fa] border border-[#4b001f]/30 text-[#4b001f] text-xs font-bold hover:bg-[#f7dce8] transition-all cursor-pointer shadow-2xs"
+                title="Create profile"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>Create Profile</span>
+              </button>
             )}
 
             {/* Admin Badge Shortcut if Super Admin is logged in */}

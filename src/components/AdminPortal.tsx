@@ -420,8 +420,8 @@ export const AdminPortal: React.FC<Props> = ({
           <div>
             <h2 className="font-serif text-2xl font-bold text-[#4b001f]">
               {activeTab === 'dashboard' && 'Dashboard Overview'}
-              {activeTab === 'biodata_directory' && 'Full Biodata Directory (മുഴുവൻ ബയോഡാറ്റയും)'}
-              {activeTab === 'user_accounts' && 'User Accounts & Registrations (യൂസർ പ്രൊഫൈലുകൾ)'}
+              {activeTab === 'biodata_directory' && 'Full Biodata Directory'}
+              {activeTab === 'user_accounts' && 'User Accounts & Registrations'}
               {activeTab === 'premium_requests' && 'Premium & Payment Requests'}
               {activeTab === 'requests' && 'Pending Profile Approvals'}
               {activeTab === 'profiles' && 'Profile Management'}
@@ -513,10 +513,10 @@ export const AdminPortal: React.FC<Props> = ({
                   </div>
                   <div>
                     <h4 className="font-serif font-bold text-[#4b001f] text-sm">
-                      {pendingPremiumRequests.length} പുതിയ പ്രീമിയം / പേയ്മെന്റ് റിക്വസ്റ്റുകൾ പരിശോധനയ്ക്ക് തയ്യാറാണ്!
+                      {pendingPremiumRequests.length} new premium / payment requests pending verification!
                     </h4>
                     <p className="text-xs text-stone-600 mt-0.5">
-                      UPI സ്കാനർ പേയ്മെന്റുകൾ, ക്യാഷ് കൗണ്ടർ, സൗജന്യ പ്രീമിയം എന്നിവ അക്സെപ്റ്റ് (Accept) അല്ലെങ്കിൽ റിജക്റ്റ് ചെയ്യുക.
+                      Review and approve or reject UPI scanner payments, cash counter, and free premium requests.
                     </p>
                   </div>
                 </div>
@@ -524,7 +524,7 @@ export const AdminPortal: React.FC<Props> = ({
                   onClick={() => setActiveTab('premium_requests')}
                   className="px-4 py-2 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold transition-colors cursor-pointer shrink-0"
                 >
-                  പരിശോധിക്കുക (Review Requests)
+                  Review Requests
                 </button>
               </div>
             )}
@@ -536,10 +536,10 @@ export const AdminPortal: React.FC<Props> = ({
                   <Clock className="w-5 h-5 text-amber-600" />
                   <div>
                     <h4 className="font-bold text-amber-900 text-sm">
-                      {pendingRequests.length} പുതിയ പ്രൊഫൈൽ റിക്വസ്റ്റുകൾ പരിശോധനയ്ക്കായി കാത്തിരിക്കുന്നു!
+                      {pendingRequests.length} new profile requests awaiting verification!
                     </h4>
                     <p className="text-xs text-amber-700 mt-0.5">
-                      അപ്രൂവ് ചെയ്യുന്നതിന് പ്രൊഫൈൽ അപ്രൂവൽസ് ടാബിൽ ക്ലിക്ക് ചെയ്യുക.
+                      Click the Profile Approvals tab to review and approve.
                     </p>
                   </div>
                 </div>
@@ -547,7 +547,7 @@ export const AdminPortal: React.FC<Props> = ({
                   onClick={() => setActiveTab('requests')}
                   className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors cursor-pointer"
                 >
-                  പരിശോധിക്കുക (Review)
+                  Review
                 </button>
               </div>
             )}
@@ -633,17 +633,17 @@ export const AdminPortal: React.FC<Props> = ({
           </div>
         )}
 
-        {/* TAB: FULL BIODATA DIRECTORY (എല്ലാ ബയോഡാറ്റയും ഓർഡറിൽ) */}
+        {/* TAB: FULL BIODATA DIRECTORY */}
         {activeTab === 'biodata_directory' && (
           <div className="space-y-4">
             <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="font-serif font-bold text-lg text-[#4b001f] flex items-center gap-2">
                   <BookOpen className="w-5 h-5 text-[#c9973e]" />
-                  <span>മുഴുവൻ ബയോഡാറ്റ ഡയറക്ടറി (Full Biodata Directory)</span>
+                  <span>Full Biodata Directory</span>
                 </h3>
                 <p className="text-xs text-stone-500 mt-0.5">
-                  രജിസ്റ്റർ ചെയ്ത എല്ലാ പ്രൊഫൈലുകളുടെയും പൂർണ്ണ ബയോഡാറ്റ വിവരങ്ങൾ തീയതി ക്രമത്തിൽ ഇവിടെ ലഭ്യമാണ്. ആകെ: {profiles.length} പ്രൊഫൈലുകൾ.
+                  Complete biodata of all registered profiles in chronological order. Total: {profiles.length} profiles.
                 </p>
               </div>
 
@@ -681,7 +681,7 @@ export const AdminPortal: React.FC<Props> = ({
                     {filteredProfiles.length === 0 ? (
                       <tr>
                         <td colSpan={8} className="p-8 text-center text-stone-500">
-                          പ്രൊഫൈലുകൾ കണ്ടെത്തിയില്ല.
+                          No profiles found.
                         </td>
                       </tr>
                     ) : (
@@ -771,17 +771,17 @@ export const AdminPortal: React.FC<Props> = ({
           </div>
         )}
 
-        {/* TAB: USER ACCOUNTS (യൂസർ പ്രൊഫൈലുകൾ) */}
+        {/* TAB: USER ACCOUNTS */}
         {activeTab === 'user_accounts' && (
           <div className="space-y-4">
             <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="font-serif font-bold text-lg text-[#4b001f] flex items-center gap-2">
                   <UserCheck className="w-5 h-5 text-emerald-600" />
-                  <span>യൂസർ പ്രൊഫൈലുകൾ (User Created Accounts)</span>
+                  <span>User Created Accounts</span>
                 </h3>
                 <p className="text-xs text-stone-500 mt-0.5">
-                  ആപ്പിൽ നിന്നും നേരിട്ട് രജിസ്റ്റർ ചെയ്ത യൂസർമാരുടെ അക്കൗണ്ടുകളും വിവരങ്ങളും. ആകെ: {profiles.filter((p) => p.registration_type === 'ONLINE').length} യൂസർമാർ.
+                  Accounts and biodata of users who registered directly from the app. Total: {profiles.filter((p) => p.registration_type === 'ONLINE').length} users.
                 </p>
               </div>
             </div>
@@ -804,7 +804,7 @@ export const AdminPortal: React.FC<Props> = ({
                     {profiles.filter((p) => p.registration_type === 'ONLINE').length === 0 ? (
                       <tr>
                         <td colSpan={7} className="p-8 text-center text-stone-500">
-                          ഓൺലൈൻ രജിസ്ട്രേഷനുകൾ ഇതുവരെ ലഭിച്ചിട്ടില്ല.
+                          No online user registrations yet.
                         </td>
                       </tr>
                     ) : (
@@ -899,10 +899,10 @@ export const AdminPortal: React.FC<Props> = ({
             <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="font-serif font-bold text-lg text-[#4b001f]">
-                  പ്രീമിയം & പേയ്മെന്റ് റിക്വസ്റ്റുകൾ (Premium & Payment Requests)
+                  Premium & Payment Requests
                 </h3>
                 <p className="text-xs text-stone-500 mt-0.5">
-                  UPI സ്കാനർ പേയ്മെന്റുകൾ, ക്യാഷ് കൗണ്ടർ, സൗജന്യ പ്രീമിയം റിക്വസ്റ്റുകൾ പരിശോധിച്ച് അക്സെപ്റ്റ് (Accept) അല്ലെങ്കിൽ റിജക്റ്റ് (Reject) ചെയ്യുക.
+                  Review UPI scanner payments, cash counter receipts, and free premium requests to approve or reject.
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -978,8 +978,8 @@ export const AdminPortal: React.FC<Props> = ({
             {filteredPremiumRequests.length === 0 ? (
               <div className="p-12 text-center bg-white rounded-2xl border border-stone-200 text-stone-400 space-y-2">
                 <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto" />
-                <h4 className="font-bold text-stone-700 text-base">ഈ വിഭാഗത്തിൽ റിക്വസ്റ്റുകൾ ഒന്നുമില്ല!</h4>
-                <p className="text-xs text-stone-500">പുതിയ പേയ്മെന്റുകൾ ഇവിടെ ദൃശ്യമാകും.</p>
+                <h4 className="font-bold text-stone-700 text-base">No requests in this category!</h4>
+                <p className="text-xs text-stone-500">New payments will appear here.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1045,7 +1045,7 @@ export const AdminPortal: React.FC<Props> = ({
                       <div className="flex items-center justify-between">
                         <span className="text-stone-500">Amount:</span>
                         <span className="font-serif font-bold text-sm text-stone-900">
-                          {req.amount > 0 ? `₹${req.amount.toLocaleString('en-IN')}` : 'FREE (സൗജന്യം)'}
+                          {req.amount > 0 ? `₹${req.amount.toLocaleString('en-IN')}` : 'FREE'}
                         </span>
                       </div>
 
@@ -1077,7 +1077,7 @@ export const AdminPortal: React.FC<Props> = ({
                         <div className="flex items-center justify-between bg-emerald-50/70 p-2 rounded-lg border border-emerald-200">
                           <div>
                             <span className="text-[10px] uppercase font-bold text-emerald-800 block">
-                              റെഫറൽ കോഡ് (Single-Use Referral Code):
+                              Single-Use Referral Code:
                             </span>
                             <span className="font-mono font-bold text-emerald-950 text-xs tracking-wider">
                               🏷️ {req.referral_code}
@@ -1102,7 +1102,7 @@ export const AdminPortal: React.FC<Props> = ({
                       {req.payment_screenshot && (
                         <div className="pt-2 border-t border-stone-200">
                           <span className="text-stone-500 text-[11px] block mb-1 font-semibold">
-                            പേയ്മെന്റ് സ്ക്രീൻഷോട്ട് / രസീത് (Payment Proof):
+                            Payment Proof Screenshot / Receipt:
                           </span>
                           <div className="flex items-center gap-3">
                             <img
@@ -1118,10 +1118,10 @@ export const AdminPortal: React.FC<Props> = ({
                                 className="px-3 py-1.5 rounded-lg bg-[#4b001f] text-white text-[11px] font-bold flex items-center gap-1.5 hover:bg-[#350016] transition-colors cursor-pointer"
                               >
                                 <Eye className="w-3.5 h-3.5" />
-                                <span>വലുതായി കാണുക (View Full Image)</span>
+                                <span>View Full Image</span>
                               </button>
                               <span className="text-[10px] text-stone-400 block">
-                                രസീത് വ്യക്തമായി പരിശോധിച്ച് ഉറപ്പുവരുത്തുക.
+                                Carefully verify receipt details.
                               </span>
                             </div>
                           </div>
@@ -1142,7 +1142,7 @@ export const AdminPortal: React.FC<Props> = ({
                           className="flex-1 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.98]"
                         >
                           <Check className="w-4 h-4" />
-                          <span>അക്സെപ്റ്റ് ചെയ്യുക (Accept & Activate)</span>
+                          <span>Accept & Activate</span>
                         </button>
 
                         <button
@@ -1151,14 +1151,14 @@ export const AdminPortal: React.FC<Props> = ({
                           className="py-2.5 px-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-[0.98]"
                         >
                           <X className="w-4 h-4" />
-                          <span>റിജക്റ്റ് ചെയ്യുക (Reject)</span>
+                          <span>Reject</span>
                         </button>
                       </div>
                     ) : (
                       <div className="flex items-center justify-between text-xs pt-2 border-t border-stone-100">
                         <span className="text-emerald-800 font-bold flex items-center gap-1">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>തീരുമാനം: {req.status === 'APPROVED' ? 'Admin Approved (അക്സെപ്റ്റ് ചെയ്തു)' : 'നിരസിച്ചു (Rejected)'}</span>
+                          <span>Status: {req.status === 'APPROVED' ? 'Admin Approved' : 'Rejected'}</span>
                         </span>
                         <div className="flex items-center gap-1.5">
                           {req.status === 'APPROVED' && onDeactivatePremium && (
@@ -1177,7 +1177,7 @@ export const AdminPortal: React.FC<Props> = ({
                               onClick={() => onApprovePremiumRequest(req.id)}
                               className="px-3 py-1 rounded-lg border border-emerald-600 text-emerald-700 hover:bg-emerald-50 text-[11px] font-bold cursor-pointer"
                             >
-                              വീണ്ടും അപ്രൂവ് ചെയ്യുക
+                              Approve Again
                             </button>
                           )}
                         </div>
@@ -1196,10 +1196,10 @@ export const AdminPortal: React.FC<Props> = ({
             <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs flex items-center justify-between">
               <div>
                 <h3 className="font-serif font-bold text-lg text-[#4b001f]">
-                  അഡ്മിൻ റിക്വസ്റ്റുകൾ (Pending Approval Requests)
+                  Pending Approval Requests
                 </h3>
                 <p className="text-xs text-stone-500">
-                  ഉപയോക്താക്കൾ രജിസ്റ്റർ ചെയ്ത പ്രൊഫൈലുകൾ അക്സെപ്റ്റ് ചെയ്ത ശേഷം മാത്രമേ പോർട്ടലിൽ കാണിക്കൂ.
+                  Profiles submitted by users will appear on the portal only after admin approval.
                 </p>
               </div>
               <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold">
@@ -1210,8 +1210,8 @@ export const AdminPortal: React.FC<Props> = ({
             {pendingRequests.length === 0 ? (
               <div className="p-12 text-center bg-white rounded-2xl border border-stone-200 text-stone-400 space-y-2">
                 <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto" />
-                <h4 className="font-bold text-stone-700 text-base">പെൻഡിങ് റിക്വസ്റ്റുകൾ ഒന്നുമില്ല!</h4>
-                <p className="text-xs text-stone-500">എല്ലാ പ്രൊഫൈലുകളും അപ്രൂവ് ചെയ്തിട്ടുണ്ട്.</p>
+                <h4 className="font-bold text-stone-700 text-base">No pending requests!</h4>
+                <p className="text-xs text-stone-500">All submitted profiles have been approved.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1257,7 +1257,7 @@ export const AdminPortal: React.FC<Props> = ({
                         className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
                       >
                         <Check className="w-4 h-4" />
-                        <span>അക്സെപ്റ്റ് ചെയ്യുക (Approve)</span>
+                        <span>Approve</span>
                       </button>
 
                       <button
@@ -1552,7 +1552,7 @@ export const AdminPortal: React.FC<Props> = ({
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-xs font-bold text-stone-700">
-                      Profile Photo (ഗാലറി / URL)
+                      Profile Photo (Gallery / URL)
                     </label>
                   </div>
                   <input
@@ -1837,10 +1837,10 @@ export const AdminPortal: React.FC<Props> = ({
             </div>
             <div className="text-center space-y-1.5">
               <h3 className="font-serif font-bold text-lg text-stone-900">
-                പ്രൊഫൈൽ ഒഴിവാക്കണോ?
+                Delete Profile?
               </h3>
               <p className="text-xs text-stone-600 leading-relaxed">
-                <span className="font-bold text-stone-900">{profileToDelete.full_name}</span> ({profileToDelete.gender}, {profileToDelete.district || 'Kerala'}) എന്ന പ്രൊഫൈൽ പൂർണ്ണമായും ഒഴിവാക്കപ്പെടും. ഈ പ്രവർത്തനം മാറ്റാനാകില്ല.
+                Are you sure you want to permanently delete profile <span className="font-bold text-stone-900">{profileToDelete.full_name}</span> ({profileToDelete.gender}, {profileToDelete.district || 'Kerala'})? This action cannot be undone.
               </p>
             </div>
             <div className="flex items-center gap-3 pt-2">
@@ -1850,7 +1850,7 @@ export const AdminPortal: React.FC<Props> = ({
                 onClick={() => setProfileToDelete(null)}
                 className="flex-1 py-2.5 rounded-xl border border-stone-300 text-stone-700 hover:bg-stone-50 text-xs font-semibold cursor-pointer transition-colors"
               >
-                റദ്ദാക്കുക (Cancel)
+                Cancel
               </button>
               <button
                 type="button"
@@ -1869,7 +1869,7 @@ export const AdminPortal: React.FC<Props> = ({
                 className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-xs font-bold transition-all cursor-pointer shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50"
               >
                 <Trash2 className="w-4 h-4" />
-                <span>{isDeletingProfile ? 'ഒഴിവാക്കുന്നു...' : 'ഡിലീറ്റ് ചെയ്യുക (Delete)'}</span>
+                <span>{isDeletingProfile ? 'Deleting...' : 'Delete Profile'}</span>
               </button>
             </div>
           </div>

@@ -179,19 +179,19 @@ export const UserProfileModal: React.FC<Props> = ({
 
     // Validation
     if (!formData.full_name.trim()) {
-      setErrorMsg('ദയവായി നിങ്ങളുടെ പേര് നൽകുക (Please enter your name)');
+      setErrorMsg('Please enter your name');
       return;
     }
     if (!formData.mobile.trim() || formData.mobile.replace(/\D/g, '').length < 10) {
-      setErrorMsg('സാധുവായ 10 അക്ക ഫോൺ നമ്പർ നൽകുക (Please enter a valid 10-digit phone number)');
+      setErrorMsg('Please enter a valid 10-digit phone number');
       return;
     }
     if (!formData.email.trim() || !formData.email.includes('@')) {
-      setErrorMsg('സാധുവായ ഇമെയിൽ വിലാസം നൽകുക (Please enter a valid email address)');
+      setErrorMsg('Please enter a valid email address');
       return;
     }
     if (!formData.place.trim()) {
-      setErrorMsg('ദയവായി നിങ്ങളുടെ സ്ഥലം രേഖപ്പെടുത്തുക (Please enter your place / city)');
+      setErrorMsg('Please enter your place / city');
       return;
     }
 
@@ -203,7 +203,7 @@ export const UserProfileModal: React.FC<Props> = ({
       }
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err?.message || 'പ്രൊഫൈൽ സേവ് ചെയ്യുന്നതിൽ തടസ്സമുണ്ടായി. വീണ്ടും ശ്രമിക്കുക.');
+      setErrorMsg(err?.message || 'Error saving profile. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -233,12 +233,12 @@ export const UserProfileModal: React.FC<Props> = ({
                 {isEditing ? 'Profile Settings' : 'Mandatory Setup'}
               </span>
               <h2 className="font-serif text-xl sm:text-2xl font-bold text-white tracking-tight">
-                {isEditing ? 'എന്റെ പ്രൊഫൈൽ എഡിറ്റ് ചെയ്യുക' : 'പ്രൊഫൈൽ അക്കൗണ്ട് നിർമ്മിക്കുക'}
+                {isEditing ? 'Edit Profile' : 'Create Profile Account'}
               </h2>
               <p className="text-xs text-stone-200 mt-0.5">
                 {isEditing
-                  ? 'നിങ്ങളുടെ വിവരങ്ങൾ ഏത് സമയത്തും അപ്ഡേറ്റ് ചെയ്യാവുന്നതാണ്'
-                  : 'ആപ്പ് ഉപയോഗിക്കുന്നതിനായി നിങ്ങളുടെ പ്രൊഫൈൽ വിവരങ്ങൾ നൽകുക'}
+                  ? 'You can update your profile details anytime'
+                  : 'Please enter your profile details to start using the app'}
               </p>
             </div>
           </div>
@@ -271,10 +271,10 @@ export const UserProfileModal: React.FC<Props> = ({
 
             <div className="space-y-1.5 text-center sm:text-left flex-1">
               <span className="font-bold text-stone-900 block text-xs">
-                പ്രൊഫൈൽ ഫോട്ടോ (Profile Photo - Optional)
+                Profile Photo (Optional)
               </span>
               <p className="text-[11px] text-stone-500">
-                മര്യാദയുള്ള ചിത്രങ്ങൾ തിരഞ്ഞെടുക്കുക. നിങ്ങളുടെ ചിത്രം ഇൻട്രസ്റ്റ് അക്സെപ്റ്റ് ചെയ്യുമ്പോൾ മാത്രമേ അൺബ്ലർ ആകൂ.
+                Please select a modest photo. Your photo will remain blurred until an interest is accepted.
               </p>
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
                 <button
@@ -306,19 +306,19 @@ export const UserProfileModal: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* SECTION 1: Required Details (പേര്, ഫോൺ നമ്പർ, Email) */}
+          {/* SECTION 1: Required Details */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 pb-1 border-b border-stone-200">
               <User className="w-4 h-4 text-[#4b001f]" />
               <h3 className="font-bold text-stone-900 text-xs uppercase tracking-wider">
-                അടിസ്ഥാന വിവരങ്ങൾ (Required Details)
+                Required Details
               </h3>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-[11px] font-bold text-stone-700 mb-1">
-                  മുഴുവൻ പേര് (Full Name) <span className="text-red-500">*</span>
+                  Full Name <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -335,7 +335,7 @@ export const UserProfileModal: React.FC<Props> = ({
 
               <div>
                 <label className="block text-[11px] font-bold text-stone-700 mb-1">
-                  ഫോൺ നമ്പർ (Phone Number) <span className="text-red-500">*</span>
+                  Phone Number <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -352,7 +352,7 @@ export const UserProfileModal: React.FC<Props> = ({
 
               <div>
                 <label className="block text-[11px] font-bold text-stone-700 mb-1">
-                  ഇമെയിൽ (Email Address) <span className="text-red-500">*</span>
+                  Email Address <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -369,12 +369,12 @@ export const UserProfileModal: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* SECTION 2: Selective Details (State, District, Place, Gender, DOB) */}
+          {/* SECTION 2: Selective Details */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 pb-1 border-b border-stone-200">
               <MapPin className="w-4 h-4 text-[#4b001f]" />
               <h3 className="font-bold text-stone-900 text-xs uppercase tracking-wider">
-                മേൽവിലാസവും വ്യക്തിഗത വിവരങ്ങളും (Selective Details)
+                Personal & Location Details
               </h3>
             </div>
 
@@ -382,22 +382,22 @@ export const UserProfileModal: React.FC<Props> = ({
               {/* Gender */}
               <div>
                 <label className="block text-[11px] font-bold text-stone-700 mb-1">
-                  ലിംഗം (Gender) <span className="text-red-500">*</span>
+                  Gender <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={formData.gender}
                   onChange={(e) => setFormData({ ...formData, gender: e.target.value as 'Male' | 'Female' })}
                   className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300 focus:border-[#4b001f] outline-none bg-white font-medium"
                 >
-                  <option value="Female">Female (പെൺകുട്ടി / Bride)</option>
-                  <option value="Male">Male (ആൺകുട്ടി / Groom)</option>
+                  <option value="Female">Female (Bride)</option>
+                  <option value="Male">Male (Groom)</option>
                 </select>
               </div>
 
               {/* Date of Birth */}
               <div>
                 <label className="block text-[11px] font-bold text-stone-700 mb-1">
-                  ജനനത്തീയതി (Date of Birth) <span className="text-red-500">*</span>
+                  Date of Birth <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -417,7 +417,7 @@ export const UserProfileModal: React.FC<Props> = ({
               {/* State */}
               <div>
                 <label className="block text-[11px] font-bold text-stone-700 mb-1">
-                  സംസ്ഥാനം (State) <span className="text-red-500">*</span>
+                  State <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={formData.state}
@@ -435,7 +435,7 @@ export const UserProfileModal: React.FC<Props> = ({
               {/* District */}
               <div>
                 <label className="block text-[11px] font-bold text-stone-700 mb-1">
-                  ജില്ല (District) <span className="text-red-500">*</span>
+                  District <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={formData.district}
@@ -453,7 +453,7 @@ export const UserProfileModal: React.FC<Props> = ({
               {/* Place */}
               <div>
                 <label className="block text-[11px] font-bold text-stone-700 mb-1">
-                  സ്ഥലം / നഗരം (Place / City) <span className="text-red-500">*</span>
+                  Place / City <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -471,7 +471,7 @@ export const UserProfileModal: React.FC<Props> = ({
               {/* Profession */}
               <div>
                 <label className="block text-[11px] font-bold text-stone-700 mb-1">
-                  ജോലി / തൊഴിൽ (Profession - Optional)
+                  Profession (Optional)
                 </label>
                 <input
                   type="text"
@@ -484,19 +484,19 @@ export const UserProfileModal: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* SECTION 3: Guardian Details (രക്ഷിതാവ് / Guardian) */}
+          {/* SECTION 3: Guardian Details */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 pb-1 border-b border-stone-200">
               <ShieldCheck className="w-4 h-4 text-[#4b001f]" />
               <h3 className="font-bold text-stone-900 text-xs uppercase tracking-wider">
-                രക്ഷിതാവിന്റെ വിവരങ്ങൾ (Guardian Details)
+                Guardian Details
               </h3>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[11px] font-bold text-stone-700 mb-1">
-                  രക്ഷിതാവിന്റെ പേര് (Guardian Name)
+                  Guardian Name
                 </label>
                 <input
                   type="text"
@@ -509,7 +509,7 @@ export const UserProfileModal: React.FC<Props> = ({
 
               <div>
                 <label className="block text-[11px] font-bold text-stone-700 mb-1">
-                  രക്ഷിതാവിന്റെ ഫോൺ നമ്പർ (Guardian Mobile)
+                  Guardian Mobile
                 </label>
                 <input
                   type="tel"
@@ -527,14 +527,14 @@ export const UserProfileModal: React.FC<Props> = ({
             <div className="flex items-center gap-2 pb-1 border-b border-stone-200">
               <Heart className="w-4 h-4 text-[#c9973e]" />
               <h3 className="font-bold text-stone-900 text-xs uppercase tracking-wider">
-                ഹോബികളും താൽപ്പര്യങ്ങളും (Optional: Hobbies & Interests)
+                Hobbies & Interests (Optional)
               </h3>
             </div>
 
             <div className="space-y-3">
               <div>
                 <label className="block text-[11px] font-bold text-stone-700 mb-1.5">
-                  ഹോബികൾ (Hobbies)
+                  Hobbies
                 </label>
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {SUGGESTED_HOBBIES.map((hobby) => {
@@ -567,7 +567,7 @@ export const UserProfileModal: React.FC<Props> = ({
 
               <div>
                 <label className="block text-[11px] font-bold text-stone-700 mb-1.5">
-                  താൽപ്പര്യങ്ങൾ (Interests)
+                  Interests
                 </label>
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {SUGGESTED_INTERESTS.map((interest) => {
@@ -613,22 +613,9 @@ export const UserProfileModal: React.FC<Props> = ({
                 <CheckCircle2 className="w-5 h-5 text-[#c9973e]" />
               )}
               <span>
-                {isEditing ? 'മാറ്റങ്ങൾ സേവ് ചെയ്യുക (Save Changes)' : 'പ്രൊഫൈൽ അക്കൗണ്ട് പൂർത്തിയാക്കുക (Create Profile)'}
+                {isEditing ? 'Save Changes' : 'Create Profile'}
               </span>
             </button>
-
-            {/* Switch to Login Link if not editing */}
-            {!isEditing && onSwitchToLogin && (
-              <div className="text-center pt-1">
-                <button
-                  type="button"
-                  onClick={onSwitchToLogin}
-                  className="text-xs text-stone-600 hover:text-[#4b001f] font-semibold cursor-pointer underline decoration-dotted"
-                >
-                  ഇതിനകം അക്കൗണ്ട് ഉണ്ടോ? ഇവിടെ ലോഗിൻ ചെയ്യുക (Already have an account? Login)
-                </button>
-              </div>
-            )}
           </div>
         </form>
       </div>

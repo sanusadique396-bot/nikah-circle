@@ -76,10 +76,10 @@ export const RegisterModal: React.FC<Props> = ({
               Premium Members Only
             </span>
             <h3 className="font-serif text-2xl font-bold text-[#4b001f]">
-              പ്രൊഫൈൽ രജിസ്ട്രേഷൻ പ്രീമിയം അംഗങ്ങൾക്ക് മാത്രം
+              Profile Registration is for Premium Members Only
             </h3>
             <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
-              Nikah Circle-ൽ പ്രൊഫൈൽ രജിസ്റ്റർ ചെയ്യുന്നതിന് പ്രീമിയം മെമ്പർഷിപ്പ് നിർബന്ധമാണ്. UPI സ്കാനർ വഴിയോ, ഓഫീസ് വഴിയോ, അല്ലെങ്കിൽ പെൺകുട്ടികൾക്കും മറ്റുള്ളവർക്കുമുള്ള സൗജന്യ പ്രീമിയം (PREMIUM FREE - GIRLS & OTHER) വഴിയോ ഉടൻ പ്രീമിയം എടുക്കാം.
+              A premium membership is required to register a profile on Nikah Circle. You can upgrade via UPI QR Scanner, Office/Cash payment, or through our Free Premium program for eligible candidates.
             </p>
           </div>
 
@@ -93,7 +93,7 @@ export const RegisterModal: React.FC<Props> = ({
               className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white font-bold text-xs transition-colors cursor-pointer shadow-md flex items-center justify-center gap-2"
             >
               <Sparkles className="w-4 h-4 text-[#c9973e]" />
-              <span>പ്രീമിയം എടുക്കുക / PREMIUM FREE</span>
+              <span>Get Premium / Free Premium</span>
             </button>
             <button
               type="button"
@@ -151,10 +151,10 @@ export const RegisterModal: React.FC<Props> = ({
             </div>
             <div>
               <h2 className="font-serif text-2xl font-bold tracking-tight">
-                രജിസ്റ്റർ യുവർ പ്രൊഫൈൽ (Register Profile)
+                Register Profile
               </h2>
               <p className="text-xs text-stone-300">
-                അഡ്മിൻ വെരിഫിക്കേഷനായി പ്രൊഫൈൽ റിക്വസ്റ്റ് സമർപ്പിക്കുക
+                Submit profile request for Admin verification
               </p>
             </div>
           </div>
@@ -166,10 +166,10 @@ export const RegisterModal: React.FC<Props> = ({
             <div className="py-10 text-center space-y-4">
               <CheckCircle2 className="w-16 h-16 text-emerald-600 mx-auto" />
               <h3 className="font-serif text-2xl font-bold text-[#4b001f]">
-                അഡ്മിൻ റിക്വസ്റ്റ് സമർപ്പിച്ചു!
+                Request Submitted Successfully!
               </h3>
               <p className="text-sm text-stone-600 max-w-md mx-auto leading-relaxed">
-                താങ്കളുടെ പ്രൊഫൈൽ വിജയകരമായി അഡ്മിൻ റിക്വസ്റ്റായി സമർപ്പിച്ചു. അഡ്മിൻ ഇത് പരിശോധിച്ച് അക്സെപ്റ്റ് (Approve) ചെയ്ത ശേഷം മാത്രമേ പ്രൊഫൈൽ ലൈവ് ആവുകയുള്ളൂ.
+                Your profile has been submitted to the admin for verification. It will become visible on the platform once approved.
               </p>
             </div>
           ) : (
@@ -177,14 +177,14 @@ export const RegisterModal: React.FC<Props> = ({
               <div className="p-3 rounded-xl bg-[#fff6fa] border border-[#eadfe4] text-xs text-[#4b001f] font-medium flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-[#c9973e] shrink-0" />
                 <span>
-                  ശ്രദ്ധിക്കുക: രക്ഷിതാവിന്റെ (Guardian) നമ്പർ നൽകിയാൽ മറ്റുള്ളവർക്ക് അത് മാത്രമാണ് കാണിക്കുക.
+                  Privacy Note: Guardian mobile number will be prioritized for display on proposals.
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-stone-700 mb-1">
-                    Candidate Full Name (കാൻഡിഡേറ്റിന്റെ പേര്) *
+                    Candidate Full Name *
                   </label>
                   <input
                     type="text"
@@ -198,21 +198,21 @@ export const RegisterModal: React.FC<Props> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-stone-700 mb-1">
-                    Gender (ലിംഗം) *
+                    Gender *
                   </label>
                   <select
                     value={formData.gender}
                     onChange={(e) => setFormData({ ...formData, gender: e.target.value as 'Male' | 'Female' })}
                     className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:border-[#4b001f] bg-white"
                   >
-                    <option value="Female">Bride (സ്ത്രീ / പെൺകുട്ടി)</option>
-                    <option value="Male">Groom (പുരുഷൻ / ചെറുപ്പക്കാരൻ)</option>
+                    <option value="Female">Bride (Female)</option>
+                    <option value="Male">Groom (Male)</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-stone-700 mb-1">
-                    Guardian Name (രക്ഷിതാവിന്റെ പേര്) *
+                    Guardian Name *
                   </label>
                   <input
                     type="text"
@@ -226,7 +226,7 @@ export const RegisterModal: React.FC<Props> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-stone-700 mb-1">
-                    Guardian Mobile (രക്ഷിതാവിന്റെ ഫോൺ നമ്പർ) *
+                    Guardian Mobile *
                   </label>
                   <input
                     type="tel"
@@ -240,7 +240,7 @@ export const RegisterModal: React.FC<Props> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-stone-700 mb-1">
-                    Candidate Direct Mobile (കാൻഡിഡേറ്റ് നമ്പർ)
+                    Candidate Direct Mobile
                   </label>
                   <input
                     type="tel"
@@ -253,7 +253,7 @@ export const RegisterModal: React.FC<Props> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-stone-700 mb-1">
-                    Date of Birth (ജനനത്തീയതി) *
+                    Date of Birth *
                   </label>
                   <input
                     type="date"
@@ -266,7 +266,7 @@ export const RegisterModal: React.FC<Props> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-stone-700 mb-1">
-                    Education (വിദ്യാഭ്യാസം) *
+                    Education *
                   </label>
                   <input
                     type="text"
@@ -280,7 +280,7 @@ export const RegisterModal: React.FC<Props> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-stone-700 mb-1">
-                    Profession (തൊഴിൽ) *
+                    Profession *
                   </label>
                   <input
                     type="text"
@@ -294,7 +294,7 @@ export const RegisterModal: React.FC<Props> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-stone-700 mb-1">
-                    District / Location (ജില്ല / സ്ഥലം) *
+                    District / Location *
                   </label>
                   <input
                     type="text"
@@ -308,16 +308,16 @@ export const RegisterModal: React.FC<Props> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-stone-700 mb-1">
-                    Marital Status (വിവാഹാവസ്ഥ)
+                    Marital Status
                   </label>
                   <select
                     value={formData.marital_status}
                     onChange={(e) => setFormData({ ...formData, marital_status: e.target.value as any })}
                     className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:border-[#4b001f] bg-white"
                   >
-                    <option value="Never Married">Never Married (അവിവാഹിതൻ/അവിവാഹിത)</option>
-                    <option value="Divorced">Divorced (വിവാഹമോചിതർ)</option>
-                    <option value="Widowed">Widowed (വിധവ / വിഭാര്യൻ)</option>
+                    <option value="Never Married">Never Married</option>
+                    <option value="Divorced">Divorced</option>
+                    <option value="Widowed">Widowed</option>
                   </select>
                 </div>
               </div>
@@ -326,7 +326,7 @@ export const RegisterModal: React.FC<Props> = ({
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-bold text-stone-700">
-                    Profile Photo (പ്രൊഫൈൽ ഫോട്ടോ)
+                    Profile Photo
                   </label>
                   <button
                     type="button"
@@ -376,10 +376,10 @@ export const RegisterModal: React.FC<Props> = ({
                         <div className="flex-1 space-y-1.5">
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
                             <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                            <span>ഫോട്ടോ തിരഞ്ഞെടുത്തു (Photo Selected)</span>
+                            <span>Photo Selected</span>
                           </span>
                           <p className="text-[11px] text-stone-600">
-                            കാൻഡിഡേറ്റിന്റെ പ്രൊഫൈൽ ഫോട്ടോ സജ്ജമാക്കി.
+                            Candidate profile photo is ready.
                           </p>
                           <div className="flex items-center gap-2 pt-1">
                             <button
@@ -388,7 +388,7 @@ export const RegisterModal: React.FC<Props> = ({
                               className="px-2.5 py-1 rounded-lg border border-stone-300 hover:bg-white text-stone-800 text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
                             >
                               <Camera className="w-3 h-3 text-stone-500" />
-                              <span>ഫോട്ടോ മാറ്റുക (Change)</span>
+                              <span>Change Photo</span>
                             </button>
                             <button
                               type="button"
@@ -396,7 +396,7 @@ export const RegisterModal: React.FC<Props> = ({
                               className="px-2.5 py-1 rounded-lg border border-red-200 hover:bg-red-50 text-red-600 text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
                             >
                               <Trash2 className="w-3 h-3" />
-                              <span>ഒഴിവാക്കുക</span>
+                              <span>Remove</span>
                             </button>
                           </div>
                         </div>
@@ -412,10 +412,10 @@ export const RegisterModal: React.FC<Props> = ({
                         </div>
                         <div>
                           <p className="text-xs font-bold text-[#4b001f]">
-                            Choose Photo from Gallery (ഗാലറിയിൽ നിന്ന് ഫോട്ടോ തിരഞ്ഞെടുക്കുക)
+                            Choose Photo from Gallery
                           </p>
                           <p className="text-[11px] text-stone-500 mt-0.5">
-                            മൊബൈൽ ഗാലറിയിൽ നിന്നോ കമ്പ്യൂട്ടറിൽ നിന്നോ നേരിട്ട് ഫോട്ടോ അപ്‌ലോഡ് ചെയ്യാം
+                            Upload directly from your device gallery or camera
                           </p>
                         </div>
                         <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#4b001f] text-white text-[11px] font-bold shadow-2xs group-hover:bg-[#350016]">
@@ -430,13 +430,13 @@ export const RegisterModal: React.FC<Props> = ({
 
               <div>
                 <label className="block text-xs font-bold text-stone-700 mb-1">
-                  About Candidate & Family (വിവരണം)
+                  About Candidate & Family
                 </label>
                 <textarea
                   rows={2}
                   value={formData.about}
                   onChange={(e) => setFormData({ ...formData, about: e.target.value })}
-                  placeholder="കാൻഡിഡേറ്റിന്റെ സ്വഭാവം, ദീനിയായ കാര്യങ്ങൾ, കുടുംബ പശ്ചാത്തലം..."
+                  placeholder="Candidate background, religious practice, family values..."
                   className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:border-[#4b001f]"
                 />
               </div>
@@ -454,7 +454,7 @@ export const RegisterModal: React.FC<Props> = ({
                   disabled={loading}
                   className="px-6 py-2 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold transition-colors cursor-pointer shadow-sm"
                 >
-                  {loading ? 'സമർപ്പിക്കുന്നു...' : 'സമർപ്പിക്കുക (Submit Admin Request)'}
+                  {loading ? 'Submitting...' : 'Submit Profile Request'}
                 </button>
               </div>
             </form>
