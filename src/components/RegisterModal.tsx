@@ -23,7 +23,7 @@ export const RegisterModal: React.FC<Props> = ({
     date_of_birth: '1998-01-01',
     mobile: '',
     guardian_name: '',
-    guardian_relation: 'Father (Wali)',
+    guardian_relation: 'Father (Guardian)',
     guardian_mobile: '',
     email: '',
     location: 'Kozhikode, Kerala',
@@ -177,7 +177,7 @@ export const RegisterModal: React.FC<Props> = ({
               <div className="p-3 rounded-xl bg-[#fff6fa] border border-[#eadfe4] text-xs text-[#4b001f] font-medium flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-[#c9973e] shrink-0" />
                 <span>
-                  ശ്രദ്ധിക്കുക: രക്ഷിതാവിന്റെ (Guardian / Wali) നമ്പർ നൽകിയാൽ മറ്റുള്ളവർക്ക് അത് മാത്രമാണ് കാണിക്കുക.
+                  ശ്രദ്ധിക്കുക: രക്ഷിതാവിന്റെ (Guardian) നമ്പർ നൽകിയാൽ മറ്റുള്ളവർക്ക് അത് മാത്രമാണ് കാണിക്കുക.
                 </span>
               </div>
 
@@ -212,14 +212,14 @@ export const RegisterModal: React.FC<Props> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-stone-700 mb-1">
-                    Guardian / Wali Name (രക്ഷിതാവിന്റെ പേര്) *
+                    Guardian Name (രക്ഷിതാവിന്റെ പേര്) *
                   </label>
                   <input
                     type="text"
                     required
                     value={formData.guardian_name}
                     onChange={(e) => setFormData({ ...formData, guardian_name: e.target.value })}
-                    placeholder="e.g. Father or Wali name"
+                    placeholder="e.g. Father or Guardian name"
                     className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:border-[#4b001f]"
                   />
                 </div>

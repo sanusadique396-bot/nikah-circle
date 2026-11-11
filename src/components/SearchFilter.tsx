@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, RotateCcw, Filter, CheckCircle2, Lock, Sparkles } from 'lucide-react';
+import { Search, RotateCcw, Filter, CheckCircle2, Sparkles, MapPin, Briefcase, GraduationCap } from 'lucide-react';
 import { SearchFilters } from '../types';
 
 interface Props {
@@ -14,6 +14,51 @@ interface Props {
   onOpenPremium: () => void;
 }
 
+const KERALA_DISTRICTS = [
+  'All Districts',
+  'Kozhikode',
+  'Malappuram',
+  'Kannur',
+  'Ernakulam',
+  'Thiruvananthapuram',
+  'Thrissur',
+  'Palakkad',
+  'Kollam',
+  'Alappuzha',
+  'Kottayam',
+  'Kasaragod',
+  'Wayanad',
+  'Idukki',
+  'Pathanamthitta',
+  'Outside Kerala / Gulf'
+];
+
+const PROFESSIONS = [
+  'All Professions',
+  'Doctor / Medical',
+  'Software Engineer / IT',
+  'Engineer (Civil / Mech / Elec)',
+  'Teacher / Professor',
+  'Business / Entrepreneur',
+  'Government Officer',
+  'Banking & Finance',
+  'Nursing & Healthcare',
+  'Accountant',
+  'Gulf / NRI Professional',
+  'Student',
+  'Other'
+];
+
+const EDUCATIONS = [
+  'All Qualifications',
+  'Post Graduate / Master\'s',
+  'B.Tech / Engineering',
+  'MBBS / Medical Degree',
+  'Graduate / Degree',
+  'Diploma',
+  'Plus Two / Higher Secondary'
+];
+
 export const SearchFilter: React.FC<Props> = ({
   filters,
   searchQuery,
@@ -25,104 +70,166 @@ export const SearchFilter: React.FC<Props> = ({
   isUserPremium,
   onOpenPremium,
 }) => {
-  if (!isUserPremium) {
-    return (
-      <div className="bg-gradient-to-r from-[#fff6fa] via-white to-[#fff6fa] rounded-2xl border border-[#c9973e]/40 p-6 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-2xl bg-[#4b001f] text-[#c9973e] flex items-center justify-center shrink-0 shadow-xs">
-            <Lock className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="font-serif font-bold text-base text-[#4b001f] flex items-center gap-2">
-              <span>പ്രീമിയം സെർച്ച് & ഫിൽട്ടർ ഫീച്ചർ</span>
-              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-[#c9973e] text-[#350016]">
-                Premium Only
-              </span>
-            </h3>
-            <p className="text-xs text-stone-600 mt-0.5 max-w-xl">
-              പ്രീമിയം മെമ്പർഷിപ്പ് ഉള്ളവർക്ക് മാത്രമേ പ്രൊഫൈലുകൾ ഡിസ്ട്രിക്റ്റ്, വയസ്സ്, ക്വാളിഫിക്കേഷൻ അനുസരിച്ച് സെർച്ച് ചെയ്യാനും ബയോഡാറ്റ ഇൻട്രസ്റ്റ് അയക്കാനും സാധിക്കൂ.
-            </p>
-          </div>
-        </div>
-
-        <button
-          onClick={onOpenPremium}
-          className="px-5 py-2.5 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold transition-all cursor-pointer shadow-sm flex items-center gap-2 shrink-0 whitespace-nowrap"
-        >
-          <Sparkles className="w-3.5 h-3.5 text-[#c9973e]" />
-          <span>Unlock Search with Premium</span>
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div className="bg-white rounded-2xl border border-[#eadfe4] shadow-sm p-5 space-y-4">
+      {/* Top Header Strip */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100">
         <div className="flex items-center gap-2">
-          <Filter className="w-5 h-5 text-[#4b001f]" />
-          <h2 className="font-serif text-lg font-bold text-[#4b001f]">
-            Filter & Search Profiles
-          </h2>
-          <span className="text-xs text-stone-500 font-medium">
-            ({filteredCount} of {totalCount} matching)
-          </span>
+          <div className="p-1.5 rounded-lg bg-[#fff6fa] text-[#4b001f] border border-[#eadfe4]">
+            <Filter className="w-4 h-4" />
+          </div>
+          <div>
+            <h2 className="font-serif text-lg font-bold text-[#4b001f] leading-none">
+              ഫിൽട്ടർ & സെർച്ച് (Advanced Filters)
+            </h2>
+            <span className="text-[11px] text-stone-500 font-medium">
+              ആകെ {totalCount} പ്രൊഫൈലുകളിൽ {filteredCount} എണ്ണം പൊരുത്തപ്പെടുന്നു
+            </span>
+          </div>
         </div>
 
-        <button
-          onClick={onReset}
-          className="text-xs font-semibold text-stone-500 hover:text-[#4b001f] flex items-center gap-1 transition-colors self-start sm:self-auto cursor-pointer"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-          <span>Reset Filters</span>
-        </button>
+        <div className="flex items-center gap-3">
+          {!isUserPremium && (
+            <button
+              onClick={onOpenPremium}
+              className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-[#c9973e] text-white text-[11px] font-bold shadow-2xs hover:shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              <Sparkles className="w-3 h-3 text-white" />
+              <span>Get Premium</span>
+            </button>
+          )}
+
+          <button
+            onClick={onReset}
+            className="text-xs font-semibold text-stone-500 hover:text-[#4b001f] flex items-center gap-1 transition-colors cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Reset All</span>
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        {/* Search Query */}
-        <div className="relative">
+      {/* Grid of All Filter Options */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+        {/* 1. Keyword / Name / Place Search */}
+        <div>
           <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1">
-            Keyword / Name
+            പേര് / കീവേഡ് (Keyword Search)
           </label>
           <div className="relative">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="e.g. Doctor, Kozhikode..."
+              placeholder="e.g. Doctor, Kozhikode, Manjeri..."
               className="w-full pl-8 pr-3 py-2 text-xs rounded-xl border border-[#eadfe4] focus:outline-none focus:border-[#4b001f] focus:ring-1 focus:ring-[#4b001f] bg-stone-50/50"
             />
             <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
           </div>
         </div>
 
-        {/* Gender */}
+        {/* 2. Looking For (Gender) */}
         <div>
           <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1">
-            Looking For
+            ലിംഗം (Looking For)
           </label>
           <select
             value={filters.gender}
             onChange={(e) => onFilterChange({ ...filters, gender: e.target.value })}
             className="w-full px-3 py-2 text-xs rounded-xl border border-[#eadfe4] focus:outline-none focus:border-[#4b001f] bg-white text-stone-800"
           >
-            <option value="">All Genders</option>
-            <option value="Female">Bride (Female)</option>
-            <option value="Male">Groom (Male)</option>
+            <option value="">All Genders (എല്ലാം)</option>
+            <option value="Female">Bride (പെൺകുട്ടി / Female)</option>
+            <option value="Male">Groom (ആൺകുട്ടി / Male)</option>
           </select>
         </div>
 
-        {/* Age Range */}
+        {/* 3. District / Region */}
         <div>
           <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1">
-            Age Bracket
+            ജില്ല (District)
+          </label>
+          <select
+            value={filters.district}
+            onChange={(e) => onFilterChange({ ...filters, district: e.target.value })}
+            className="w-full px-3 py-2 text-xs rounded-xl border border-[#eadfe4] focus:outline-none focus:border-[#4b001f] bg-white text-stone-800"
+          >
+            {KERALA_DISTRICTS.map((dist) => (
+              <option key={dist} value={dist === 'All Districts' ? '' : dist}>
+                {dist}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* 4. Place / City Specific Filter */}
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1">
+            സ്ഥലം / നഗരം (Place / Town)
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              value={filters.place}
+              onChange={(e) => onFilterChange({ ...filters, place: e.target.value })}
+              placeholder="e.g. Manjeri, Vadakara, Edappally..."
+              className="w-full pl-8 pr-3 py-2 text-xs rounded-xl border border-[#eadfe4] focus:outline-none focus:border-[#4b001f] focus:ring-1 focus:ring-[#4b001f] bg-white"
+            />
+            <MapPin className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+          </div>
+        </div>
+
+        {/* 5. Profession / Job Filter */}
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1">
+            തൊഴിൽ / ജോലി (Profession / Job)
+          </label>
+          <div className="relative">
+            <select
+              value={filters.profession}
+              onChange={(e) => onFilterChange({ ...filters, profession: e.target.value })}
+              className="w-full px-3 py-2 text-xs rounded-xl border border-[#eadfe4] focus:outline-none focus:border-[#4b001f] bg-white text-stone-800"
+            >
+              {PROFESSIONS.map((prof) => (
+                <option key={prof} value={prof === 'All Professions' ? '' : prof}>
+                  {prof}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* 6. Education Qualification */}
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1">
+            വിദ്യാഭ്യാസം (Education)
+          </label>
+          <div className="relative">
+            <select
+              value={filters.education}
+              onChange={(e) => onFilterChange({ ...filters, education: e.target.value })}
+              className="w-full px-3 py-2 text-xs rounded-xl border border-[#eadfe4] focus:outline-none focus:border-[#4b001f] bg-white text-stone-800"
+            >
+              {EDUCATIONS.map((edu) => (
+                <option key={edu} value={edu === 'All Qualifications' ? '' : edu}>
+                  {edu}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* 7. Age Bracket */}
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1">
+            പ്രായം (Age Bracket)
           </label>
           <select
             value={filters.ageRange}
             onChange={(e) => onFilterChange({ ...filters, ageRange: e.target.value })}
             className="w-full px-3 py-2 text-xs rounded-xl border border-[#eadfe4] focus:outline-none focus:border-[#4b001f] bg-white text-stone-800"
           >
-            <option value="">Any Age</option>
+            <option value="">Any Age (എല്ലാ പ്രായവും)</option>
             <option value="18-24">18 – 24 Years</option>
             <option value="25-29">25 – 29 Years</option>
             <option value="30-34">30 – 34 Years</option>
@@ -131,52 +238,26 @@ export const SearchFilter: React.FC<Props> = ({
           </select>
         </div>
 
-        {/* Marital Status */}
+        {/* 8. Marital Status */}
         <div>
           <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1">
-            Marital Status
+            വൈവാഹികാവസ്ഥ (Marital Status)
           </label>
           <select
             value={filters.maritalStatus}
             onChange={(e) => onFilterChange({ ...filters, maritalStatus: e.target.value })}
             className="w-full px-3 py-2 text-xs rounded-xl border border-[#eadfe4] focus:outline-none focus:border-[#4b001f] bg-white text-stone-800"
           >
-            <option value="">Any Status</option>
-            <option value="Never Married">Never Married</option>
-            <option value="Divorced">Divorced</option>
-            <option value="Widowed">Widowed</option>
-          </select>
-        </div>
-
-        {/* Location / District */}
-        <div>
-          <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1">
-            District / Region
-          </label>
-          <select
-            value={filters.location}
-            onChange={(e) => onFilterChange({ ...filters, location: e.target.value })}
-            className="w-full px-3 py-2 text-xs rounded-xl border border-[#eadfe4] focus:outline-none focus:border-[#4b001f] bg-white text-stone-800"
-          >
-            <option value="">All Locations</option>
-            <option value="Kozhikode">Kozhikode (Calicut)</option>
-            <option value="Malappuram">Malappuram</option>
-            <option value="Kochi">Kochi / Ernakulam</option>
-            <option value="Kannur">Kannur</option>
-            <option value="Thiruvananthapuram">Thiruvananthapuram</option>
-            <option value="Thrissur">Thrissur</option>
-            <option value="Palakkad">Palakkad</option>
-            <option value="Kollam">Kollam</option>
-            <option value="Wayanad">Wayanad</option>
-            <option value="Kasaragod">Kasaragod</option>
-            <option value="Dubai">Dubai / UAE</option>
-            <option value="Saudi">Saudi Arabia</option>
-            <option value="Qatar">Qatar</option>
+            <option value="">Any Status (എല്ലാം)</option>
+            <option value="Never Married">Never Married (വിവാഹം കഴിക്കാത്തവർ)</option>
+            <option value="Divorced">Divorced (വിവാഹമോചിതർ)</option>
+            <option value="Widowed">Widowed (വിധവ / വിഭാര്യൻ)</option>
           </select>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-xs">
+      {/* Checkboxes Row */}
+      <div className="flex flex-wrap items-center gap-6 pt-2 text-xs border-t border-stone-100">
         <label className="inline-flex items-center gap-2 cursor-pointer font-medium text-stone-700 select-none">
           <input
             type="checkbox"
@@ -185,7 +266,18 @@ export const SearchFilter: React.FC<Props> = ({
             className="w-4 h-4 rounded text-[#4b001f] border-stone-300 focus:ring-[#4b001f]"
           />
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Show Admin-Verified Profiles Only</span>
+          <span>Verified Profiles Only</span>
+        </label>
+
+        <label className="inline-flex items-center gap-2 cursor-pointer font-medium text-stone-700 select-none">
+          <input
+            type="checkbox"
+            checked={filters.premiumOnly}
+            onChange={(e) => onFilterChange({ ...filters, premiumOnly: e.target.checked })}
+            className="w-4 h-4 rounded text-[#c9973e] border-stone-300 focus:ring-[#c9973e]"
+          />
+          <Sparkles className="w-3.5 h-3.5 text-[#c9973e]" />
+          <span>Premium Featured Profiles Only</span>
         </label>
       </div>
     </div>

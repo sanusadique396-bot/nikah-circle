@@ -10,14 +10,18 @@ export interface Profile {
   gender: 'Male' | 'Female';
   date_of_birth?: string | null;
   age?: number;
-  location?: string | null;
+  state?: string | null;
   district?: string | null;
+  place?: string | null;
+  location?: string | null;
   education?: string | null;
   profession?: string | null;
   marital_status: 'Never Married' | 'Divorced' | 'Widowed';
   religion?: string;
   sect?: string;
   height?: string;
+  hobbies?: string | string[] | null;
+  interests?: string | string[] | null;
   about?: string | null;
   partner_preferences?: string | null;
   family_details?: string | null;
@@ -72,8 +76,13 @@ export interface InterestRecord {
 export interface SearchFilters {
   gender: string;
   ageRange: string;
+  state: string;
+  district: string;
+  place: string;
   location: string;
-  maritalStatus: string;
+  profession: string;
   education: string;
+  maritalStatus: string;
   verifiedOnly: boolean;
+  premiumOnly: boolean;
 }

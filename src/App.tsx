@@ -8,6 +8,7 @@ import { PremiumModal } from './components/PremiumModal';
 import { RegisterModal } from './components/RegisterModal';
 import { LoginModal } from './components/LoginModal';
 import { AdminPortal } from './components/AdminPortal';
+import { UserProfileModal, UserProfileData } from './components/UserProfileModal';
 import { Footer } from './components/Footer';
 import { OfflineBanner } from './components/OfflineBanner';
 import { Profile, Payment, SearchFilters, PremiumRequest } from './types';
@@ -49,7 +50,7 @@ export default function App() {
     getStoredInterestsMap()
   );
 
-  // Authentication State: Auto-restore or check authentication
+  // Authentication & User Profile State
   const [currentUser, setCurrentUser] = useState<{ email?: string; id?: string } | null>(() => {
     try {
       const stored = localStorage.getItem('nikah_circle_user');
@@ -57,12 +58,22 @@ export default function App() {
     } catch {}
     return null;
   });
+
+  const [currentUserProfile, setCurrentUserProfile] = useState<UserProfileData | null>(() => {
+    try {
+      const stored = localStorage.getItem('nikah_circle_user_profile');
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return null;
+  });
+
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
     try {
       return localStorage.getItem('nikah_circle_is_admin') === 'true';
     } catch {}
     return false;
   });
+
   const [isUserPremium, setIsUserPremium] = useState<boolean>(() => {
     try {
       const adminStatus = localStorage.getItem('nikah_circle_premium_admin_status');
@@ -70,22 +81,27 @@ export default function App() {
       const stored = localStorage.getItem('nikah_circle_user_is_premium');
       if (stored !== null) return stored === 'true';
     } catch {}
-    return false; // Registration and search require premium membership
+    return false;
   });
 
   useEffect(() => {
     localStorage.setItem('nikah_circle_user_is_premium', String(isUserPremium));
   }, [isUserPremium]);
 
-  // Modals: 1. Auto-open Login as soon as the app is opened if the user is not authenticated
-  const [isLoginOpen, setIsLoginOpen] = useState<boolean>(() => {
+  // Mandatory Account / Profile Setup: Opens on first app launch if profile is not created (No skip button!)
+  const [isCreateAccountOpen, setIsCreateAccountOpen] = useState<boolean>(() => {
     try {
-      const stored = localStorage.getItem('nikah_circle_user');
-      return !stored; // Auto-opens login modal immediately if user is not authenticated
+      const profile = localStorage.getItem('nikah_circle_user_profile');
+      const user = localStorage.getItem('nikah_circle_user');
+      return !profile && !user;
     } catch {
       return true;
     }
   });
+  const [isEditingProfile, setIsEditingProfile] = useState<boolean>(false);
+
+  // Login Modal (for returning members or admin login)
+  const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false);
   const [loginMode, setLoginMode] = useState<'member' | 'admin'>('member');
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isPremiumOpen, setIsPremiumOpen] = useState(false);
@@ -96,10 +112,15 @@ export default function App() {
   const [filters, setFilters] = useState<SearchFilters>({
     gender: '',
     ageRange: '',
+    state: '',
+    district: '',
+    place: '',
     location: '',
-    maritalStatus: '',
+    profession: '',
     education: '',
+    maritalStatus: '',
     verifiedOnly: false,
+    premiumOnly: false,
   });
 
   // Notification Toast & Screen Status Banners
@@ -217,6 +238,78 @@ export default function App() {
       particleCount: 50,
       spread: 50,
       origin: { y: 0.7 },
+    });
+  };
+
+  const handleCancelInterest = (profileId: string) => {
+    const updated = { ...interestsMap };
+    delete updated[profileId];
+    setInterestsMap(updated);
+    saveStoredInterestsMap(updated);
+    showToast('ഇൻട്രസ്റ്റ് ക്യാൻസൽ ചെയ്തു (Interest cancelled).');
+  };
+
+  const handleSaveUserProfile = async (data: UserProfileData) => {
+    setCurrentUserProfile(data);
+    localStorage.setItem('nikah_circle_user_profile', JSON.stringify(data));
+
+    const userObj = { email: data.email, id: `usr-${data.mobile}` };
+    setCurrentUser(userObj);
+    localStorage.setItem('nikah_circle_user', JSON.stringify(userObj));
+
+    const existingIndex = profiles.findIndex(
+      (p) => (p.mobile && p.mobile === data.mobile) || (p.email && p.email === data.email)
+    );
+
+    const calculatedAge = data.date_of_birth
+      ? Math.max(18, new Date().getFullYear() - new Date(data.date_of_birth).getFullYear())
+      : 24;
+
+    const profilePayload: Profile = {
+      id: existingIndex >= 0 ? profiles[existingIndex].id : `usr-${Date.now().toString().slice(-6)}`,
+      full_name: data.full_name,
+      mobile: data.mobile,
+      email: data.email,
+      gender: data.gender,
+      date_of_birth: data.date_of_birth,
+      age: calculatedAge,
+      state: data.state,
+      district: data.district,
+      place: data.place,
+      location: `${data.place}, ${data.district}`,
+      education: data.education || 'Graduate',
+      profession: data.profession || 'Professional',
+      guardian_name: data.guardian_name || 'Family Guardian',
+      guardian_mobile: data.guardian_mobile || data.mobile,
+      guardian_relation: 'Parent (Guardian)',
+      marital_status: 'Never Married',
+      hobbies: data.hobbies,
+      interests: data.interests,
+      profile_photo: data.profile_photo || null,
+      registration_type: 'ONLINE',
+      profile_status: 'APPROVED',
+      is_verified: true,
+      is_premium: isUserPremium,
+      created_at: new Date().toISOString(),
+    };
+
+    let updatedProfiles: Profile[];
+    if (existingIndex >= 0) {
+      updatedProfiles = profiles.map((p, idx) => (idx === existingIndex ? { ...p, ...profilePayload } : p));
+    } else {
+      updatedProfiles = [profilePayload, ...profiles];
+    }
+
+    setProfiles(updatedProfiles);
+    saveStoredProfiles(updatedProfiles);
+
+    setIsCreateAccountOpen(false);
+    setIsEditingProfile(false);
+    showToast('പ്രൊഫൈൽ അക്കൗണ്ട് വിജയകരമായി സേവ് ചെയ്തു!');
+    confetti({
+      particleCount: 60,
+      spread: 60,
+      origin: { y: 0.6 },
     });
   };
 
@@ -509,7 +602,7 @@ export default function App() {
         marital_status: profileData.marital_status || 'Never Married',
         education: profileData.education || 'Graduate',
         profession: profileData.profession || 'Professional',
-        guardian_name: profileData.guardian_name || 'Father (Wali)',
+        guardian_name: profileData.guardian_name || 'Father (Guardian)',
         guardian_mobile: profileData.guardian_mobile || '',
         registration_type: profileData.registration_type || 'ONLINE',
         profile_status: profileData.profile_status || 'APPROVED',
@@ -607,12 +700,14 @@ export default function App() {
       await supabase.auth.signOut();
     } catch {}
     setCurrentUser(null);
+    setCurrentUserProfile(null);
     setIsAdmin(false);
     localStorage.removeItem('nikah_circle_user');
+    localStorage.removeItem('nikah_circle_user_profile');
     localStorage.removeItem('nikah_circle_is_admin');
     showToast('Logged out successfully.');
-    // As soon as unauthenticated, auto-open login modal
-    setIsLoginOpen(true);
+    // Show account creation modal
+    setIsCreateAccountOpen(true);
   };
 
   const handleResetFilters = () => {
@@ -620,29 +715,45 @@ export default function App() {
     setFilters({
       gender: '',
       ageRange: '',
+      state: '',
+      district: '',
+      place: '',
       location: '',
-      maritalStatus: '',
+      profession: '',
       education: '',
+      maritalStatus: '',
       verifiedOnly: false,
+      premiumOnly: false,
     });
   };
 
-  // Approved Profiles List
+  // Approved Profiles List: Featured with Premium profiles in front
   const approvedProfiles = useMemo(() => {
-    return profiles.filter((p) => p.profile_status === 'APPROVED');
+    return [...profiles]
+      .filter((p) => p.profile_status === 'APPROVED')
+      .sort((a, b) => {
+        // Premium profiles featured prominently first
+        if (a.is_premium && !b.is_premium) return -1;
+        if (!a.is_premium && b.is_premium) return 1;
+        return (new Date(b.created_at || '').getTime() || 0) - (new Date(a.created_at || '').getTime() || 0);
+      });
   }, [profiles]);
 
-  // Filtered Approved Profiles
+  // Filtered Approved Profiles with Advanced Multi-field filtering
   const filteredProfiles = useMemo(() => {
     return approvedProfiles.filter((profile) => {
       if (searchQuery) {
         const match = [
           profile.full_name,
+          profile.place,
           profile.location,
           profile.education,
           profile.profession,
           profile.district,
+          profile.state,
           profile.about,
+          Array.isArray(profile.hobbies) ? profile.hobbies.join(' ') : profile.hobbies,
+          Array.isArray(profile.interests) ? profile.interests.join(' ') : profile.interests,
         ]
           .filter(Boolean)
           .join(' ')
@@ -652,15 +763,29 @@ export default function App() {
       }
 
       if (filters.gender && profile.gender !== filters.gender) return false;
-      if (
-        filters.location &&
-        !(profile.location || '').toLowerCase().includes(filters.location.toLowerCase()) &&
-        !(profile.district || '').toLowerCase().includes(filters.location.toLowerCase())
-      ) {
+
+      if (filters.district && !(profile.district || '').toLowerCase().includes(filters.district.toLowerCase())) {
         return false;
       }
+
+      if (filters.place) {
+        const placeMatches =
+          (profile.place || '').toLowerCase().includes(filters.place.toLowerCase()) ||
+          (profile.location || '').toLowerCase().includes(filters.place.toLowerCase());
+        if (!placeMatches) return false;
+      }
+
+      if (filters.profession && !(profile.profession || '').toLowerCase().includes(filters.profession.toLowerCase())) {
+        return false;
+      }
+
+      if (filters.education && !(profile.education || '').toLowerCase().includes(filters.education.toLowerCase())) {
+        return false;
+      }
+
       if (filters.maritalStatus && profile.marital_status !== filters.maritalStatus) return false;
       if (filters.verifiedOnly && !profile.is_verified) return false;
+      if (filters.premiumOnly && !profile.is_premium) return false;
 
       if (filters.ageRange) {
         const age =
@@ -752,6 +877,8 @@ export default function App() {
           }
         }}
         currentUser={currentUser}
+        userProfile={currentUserProfile}
+        onEditProfile={() => setIsEditingProfile(true)}
         isAdmin={isAdmin}
         onOpenLogin={(mode) => {
           setLoginMode(mode || 'member');
@@ -873,6 +1000,7 @@ export default function App() {
                     profile={profile}
                     onView={setSelectedProfile}
                     onSendInterest={handleSendInterest}
+                    onCancelInterest={handleCancelInterest}
                     isBookmarked={bookmarks.includes(profile.id)}
                     onToggleBookmark={handleToggleBookmark}
                     interestStatus={interestsMap[profile.id]}
@@ -941,10 +1069,10 @@ export default function App() {
                     3
                   </div>
                   <h4 className="font-serif font-bold text-base text-[#4b001f]">
-                    Wali Contact & Nikah
+                    Guardian Contact & Nikah
                   </h4>
                   <p className="text-xs text-stone-600 leading-relaxed">
-                    Receive verified Guardian (Wali) phone number for respectful family discussions.
+                    Receive verified Guardian phone number for respectful family discussions.
                   </p>
                 </div>
               </div>
@@ -1011,6 +1139,7 @@ export default function App() {
                   profile={profile}
                   onView={setSelectedProfile}
                   onSendInterest={handleSendInterest}
+                  onCancelInterest={handleCancelInterest}
                   isBookmarked={bookmarks.includes(profile.id)}
                   onToggleBookmark={handleToggleBookmark}
                   interestStatus={interestsMap[profile.id]}
@@ -1065,6 +1194,7 @@ export default function App() {
                   profile={profile}
                   onView={setSelectedProfile}
                   onSendInterest={handleSendInterest}
+                  onCancelInterest={handleCancelInterest}
                   isBookmarked={bookmarks.includes(profile.id)}
                   onToggleBookmark={handleToggleBookmark}
                   interestStatus={interestsMap[profile.id]}
@@ -1172,6 +1302,14 @@ export default function App() {
                       </div>
 
                       <div className="pt-2 border-t border-stone-100 flex items-center justify-end gap-2">
+                        {!isAccepted && (
+                          <button
+                            onClick={() => handleCancelInterest(p.id)}
+                            className="px-3 py-2 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold cursor-pointer"
+                          >
+                            Cancel Interest
+                          </button>
+                        )}
                         <button
                           onClick={() => setSelectedProfile(p)}
                           className="px-4 py-2 rounded-xl bg-[#4b001f] text-white text-xs font-bold cursor-pointer"
@@ -1193,6 +1331,7 @@ export default function App() {
         profile={selectedProfile}
         onClose={() => setSelectedProfile(null)}
         onSendInterest={handleSendInterest}
+        onCancelInterest={handleCancelInterest}
         interestStatus={selectedProfile ? interestsMap[selectedProfile.id] : null}
         isBookmarked={selectedProfile ? bookmarks.includes(selectedProfile.id) : false}
         onToggleBookmark={handleToggleBookmark}
@@ -1202,6 +1341,25 @@ export default function App() {
         }}
         isUserPremium={isUserPremium}
         onAcceptInterestTest={handleAcceptInterest}
+      />
+
+      {/* Mandatory Profile Account Setup on First Open / Edit Anytime */}
+      <UserProfileModal
+        isOpen={isCreateAccountOpen || isEditingProfile}
+        isMandatory={isCreateAccountOpen && !isEditingProfile}
+        isEditing={isEditingProfile}
+        initialData={currentUserProfile}
+        onClose={() => {
+          setIsCreateAccountOpen(false);
+          setIsEditingProfile(false);
+        }}
+        onSubmit={handleSaveUserProfile}
+        onSwitchToLogin={() => {
+          setIsCreateAccountOpen(false);
+          setIsEditingProfile(false);
+          setLoginMode('member');
+          setIsLoginOpen(true);
+        }}
       />
 
       <PremiumModal

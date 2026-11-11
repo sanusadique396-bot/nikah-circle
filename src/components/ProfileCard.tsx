@@ -6,6 +6,7 @@ interface Props {
   profile: Profile;
   onView: (profile: Profile) => void;
   onSendInterest: (profileId: string) => void;
+  onCancelInterest?: (profileId: string) => void;
   isBookmarked: boolean;
   onToggleBookmark: (profileId: string) => void;
   interestStatus?: 'pending' | 'accepted' | 'declined' | null;
@@ -17,6 +18,7 @@ export const ProfileCard: React.FC<Props> = ({
   profile,
   onView,
   onSendInterest,
+  onCancelInterest,
   isBookmarked,
   onToggleBookmark,
   interestStatus,
@@ -181,11 +183,21 @@ export const ProfileCard: React.FC<Props> = ({
               className="flex-1 py-2 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1"
             >
               <UserCheck className="w-3.5 h-3.5" />
-              <span>Contact Wali</span>
+              <span>Contact Guardian</span>
             </button>
           ) : interestStatus === 'pending' ? (
-            <div className="flex-1 py-2 px-2.5 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold text-center truncate">
-              Awaiting
+            <div className="flex-1 flex items-center gap-1.5">
+              <div className="flex-1 py-2 px-1.5 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold text-center truncate">
+                Sent ⏳
+              </div>
+              <button
+                type="button"
+                onClick={() => onCancelInterest?.(profile.id)}
+                className="py-2 px-2.5 rounded-xl border border-red-300 text-red-700 hover:bg-red-50 text-xs font-bold transition-colors cursor-pointer shrink-0"
+                title="Cancel Interest"
+              >
+                Cancel
+              </button>
             </div>
           ) : (
             <button

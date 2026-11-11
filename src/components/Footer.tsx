@@ -80,7 +80,7 @@ export const Footer: React.FC<Props> = ({
             <ul className="space-y-2 text-xs text-stone-300">
               <li>100% Halal Privacy Policy</li>
               <li>Photo Purdah / Blur Feature</li>
-              <li>Wali / Guardian Facilitation</li>
+              <li>Family & Guardian Facilitation</li>
               <li>Anti-Harassment Protocols</li>
               <li>Terms & Conditions</li>
             </ul>

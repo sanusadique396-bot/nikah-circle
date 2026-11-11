@@ -18,6 +18,8 @@ interface Props {
   activeView: 'home' | 'profiles' | 'shortlist' | 'interests' | 'admin';
   onNavigate: (view: 'home' | 'profiles' | 'shortlist' | 'interests' | 'admin') => void;
   currentUser: { email?: string; id?: string } | null;
+  userProfile?: { full_name?: string; profile_photo?: string | null; mobile?: string | null; email?: string | null } | null;
+  onEditProfile?: () => void;
   isAdmin: boolean;
   onOpenLogin: (mode?: 'member' | 'admin') => void;
   onOpenRegister: () => void;
@@ -33,6 +35,8 @@ export const Navbar: React.FC<Props> = ({
   activeView,
   onNavigate,
   currentUser,
+  userProfile,
+  onEditProfile,
   isAdmin,
   onOpenLogin,
   onOpenRegister,
@@ -162,8 +166,46 @@ export const Navbar: React.FC<Props> = ({
             </button>
           </nav>
 
-          {/* Zone 3: Three-Dot Menu (⋮) & Quick Actions */}
+          {/* Zone 3: Profile Avatar, Three-Dot Menu (⋮) & Quick Actions */}
           <div className="flex items-center gap-2 relative shrink-0" ref={dropdownRef}>
+            {/* Top Right Profile Avatar / Icon for Quick Edit */}
+            {userProfile ? (
+              <button
+                type="button"
+                onClick={onEditProfile}
+                className="flex items-center gap-2 p-1 pl-1.5 pr-2.5 rounded-full border border-[#eadfe4] bg-white hover:bg-[#fff6fa] transition-all cursor-pointer shadow-2xs group"
+                title="Click to view & edit your profile"
+              >
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-[#4b001f] text-white flex items-center justify-center font-bold text-xs shrink-0 border border-[#c9973e]/40 shadow-xs">
+                  {userProfile.profile_photo ? (
+                    <img
+                      src={userProfile.profile_photo}
+                      alt={userProfile.full_name || 'User'}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span>{(userProfile.full_name || 'U').charAt(0).toUpperCase()}</span>
+                  )}
+                </div>
+                <div className="text-left hidden sm:block">
+                  <span className="block text-xs font-bold text-stone-800 leading-none group-hover:text-[#4b001f] truncate max-w-[100px]">
+                    {userProfile.full_name?.split(' ')[0] || 'User'}
+                  </span>
+                  <span className="text-[10px] text-stone-500 block leading-tight mt-0.5">Edit Profile ✎</span>
+                </div>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onEditProfile}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#fff6fa] border border-[#4b001f]/30 text-[#4b001f] text-xs font-bold hover:bg-[#f7dce8] transition-all cursor-pointer shadow-2xs"
+                title="Create profile"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Create Profile</span>
+              </button>
+            )}
+
             {/* Mobile / Tablet Quick Plan Badge */}
             <button
               onClick={onOpenPremium}
@@ -223,6 +265,20 @@ export const Navbar: React.FC<Props> = ({
                 </button>
 
                 <div className="h-px bg-stone-100 my-1" />
+
+                {/* Edit Profile Option */}
+                {userProfile && (
+                  <button
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      onEditProfile?.();
+                    }}
+                    className="w-full px-4 py-2.5 text-left text-[#4b001f] hover:bg-[#fff6fa] font-semibold flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <UserPlus className="w-4 h-4 text-[#c9973e]" />
+                    <span>Edit My Profile ({userProfile.full_name?.split(' ')[0]})</span>
+                  </button>
+                )}
 
                 {/* Register Profile Option */}
                 <button

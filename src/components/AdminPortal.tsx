@@ -27,7 +27,10 @@ import {
   Banknote,
   Gift,
   ExternalLink,
-  Copy
+  Copy,
+  BookOpen,
+  FileText,
+  UserCheck
 } from 'lucide-react';
 
 interface Props {
@@ -45,7 +48,17 @@ interface Props {
   adminEmail: string;
 }
 
-type TabType = 'dashboard' | 'premium_requests' | 'profiles' | 'requests' | 'add' | 'payments' | 'premium' | 'reports';
+type TabType =
+  | 'dashboard'
+  | 'biodata_directory'
+  | 'user_accounts'
+  | 'premium_requests'
+  | 'profiles'
+  | 'requests'
+  | 'add'
+  | 'payments'
+  | 'premium'
+  | 'reports';
 
 export const AdminPortal: React.FC<Props> = ({
   profiles,
@@ -78,7 +91,7 @@ export const AdminPortal: React.FC<Props> = ({
     email: '',
     mobile: '',
     guardian_name: '',
-    guardian_relation: 'Father (Wali)',
+    guardian_relation: 'Father (Guardian)',
     guardian_mobile: '',
     gender: 'Male',
     date_of_birth: '1995-01-01',
@@ -176,7 +189,7 @@ export const AdminPortal: React.FC<Props> = ({
       email: '',
       mobile: '',
       guardian_name: '',
-      guardian_relation: 'Father (Wali)',
+      guardian_relation: 'Father (Guardian)',
       guardian_mobile: '',
       gender: 'Male',
       date_of_birth: '1995-01-01',
@@ -247,6 +260,42 @@ export const AdminPortal: React.FC<Props> = ({
             >
               <LayoutDashboard className="w-4 h-4" />
               <span>Dashboard</span>
+            </button>
+
+            {/* NEW: Full Biodata Directory */}
+            <button
+              onClick={() => setActiveTab('biodata_directory')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-colors cursor-pointer text-left ${
+                activeTab === 'biodata_directory'
+                  ? 'bg-[#4b001f] text-white shadow-xs font-bold'
+                  : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <BookOpen className="w-4 h-4 text-[#c9973e]" />
+                <span>Full Biodata Directory</span>
+              </div>
+              <span className="px-1.5 py-0.5 rounded text-[10px] bg-stone-100 text-stone-700 font-bold">
+                {profiles.length}
+              </span>
+            </button>
+
+            {/* NEW: User Registered Accounts */}
+            <button
+              onClick={() => setActiveTab('user_accounts')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-colors cursor-pointer text-left ${
+                activeTab === 'user_accounts'
+                  ? 'bg-[#4b001f] text-white shadow-xs font-bold'
+                  : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <UserCheck className="w-4 h-4 text-emerald-600" />
+                <span>User Accounts</span>
+              </div>
+              <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800 font-bold">
+                {profiles.filter((p) => p.registration_type === 'ONLINE').length}
+              </span>
             </button>
 
             <button
@@ -371,6 +420,8 @@ export const AdminPortal: React.FC<Props> = ({
           <div>
             <h2 className="font-serif text-2xl font-bold text-[#4b001f]">
               {activeTab === 'dashboard' && 'Dashboard Overview'}
+              {activeTab === 'biodata_directory' && 'Full Biodata Directory (മുഴുവൻ ബയോഡാറ്റയും)'}
+              {activeTab === 'user_accounts' && 'User Accounts & Registrations (യൂസർ പ്രൊഫൈലുകൾ)'}
               {activeTab === 'premium_requests' && 'Premium & Payment Requests'}
               {activeTab === 'requests' && 'Pending Profile Approvals'}
               {activeTab === 'profiles' && 'Profile Management'}
@@ -536,7 +587,7 @@ export const AdminPortal: React.FC<Props> = ({
                         <td className="p-3 text-stone-700">
                           {p.guardian_mobile ? (
                             <span className="font-semibold text-emerald-800">
-                              {p.guardian_mobile} ({p.guardian_relation || 'Wali'})
+                              {p.guardian_mobile} ({p.guardian_relation || 'Guardian'})
                             </span>
                           ) : (
                             <span className="text-stone-400">{p.mobile || '-'}</span>
@@ -575,6 +626,266 @@ export const AdminPortal: React.FC<Props> = ({
                         </td>
                       </tr>
                     ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB: FULL BIODATA DIRECTORY (എല്ലാ ബയോഡാറ്റയും ഓർഡറിൽ) */}
+        {activeTab === 'biodata_directory' && (
+          <div className="space-y-4">
+            <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="font-serif font-bold text-lg text-[#4b001f] flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-[#c9973e]" />
+                  <span>മുഴുവൻ ബയോഡാറ്റ ഡയറക്ടറി (Full Biodata Directory)</span>
+                </h3>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  രജിസ്റ്റർ ചെയ്ത എല്ലാ പ്രൊഫൈലുകളുടെയും പൂർണ്ണ ബയോഡാറ്റ വിവരങ്ങൾ തീയതി ക്രമത്തിൽ ഇവിടെ ലഭ്യമാണ്. ആകെ: {profiles.length} പ്രൊഫൈലുകൾ.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search by name, place, phone, job..."
+                    className="pl-8 pr-3 py-1.5 text-xs rounded-xl border border-stone-300 focus:border-[#4b001f] outline-none w-56 sm:w-64"
+                  />
+                  <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                </div>
+              </div>
+            </div>
+
+            {/* Biodata Cards / Table */}
+            <div className="bg-white rounded-2xl border border-stone-200 shadow-xs overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[#fff6fa] text-[#4b001f] border-b border-stone-200 font-bold uppercase tracking-wider text-[10px]">
+                    <tr>
+                      <th className="p-3.5">Candidate / Name</th>
+                      <th className="p-3.5">Age & Gender</th>
+                      <th className="p-3.5">Place & District</th>
+                      <th className="p-3.5">Profession & Education</th>
+                      <th className="p-3.5">Guardian Contact</th>
+                      <th className="p-3.5">Contact (Candidate)</th>
+                      <th className="p-3.5">Plan / Status</th>
+                      <th className="p-3.5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100">
+                    {filteredProfiles.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="p-8 text-center text-stone-500">
+                          പ്രൊഫൈലുകൾ കണ്ടെത്തിയില്ല.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredProfiles.map((p) => (
+                        <tr key={p.id} className="hover:bg-stone-50/80 transition-colors">
+                          <td className="p-3.5">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-9 h-9 rounded-xl overflow-hidden bg-stone-100 border border-stone-200 shrink-0">
+                                {p.profile_photo ? (
+                                  <img src={p.profile_photo} alt={p.full_name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center font-bold text-[#4b001f] text-xs">
+                                    {(p.full_name || 'C').charAt(0)}
+                                  </div>
+                                )}
+                              </div>
+                              <div>
+                                <span className="font-bold text-stone-900 block">{p.full_name}</span>
+                                <span className="text-[10px] text-stone-400">ID: {p.id.slice(0, 8)}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-3.5 text-stone-700">
+                            <div>{p.gender}</div>
+                            <div className="text-[11px] text-stone-500">
+                              {p.date_of_birth ? `${p.date_of_birth} (${p.age || Math.max(18, new Date().getFullYear() - new Date(p.date_of_birth).getFullYear())} yrs)` : (p.age ? `${p.age} yrs` : '-')}
+                            </div>
+                          </td>
+                          <td className="p-3.5 text-stone-700">
+                            <div className="font-medium">{p.place || p.location || '-'}</div>
+                            <div className="text-[11px] text-stone-500">{p.district || p.state || 'Kerala'}</div>
+                          </td>
+                          <td className="p-3.5 text-stone-700">
+                            <div className="font-medium text-stone-900">{p.profession || '-'}</div>
+                            <div className="text-[11px] text-stone-500">{p.education || '-'}</div>
+                          </td>
+                          <td className="p-3.5">
+                            <div className="font-bold text-emerald-800">{p.guardian_mobile || '-'}</div>
+                            <div className="text-[11px] text-stone-500">{p.guardian_name || 'Guardian'} ({p.guardian_relation || 'Parent'})</div>
+                          </td>
+                          <td className="p-3.5">
+                            <div className="text-stone-800">{p.mobile || '-'}</div>
+                            <div className="text-[11px] text-stone-400 truncate max-w-[120px]">{p.email || '-'}</div>
+                          </td>
+                          <td className="p-3.5">
+                            <div className="flex flex-col gap-1">
+                              {p.is_premium ? (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 w-fit">
+                                  <Sparkles className="w-2.5 h-2.5 text-amber-600" />
+                                  <span>Premium</span>
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-stone-100 text-stone-600 border border-stone-200 w-fit">
+                                  Free
+                                </span>
+                              )}
+                              <span className={`text-[10px] font-semibold ${p.profile_status === 'APPROVED' ? 'text-emerald-700' : 'text-amber-700'}`}>
+                                {p.profile_status}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="p-3.5 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => setViewingProfile(p)}
+                                title="View Full Biodata"
+                                className="p-1.5 rounded-lg border border-stone-200 text-stone-700 hover:bg-[#fff6fa] hover:text-[#4b001f] transition-colors cursor-pointer"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleEditClick(p)}
+                                title="Edit Biodata"
+                                className="p-1.5 rounded-lg border border-stone-200 text-stone-700 hover:bg-stone-50 transition-colors cursor-pointer"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB: USER ACCOUNTS (യൂസർ പ്രൊഫൈലുകൾ) */}
+        {activeTab === 'user_accounts' && (
+          <div className="space-y-4">
+            <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="font-serif font-bold text-lg text-[#4b001f] flex items-center gap-2">
+                  <UserCheck className="w-5 h-5 text-emerald-600" />
+                  <span>യൂസർ പ്രൊഫൈലുകൾ (User Created Accounts)</span>
+                </h3>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  ആപ്പിൽ നിന്നും നേരിട്ട് രജിസ്റ്റർ ചെയ്ത യൂസർമാരുടെ അക്കൗണ്ടുകളും വിവരങ്ങളും. ആകെ: {profiles.filter((p) => p.registration_type === 'ONLINE').length} യൂസർമാർ.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-stone-200 shadow-xs overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[#fff6fa] text-[#4b001f] border-b border-stone-200 font-bold uppercase tracking-wider text-[10px]">
+                    <tr>
+                      <th className="p-3.5">User Details</th>
+                      <th className="p-3.5">Contact & Place</th>
+                      <th className="p-3.5">Guardian Contact</th>
+                      <th className="p-3.5">Hobbies & Interests</th>
+                      <th className="p-3.5">Plan Status</th>
+                      <th className="p-3.5">Profile Status</th>
+                      <th className="p-3.5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100">
+                    {profiles.filter((p) => p.registration_type === 'ONLINE').length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="p-8 text-center text-stone-500">
+                          ഓൺലൈൻ രജിസ്ട്രേഷനുകൾ ഇതുവരെ ലഭിച്ചിട്ടില്ല.
+                        </td>
+                      </tr>
+                    ) : (
+                      profiles
+                        .filter((p) => p.registration_type === 'ONLINE')
+                        .map((p) => (
+                          <tr key={p.id} className="hover:bg-stone-50/80 transition-colors">
+                            <td className="p-3.5">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-9 h-9 rounded-xl overflow-hidden bg-stone-100 border border-stone-200 shrink-0">
+                                  {p.profile_photo ? (
+                                    <img src={p.profile_photo} alt={p.full_name} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center font-bold text-[#4b001f] text-xs">
+                                      {(p.full_name || 'U').charAt(0)}
+                                    </div>
+                                  )}
+                                </div>
+                                <div>
+                                  <span className="font-bold text-stone-900 block">{p.full_name}</span>
+                                  <span className="text-[11px] text-stone-500">{p.gender} · {p.age || 25} yrs</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-3.5">
+                              <div className="font-bold text-stone-800">{p.mobile || '-'}</div>
+                              <div className="text-[11px] text-stone-500">{p.place || p.district || 'Kerala'}</div>
+                              <div className="text-[10px] text-stone-400">{p.email}</div>
+                            </td>
+                            <td className="p-3.5">
+                              <div className="font-bold text-emerald-800">{p.guardian_mobile || '-'}</div>
+                              <div className="text-[11px] text-stone-500">{p.guardian_name || 'Guardian'}</div>
+                            </td>
+                            <td className="p-3.5 max-w-[180px]">
+                              <div className="text-[11px] text-stone-700 truncate font-medium">
+                                {Array.isArray(p.hobbies) ? p.hobbies.join(', ') : (p.hobbies || '-')}
+                              </div>
+                              <div className="text-[10px] text-stone-500 truncate">
+                                {Array.isArray(p.interests) ? p.interests.join(', ') : (p.interests || '-')}
+                              </div>
+                            </td>
+                            <td className="p-3.5">
+                              {p.is_premium ? (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                  ★ Premium
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-600 border border-stone-200">
+                                  Free Plan
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3.5">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                p.profile_status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                              }`}>
+                                {p.profile_status}
+                              </span>
+                            </td>
+                            <td className="p-3.5 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {p.profile_status === 'PENDING' && (
+                                  <button
+                                    onClick={() => onApproveProfile(p.id)}
+                                    className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold cursor-pointer"
+                                  >
+                                    Approve
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => setViewingProfile(p)}
+                                  className="p-1.5 rounded-lg border border-stone-200 text-stone-700 hover:bg-stone-50 cursor-pointer"
+                                  title="View Full Biodata"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1109,13 +1420,13 @@ export const AdminPortal: React.FC<Props> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-stone-700 mb-1">
-                    Guardian / Wali Name
+                    Guardian Name
                   </label>
                   <input
                     type="text"
                     value={formData.guardian_name || ''}
                     onChange={(e) => setFormData({ ...formData, guardian_name: e.target.value })}
-                    placeholder="e.g. Father or Wali name"
+                    placeholder="e.g. Father or Guardian name"
                     className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:border-[#4b001f]"
                   />
                 </div>

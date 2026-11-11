@@ -85,7 +85,7 @@ export const Hero: React.FC<Props> = ({
               </div>
               <div className="flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-[#c9973e]" />
-                <span>Wali / Guardian Facilitated</span>
+                <span>Family & Guardian Facilitated</span>
               </div>
             </div>
           </div>

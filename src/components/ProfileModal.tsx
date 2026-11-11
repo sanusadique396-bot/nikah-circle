@@ -18,6 +18,7 @@ interface Props {
   profile: Profile | null;
   onClose: () => void;
   onSendInterest: (profileId: string) => void;
+  onCancelInterest?: (profileId: string) => void;
   interestStatus?: 'pending' | 'accepted' | 'declined' | null;
   isBookmarked: boolean;
   onToggleBookmark: (profileId: string) => void;
@@ -30,6 +31,7 @@ export const ProfileModal: React.FC<Props> = ({
   profile,
   onClose,
   onSendInterest,
+  onCancelInterest,
   interestStatus,
   isBookmarked,
   onToggleBookmark,
@@ -50,7 +52,7 @@ export const ProfileModal: React.FC<Props> = ({
   const hasGuardianNumber = !!profile.guardian_mobile && profile.guardian_mobile.trim().length > 0;
   const contactPhoneToDisplay = hasGuardianNumber ? profile.guardian_mobile : profile.mobile;
   const contactLabel = hasGuardianNumber
-    ? `Guardian / Wali (${profile.guardian_relation || 'Father / Wali'})`
+    ? `Guardian (${profile.guardian_relation || 'Father / Guardian'})`
     : 'Candidate Direct Mobile';
 
   return (
@@ -132,15 +134,26 @@ export const ProfileModal: React.FC<Props> = ({
                   ബയോഡാറ്റ ഹൈഡ് ചെയ്തിരിക്കുന്നു
                 </h3>
                 <p className="text-xs text-stone-600 leading-relaxed">
-                  ഈ പ്രൊഫൈലിന്റെ വിശദമായ ബയോഡാറ്റയും രക്ഷിതാവിന്റെ (Wali) ഫോൺ നമ്പറും കാണുന്നതിന് താങ്കൾ ആദ്യം <strong>ഇൻട്രസ്റ്റ്</strong> അയക്കേണ്ടതുണ്ട്. അവർ ഇൻട്രസ്റ്റ് <strong>അക്സെപ്റ്റ്</strong> ചെയ്താൽ മാത്രമേ ഇവരുടെ പൂർണ്ണ വിവരങ്ങൾ ലഭ്യമാകൂ.
+                  ഈ പ്രൊഫൈലിന്റെ വിശദമായ ബയോഡാറ്റയും രക്ഷിതാവിന്റെ (Guardian) ഫോൺ നമ്പറും കാണുന്നതിന് താങ്കൾ ആദ്യം <strong>ഇൻട്രസ്റ്റ്</strong> അയക്കേണ്ടതുണ്ട്. അവർ ഇൻട്രസ്റ്റ് <strong>അക്സെപ്റ്റ്</strong> ചെയ്താൽ മാത്രമേ ഇവരുടെ പൂർണ്ണ വിവരങ്ങൾ ലഭ്യമാകൂ.
                 </p>
               </div>
 
               <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
                 {interestStatus === 'pending' ? (
-                  <div className="px-5 py-2.5 rounded-xl bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-amber-700" />
-                    <span>ഇൻട്രസ്റ്റ് അയച്ചിട്ടുണ്ട് (അക്സെപ്റ്റൻസിനായി കാത്തിരിക്കുന്നു)</span>
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <div className="px-5 py-2.5 rounded-xl bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-amber-700" />
+                      <span>ഇൻട്രസ്റ്റ് അയച്ചിട്ടുണ്ട് (അക്സെപ്റ്റൻസിനായി കാത്തിരിക്കുന്നു)</span>
+                    </div>
+                    {onCancelInterest && (
+                      <button
+                        type="button"
+                        onClick={() => onCancelInterest(profile.id)}
+                        className="px-4 py-2.5 rounded-xl border border-red-300 bg-red-50 hover:bg-red-100 text-red-800 text-xs font-bold transition-colors cursor-pointer"
+                      >
+                        Cancel Interest (ക്യാൻസൽ ചെയ്യുക)
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <button
@@ -256,7 +269,7 @@ export const ProfileModal: React.FC<Props> = ({
 
                 {hasGuardianNumber ? (
                   <p className="text-[11px] text-emerald-800 font-medium pt-1 border-t border-emerald-200/60">
-                    ✓ രക്ഷിതാവിന്റെ (ഗാർഡിയൻ/വലി) നമ്പർ നൽകിയിട്ടുള്ളതിനാൽ അത് മാത്രമാണ് പ്രദർശിപ്പിക്കുന്നത്. വ്യക്തിഗത നമ്പർ ഹൈഡ് ചെയ്തിരിക്കുന്നു.
+                    ✓ രക്ഷിതാവിന്റെ (Guardian) നമ്പർ നൽകിയിട്ടുള്ളതിനാൽ അത് മാത്രമാണ് പ്രദർശിപ്പിക്കുന്നത്. വ്യക്തിഗത നമ്പർ ഹൈഡ് ചെയ്തിരിക്കുന്നു.
                   </p>
                 ) : (
                   <p className="text-[11px] text-stone-600 font-medium pt-1 border-t border-stone-200">
