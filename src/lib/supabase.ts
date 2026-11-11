@@ -425,14 +425,19 @@ export function saveStoredBookmarks(ids: string[]) {
 export function getStoredInterestsMap(): Record<string, 'pending' | 'accepted' | 'declined'> {
   try {
     const raw = localStorage.getItem(INTERESTS_MAP_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // Remove any leftover default sample interest nc-002
+      if (parsed && parsed['nc-002'] && Object.keys(parsed).length === 1) {
+        localStorage.removeItem(INTERESTS_MAP_KEY);
+        return {};
+      }
+      return parsed;
+    }
   } catch {
     // fallback
   }
-  // Default sample interest: e.g. nc-001 is pending, nc-002 is accepted so user can immediately test!
-  return {
-    "nc-002": "accepted",
-  };
+  return {};
 }
 
 export function saveStoredInterestsMap(map: Record<string, 'pending' | 'accepted' | 'declined'>) {

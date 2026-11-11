@@ -45,6 +45,8 @@ interface Props {
   initialData?: Partial<UserProfileData> | null;
   isEditing?: boolean;
   onSwitchToLogin?: () => void;
+  isUserPremium?: boolean;
+  currentPlanName?: string | null;
 }
 
 const KERALA_DISTRICTS = [
@@ -106,6 +108,8 @@ export const UserProfileModal: React.FC<Props> = ({
   initialData,
   isEditing = false,
   onSwitchToLogin,
+  isUserPremium = false,
+  currentPlanName,
 }) => {
   const [formData, setFormData] = useState<UserProfileData>({
     full_name: '',
@@ -246,6 +250,31 @@ export const UserProfileModal: React.FC<Props> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 overflow-y-auto space-y-6 text-xs sm:text-sm text-stone-800">
+          {/* Admin Approved & Active Plan Status Banner */}
+          {isUserPremium && (
+            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 flex items-center justify-between gap-3 text-emerald-950 shadow-2xs">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="block text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
+                    <span>Status: Admin Approved</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-200 text-emerald-900 font-bold">
+                      Live
+                    </span>
+                  </span>
+                  <span className="text-xs font-semibold text-emerald-900 mt-0.5 block">
+                    Active Plan: {currentPlanName || 'Premium Plan'} (Full Biodata & Guardian Access Enabled)
+                  </span>
+                </div>
+              </div>
+              <span className="px-3 py-1 rounded-full bg-emerald-600 text-white text-[11px] font-bold shadow-xs shrink-0">
+                ✓ Approved
+              </span>
+            </div>
+          )}
+
           {errorMsg && (
             <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs font-semibold flex items-center gap-2">
               <X className="w-4 h-4 text-red-600 shrink-0" />

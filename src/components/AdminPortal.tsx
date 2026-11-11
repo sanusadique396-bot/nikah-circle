@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { Profile, Payment, PremiumRequest } from '../types';
 import {
   LayoutDashboard,
@@ -133,19 +133,27 @@ export const AdminPortal: React.FC<Props> = ({
     }
   };
 
-  // Filtered Profiles
-  const filteredProfiles = profiles.filter((p) => {
-    const matchesSearch =
-      !searchQuery ||
-      [p.full_name, p.mobile, p.guardian_mobile, p.email, p.location, p.education, p.profession]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
-    const matchesStatus = !statusFilter || p.profile_status === statusFilter;
-    const matchesReg = !regFilter || p.registration_type === regFilter;
-    return matchesSearch && matchesStatus && matchesReg;
-  });
+  // Filtered Profiles: Sorted by newest joined time first
+  const filteredProfiles = useMemo(() => {
+    return [...profiles]
+      .sort((a, b) => {
+        const timeA = new Date(a.created_at || 0).getTime();
+        const timeB = new Date(b.created_at || 0).getTime();
+        return timeB - timeA;
+      })
+      .filter((p) => {
+        const matchesSearch =
+          !searchQuery ||
+          [p.full_name, p.mobile, p.guardian_mobile, p.email, p.location, p.district, p.place, p.education, p.profession]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase());
+        const matchesStatus = !statusFilter || p.profile_status === statusFilter;
+        const matchesReg = !regFilter || p.registration_type === regFilter;
+        return matchesSearch && matchesStatus && matchesReg;
+      });
+  }, [profiles, searchQuery, statusFilter, regFilter]);
 
   const pendingRequests = profiles.filter((p) => p.profile_status === 'PENDING');
   const pendingPremiumRequests = premiumRequests.filter((r) => r.status === 'PENDING');
@@ -163,9 +171,57 @@ export const AdminPortal: React.FC<Props> = ({
 
   // Metrics
   const totalProfilesCount = profiles.length;
-  const activePremiumCount = profiles.filter(
-    (p) => p.is_premium && (!p.premium_end || p.premium_end >= todayStr)
-  ).length;
+
+  // Unified list of all active Premium Members:
+  // Combines profiles marked is_premium AND approved premium requests (so approved users like Hida are immediately listed!)
+  const allPremiumMembers = useMemo(() => {
+    const map = new Map<string, {
+      id: string;
+      candidateName: string;
+      planName: string;
+      mobile: string;
+      expiry: string;
+      profileRef?: Profile;
+      requestId?: string;
+    }>();
+
+    // 1. From profiles
+    profiles.filter((p) => p.is_premium).forEach((p) => {
+      const key = (p.mobile || p.guardian_mobile || p.full_name).toLowerCase().replace(/\s+/g, '');
+      map.set(key, {
+        id: p.id,
+        candidateName: p.full_name,
+        planName: p.premium_plan || 'Premium Member',
+        mobile: p.guardian_mobile || p.mobile || '—',
+        expiry: p.premium_end || '2026-12-31',
+        profileRef: p,
+      });
+    });
+
+    // 2. From approved premium requests (e.g. Hida, UPI, Free etc.)
+    premiumRequests.filter((r) => r.status === 'APPROVED').forEach((r) => {
+      const key = (r.phone_number || r.user_name).toLowerCase().replace(/\s+/g, '');
+      if (!map.has(key)) {
+        const matchingProfile = profiles.find((p) =>
+          p.full_name.toLowerCase() === r.user_name.toLowerCase() ||
+          (p.mobile && r.phone_number.includes(p.mobile.slice(-8)))
+        );
+        map.set(key, {
+          id: r.id,
+          candidateName: r.user_name,
+          planName: r.plan_name,
+          mobile: r.phone_number,
+          expiry: '2026-12-31',
+          profileRef: matchingProfile,
+          requestId: r.id,
+        });
+      }
+    });
+
+    return Array.from(map.values());
+  }, [profiles, premiumRequests]);
+
+  const activePremiumCount = allPremiumMembers.length;
   const cashPaymentsCount = payments.filter((p) => p.payment_method === 'CASH').length;
   const totalRevenue = payments
     .filter((p) => p.payment_status === 'PAID')
@@ -668,6 +724,7 @@ export const AdminPortal: React.FC<Props> = ({
                   <thead className="bg-[#fff6fa] text-[#4b001f] border-b border-stone-200 font-bold uppercase tracking-wider text-[10px]">
                     <tr>
                       <th className="p-3.5">Candidate / Name</th>
+                      <th className="p-3.5">Joined Time</th>
                       <th className="p-3.5">Age & Gender</th>
                       <th className="p-3.5">Place & District</th>
                       <th className="p-3.5">Profession & Education</th>
@@ -680,7 +737,7 @@ export const AdminPortal: React.FC<Props> = ({
                   <tbody className="divide-y divide-stone-100">
                     {filteredProfiles.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="p-8 text-center text-stone-500">
+                        <td colSpan={9} className="p-8 text-center text-stone-500">
                           No profiles found.
                         </td>
                       </tr>
@@ -700,8 +757,31 @@ export const AdminPortal: React.FC<Props> = ({
                               </div>
                               <div>
                                 <span className="font-bold text-stone-900 block">{p.full_name}</span>
-                                <span className="text-[10px] text-stone-400">ID: {p.id.slice(0, 8)}</span>
+                                <span className="text-[10px] text-stone-400">ID: {p.id.slice(0, 8)} · {p.registration_type || 'ONLINE'}</span>
                               </div>
+                            </div>
+                          </td>
+                          <td className="p-3.5 whitespace-nowrap">
+                            <div className="flex items-center gap-1.5 text-stone-900 font-bold text-xs">
+                              <Clock className="w-3.5 h-3.5 text-[#c9973e]" />
+                              <span>
+                                {p.created_at
+                                  ? new Date(p.created_at).toLocaleDateString('en-IN', {
+                                      day: '2-digit',
+                                      month: 'short',
+                                      year: 'numeric',
+                                    })
+                                  : 'Recent'}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-stone-500 font-medium pl-5 mt-0.5">
+                              {p.created_at
+                                ? new Date(p.created_at).toLocaleTimeString('en-IN', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    hour12: true,
+                                  })
+                                : '—'}
                             </div>
                           </td>
                           <td className="p-3.5 text-stone-700">
@@ -1709,9 +1789,16 @@ export const AdminPortal: React.FC<Props> = ({
         {/* TAB 6: PREMIUM USERS */}
         {activeTab === 'premium' && (
           <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-5 space-y-4">
-            <h3 className="font-serif font-bold text-base text-[#4b001f] pb-3 border-b border-stone-200">
-              Premium Active Members
-            </h3>
+            <div className="flex items-center justify-between pb-3 border-b border-stone-200">
+              <div>
+                <h3 className="font-serif font-bold text-base text-[#4b001f]">
+                  Premium Active Members
+                </h3>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  All candidates with active, approved premium memberships ({allPremiumMembers.length})
+                </p>
+              </div>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-stone-50 text-stone-500 border-b border-stone-200">
@@ -1719,27 +1806,43 @@ export const AdminPortal: React.FC<Props> = ({
                     <th className="p-3">Candidate</th>
                     <th className="p-3">Plan</th>
                     <th className="p-3">Guardian Mobile</th>
+                    <th className="p-3">Status</th>
                     <th className="p-3">Expiry</th>
                     <th className="p-3 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100">
-                  {profiles.filter((p) => p.is_premium).map((p) => (
-                    <tr key={p.id} className="hover:bg-stone-50">
-                      <td className="p-3 font-semibold text-stone-900">{p.full_name}</td>
-                      <td className="p-3 font-bold text-[#c9973e]">{p.premium_plan || '1 Month'}</td>
-                      <td className="p-3 text-stone-700">{p.guardian_mobile || p.mobile}</td>
-                      <td className="p-3 text-stone-600">{p.premium_end || '2026-12-31'}</td>
+                  {allPremiumMembers.map((member) => (
+                    <tr key={member.id} className="hover:bg-stone-50">
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-stone-900">{member.candidateName}</span>
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                            ✓ Approved
+                          </span>
+                        </div>
+                      </td>
+                      <td className="p-3 font-bold text-[#c9973e]">{member.planName}</td>
+                      <td className="p-3 text-stone-700">{member.mobile}</td>
+                      <td className="p-3">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          Admin Approved
+                        </span>
+                      </td>
+                      <td className="p-3 text-stone-600">{member.expiry}</td>
                       <td className="p-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {member.profileRef && (
+                            <button
+                              onClick={() => handleEditClick(member.profileRef!)}
+                              className="px-2.5 py-1 rounded-lg border border-stone-200 hover:bg-stone-100 text-stone-700 font-semibold cursor-pointer"
+                            >
+                              Manage
+                            </button>
+                          )}
                           <button
-                            onClick={() => handleEditClick(p)}
-                            className="px-2.5 py-1 rounded-lg border border-stone-200 hover:bg-stone-100 text-stone-700 font-semibold cursor-pointer"
-                          >
-                            Manage
-                          </button>
-                          <button
-                            onClick={() => onDeactivatePremium?.(p.id)}
+                            onClick={() => onDeactivatePremium?.(member.profileRef?.id || member.mobile)}
                             className="px-2.5 py-1 rounded-lg bg-red-50 border border-red-200 text-red-700 hover:bg-red-100 text-[11px] font-bold cursor-pointer"
                             title="Turn off premium plan (Admin Off)"
                           >
@@ -1749,6 +1852,13 @@ export const AdminPortal: React.FC<Props> = ({
                       </td>
                     </tr>
                   ))}
+                  {allPremiumMembers.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="p-8 text-center text-stone-500 text-xs">
+                        No active premium members found.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

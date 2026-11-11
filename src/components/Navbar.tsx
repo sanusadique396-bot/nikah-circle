@@ -143,7 +143,11 @@ export const Navbar: React.FC<Props> = ({
             >
               <Sparkles className={`w-3.5 h-3.5 ${isUserPremium ? 'text-white' : 'text-[#c9973e]'}`} />
               <span>{isUserPremium ? (currentPlanName || 'Premium Plan') : 'Free Plan'}</span>
-              {!isUserPremium && (
+              {isUserPremium ? (
+                <span className="text-[10px] bg-emerald-700 text-white px-2 py-0.5 rounded-full font-bold ml-1 shadow-xs flex items-center gap-1">
+                  ✓ Admin Approved
+                </span>
+              ) : (
                 <span className="text-[10px] bg-[#4b001f] text-white px-1.5 py-0.2 rounded font-semibold ml-0.5">
                   Upgrade
                 </span>
@@ -174,10 +178,19 @@ export const Navbar: React.FC<Props> = ({
                     )}
                   </div>
                   <div className="text-left hidden sm:block">
-                    <span className="block text-xs font-bold text-stone-800 leading-none group-hover:text-[#4b001f] truncate max-w-[100px]">
-                      {userProfile.full_name?.split(' ')[0] || 'User'}
+                    <div className="flex items-center gap-1.5">
+                      <span className="block text-xs font-bold text-stone-800 leading-none group-hover:text-[#4b001f] truncate max-w-[100px]">
+                        {userProfile.full_name?.split(' ')[0] || 'User'}
+                      </span>
+                      {isUserPremium && (
+                        <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded-full border border-emerald-300">
+                          ✓ Approved
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-stone-500 block leading-tight mt-0.5">
+                      {isUserPremium ? (currentPlanName || 'Premium Active') : 'Edit Profile ✎'}
                     </span>
-                    <span className="text-[10px] text-stone-500 block leading-tight mt-0.5">Edit Profile ✎</span>
                   </div>
                 </button>
 
@@ -221,12 +234,17 @@ export const Navbar: React.FC<Props> = ({
               onClick={onOpenPremium}
               className={`md:hidden flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold cursor-pointer ${
                 isUserPremium
-                  ? 'bg-gradient-to-r from-amber-500 to-[#c9973e] text-white'
+                  ? 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white'
                   : 'bg-stone-100 text-stone-700 border border-stone-200'
               }`}
             >
               <Sparkles className="w-3 h-3 text-[#c9973e]" />
-              <span>{isUserPremium ? 'Premium Plan' : 'Free Plan'}</span>
+              <span>{isUserPremium ? (currentPlanName || 'Premium Plan') : 'Free Plan'}</span>
+              {isUserPremium && (
+                <span className="text-[9px] bg-white/25 text-white px-1 rounded-xs">
+                  ✓ Approved
+                </span>
+              )}
             </button>
 
             {/* Mobile Nav Toggle */}
