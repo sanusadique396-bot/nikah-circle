@@ -3243,6 +3243,11 @@ export default function App() {
           setIsRegisterOpen(false);
           handleOpenPremium();
         }}
+        onSwitchToLogin={() => {
+          setIsRegisterOpen(false);
+          setLoginMode('member');
+          setIsLoginOpen(true);
+        }}
       />
 
       <LoginModal

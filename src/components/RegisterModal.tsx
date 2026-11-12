@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, UserPlus, CheckCircle2, ShieldCheck, Image as ImageIcon, Camera, Upload, Trash2, Link as LinkIcon, Lock, Sparkles } from 'lucide-react';
+import { X, UserPlus, CheckCircle2, ShieldCheck, Image as ImageIcon, Camera, Upload, Trash2, Link as LinkIcon, Lock, Sparkles, LogIn } from 'lucide-react';
 import { Profile, normalizeGender } from '../types';
 
 interface Props {
@@ -8,6 +8,7 @@ interface Props {
   onSubmit: (profile: Partial<Profile>) => Promise<void>;
   isUserPremium?: boolean;
   onOpenPremium?: () => void;
+  onSwitchToLogin?: () => void;
 }
 
 export const RegisterModal: React.FC<Props> = ({
@@ -16,6 +17,7 @@ export const RegisterModal: React.FC<Props> = ({
   onSubmit,
   isUserPremium = true,
   onOpenPremium,
+  onSwitchToLogin,
 }) => {
   const [formData, setFormData] = useState({
     full_name: '',
@@ -458,6 +460,22 @@ export const RegisterModal: React.FC<Props> = ({
                   {loading ? 'Submitting...' : 'Submit Profile Request'}
                 </button>
               </div>
+
+              {onSwitchToLogin && (
+                <div className="text-center pt-2">
+                  <p className="text-xs text-stone-600">
+                    Already registered?{' '}
+                    <button
+                      type="button"
+                      onClick={onSwitchToLogin}
+                      className="font-bold text-[#4b001f] hover:text-[#c9973e] hover:underline cursor-pointer inline-flex items-center gap-1 transition-colors ml-1"
+                    >
+                      <LogIn className="w-3.5 h-3.5" />
+                      <span>Sign In</span>
+                    </button>
+                  </p>
+                </div>
+              )}
             </form>
           )}
         </div>

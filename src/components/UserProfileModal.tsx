@@ -352,7 +352,7 @@ export const UserProfileModal: React.FC<Props> = ({
               )}
             </div>
 
-            <div className="pt-2">
+            <div className="pt-2 flex flex-col items-center gap-3">
               <button
                 type="button"
                 onClick={onClose}
@@ -360,6 +360,19 @@ export const UserProfileModal: React.FC<Props> = ({
               >
                 Close & Return
               </button>
+              {onSwitchToLogin && (
+                <p className="text-xs text-stone-600">
+                  Already registered?{' '}
+                  <button
+                    type="button"
+                    onClick={onSwitchToLogin}
+                    className="font-bold text-[#4b001f] hover:text-[#c9973e] hover:underline cursor-pointer inline-flex items-center gap-1 transition-colors"
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>Sign In</span>
+                  </button>
+                </p>
+              )}
             </div>
           </div>
         ) : (
@@ -840,6 +853,22 @@ export const UserProfileModal: React.FC<Props> = ({
                 {isEditing ? 'Save Changes' : 'Create Profile'}
               </span>
             </button>
+
+            {onSwitchToLogin && (
+              <div className="text-center pt-2 pb-1">
+                <p className="text-xs sm:text-sm text-stone-600">
+                  Already registered?{' '}
+                  <button
+                    type="button"
+                    onClick={onSwitchToLogin}
+                    className="font-bold text-[#4b001f] hover:text-[#c9973e] hover:underline cursor-pointer inline-flex items-center gap-1 transition-colors ml-1"
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>Sign In</span>
+                  </button>
+                </p>
+              </div>
+            )}
           </div>
         </form>
         )}
