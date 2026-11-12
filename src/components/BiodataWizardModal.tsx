@@ -33,6 +33,8 @@ interface Props {
   initialData?: Partial<UserProfileData> | null;
   userMemberId?: string;
   isApproved?: boolean;
+  isPremium?: boolean;
+  onOpenPremium?: () => void;
 }
 
 const KERALA_DISTRICTS = [
@@ -171,6 +173,8 @@ export const BiodataWizardModal: React.FC<Props> = ({
   initialData,
   userMemberId,
   isApproved = true,
+  isPremium = true,
+  onOpenPremium,
 }) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -323,6 +327,10 @@ export const BiodataWizardModal: React.FC<Props> = ({
   };
 
   const handleSubmitFinal = async () => {
+    if (!isPremium) {
+      alert('Biodata writing & publishing is exclusively reserved for Premium members. Please upgrade your plan.');
+      return;
+    }
     if (!validateStep(currentStep)) return;
 
     setIsSubmitting(true);
@@ -386,35 +394,79 @@ export const BiodataWizardModal: React.FC<Props> = ({
             </button>
           </div>
 
-          {/* Stepper Progress Bar */}
-          <div className="mt-5 space-y-2">
-            <div className="flex items-center justify-between text-[11px] font-bold text-amber-100">
-              <span className={currentStep === 1 ? 'text-amber-300 font-extrabold' : ''}>
-                1. Personal
-              </span>
-              <span className={currentStep === 2 ? 'text-amber-300 font-extrabold' : ''}>
-                2. Career & Edu
-              </span>
-              <span className={currentStep === 3 ? 'text-amber-300 font-extrabold' : ''}>
-                3. Family & Guardian
-              </span>
-              <span className={currentStep === 4 ? 'text-amber-300 font-extrabold' : ''}>
-                4. Preferences
-              </span>
-            </div>
+          {/* Stepper Progress Bar (Only when Premium) */}
+          {isPremium && (
+            <div className="mt-5 space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-bold text-amber-100">
+                <span className={currentStep === 1 ? 'text-amber-300 font-extrabold' : ''}>
+                  1. Personal
+                </span>
+                <span className={currentStep === 2 ? 'text-amber-300 font-extrabold' : ''}>
+                  2. Career & Edu
+                </span>
+                <span className={currentStep === 3 ? 'text-amber-300 font-extrabold' : ''}>
+                  3. Family & Guardian
+                </span>
+                <span className={currentStep === 4 ? 'text-amber-300 font-extrabold' : ''}>
+                  4. Preferences
+                </span>
+              </div>
 
-            {/* Track Bar */}
-            <div className="w-full bg-white/20 h-2 rounded-full overflow-hidden p-0.5">
-              <div
-                className="bg-gradient-to-r from-amber-400 to-[#c9973e] h-full rounded-full transition-all duration-300"
-                style={{ width: `${(currentStep / 4) * 100}%` }}
-              />
+              {/* Track Bar */}
+              <div className="w-full bg-white/20 h-2 rounded-full overflow-hidden p-0.5">
+                <div
+                  className="bg-gradient-to-r from-amber-400 to-[#c9973e] h-full rounded-full transition-all duration-300"
+                  style={{ width: `${(currentStep / 4) * 100}%` }}
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Modal Scrollable Body */}
-        <div className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-5 text-stone-800 text-xs">
+        {!isPremium ? (
+          <div className="p-8 sm:p-10 text-center space-y-6">
+            <div className="w-16 h-16 rounded-3xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto shadow-inner">
+              <Lock className="w-8 h-8 text-[#c9973e]" />
+            </div>
+            <div className="space-y-2">
+              <span className="inline-block text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                Premium-Only Feature
+              </span>
+              <h3 className="font-serif text-xl sm:text-2xl font-bold text-stone-900">
+                Candidate Biodata Publishing
+              </h3>
+              <p className="text-xs sm:text-sm text-stone-600 max-w-md mx-auto leading-relaxed">
+                Writing and publishing candidate biodata is exclusively reserved for active <strong>Premium Plan</strong> members.
+                Please upgrade to a Premium Plan to upload and publish your biodata and become visible to other members.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-stone-300 text-stone-700 font-bold text-xs hover:bg-stone-50 cursor-pointer"
+              >
+                Close
+              </button>
+              {onOpenPremium && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenPremium();
+                  }}
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold text-xs shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4 text-white" />
+                  <span>Upgrade to Premium</span>
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Modal Scrollable Body */}
+            <div className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-5 text-stone-800 text-xs">
           {/* ========================================================
               STEP 1: BASIC & PERSONAL INFO
              ======================================================== */}
@@ -1071,7 +1123,9 @@ export const BiodataWizardModal: React.FC<Props> = ({
             )}
           </div>
         </div>
-      </div>
+      </>
+    )}
     </div>
-  );
+  </div>
+);
 };

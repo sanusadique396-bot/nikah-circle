@@ -879,6 +879,20 @@ export default function App() {
     setIsPremiumOpen(true);
   };
 
+  const handleOpenBiodataWizard = () => {
+    if (!isAdminApproved) {
+      showToast('Your profile is waiting for Admin Approval before biodata can be published.');
+      return;
+    }
+    const hasPremium = effectiveIsPremium || localStorage.getItem('nikah_circle_user_is_premium') === 'true';
+    if (!hasPremium) {
+      showToast('Matrimonial biodata writing and publishing is exclusively reserved for Premium members. Please activate a Premium plan.');
+      handleOpenPremium();
+      return;
+    }
+    setIsBiodataWizardOpen(true);
+  };
+
   const handleSendInterest = async (profileId: string) => {
     // Condition 0: Must be officially approved by Admin
     if (!isAdminApproved) {
@@ -898,11 +912,12 @@ export default function App() {
     const hasBiodata = Boolean(
       currentUserProfile?.biodata_uploaded ||
       currentUserProfile?.biodata_document_name ||
-      currentUserProfile?.biodata_document_url
+      currentUserProfile?.biodata_document_url ||
+      currentUserProfile?.bouthika_education
     );
     if (!hasBiodata) {
       showToast('Please complete your matrimonial biodata before sending interest proposals.');
-      setIsBiodataWizardOpen(true);
+      handleOpenBiodataWizard();
       return;
     }
 
@@ -1982,10 +1997,27 @@ export default function App() {
     });
   };
 
-  // Public Profiles List: Premium-Only Visibility (Free plan profiles are completely hidden from public listings)
+  // Helper to determine if a candidate profile has submitted/completed their biodata
+  const hasCompletedBiodata = (p: Profile): boolean => {
+    // 1. Uploaded document file
+    if (Boolean(p.biodata_uploaded || p.biodata_document_name || p.biodata_document_url)) return true;
+    // 2. Wizard details
+    if (Boolean(p.bouthika_education || p.religious_education || p.family_background || p.marriage_expectations)) return true;
+    // 3. Or comprehensive details filled
+    if (Boolean(p.education && p.profession && (p.guardian_name || p.guardian_mobile))) return true;
+    return false;
+  };
+
+  // Public Profiles List: Strict Premium + Completed Biodata Visibility
+  // A profile must be completely hidden from other members UNLESS they have an active Premium Plan
+  // AND have successfully uploaded/published their candidate biodata. Free plan or incomplete profiles are completely hidden.
   const approvedProfiles = useMemo(() => {
     return [...profiles]
-      .filter((p) => p.profile_status === 'APPROVED' && Boolean(p.is_premium))
+      .filter((p) => {
+        if (p.profile_status !== 'APPROVED') return false;
+        if (!p.is_premium) return false;
+        return hasCompletedBiodata(p);
+      })
       .sort((a, b) => {
         return (new Date(b.created_at || '').getTime() || 0) - (new Date(a.created_at || '').getTime() || 0);
       });
@@ -2067,9 +2099,14 @@ export default function App() {
     });
   }, [approvedProfiles, searchQuery, filters]);
 
-  // Bookmarked Profiles: Only visible if active premium
+  // Bookmarked Profiles: Only visible if active premium AND completed biodata
   const shortlistedProfiles = useMemo(() => {
-    return profiles.filter((p) => bookmarks.includes(p.id) && p.profile_status === 'APPROVED' && Boolean(p.is_premium));
+    return profiles.filter((p) => {
+      if (!bookmarks.includes(p.id)) return false;
+      if (p.profile_status !== 'APPROVED') return false;
+      if (!p.is_premium) return false;
+      return hasCompletedBiodata(p);
+    });
   }, [profiles, bookmarks]);
 
   // Active Interests List
@@ -2166,7 +2203,7 @@ export default function App() {
         isUserPremium={effectiveIsPremium}
         isUserApproved={isAdminApproved}
         currentPlanName={effectivePlanName}
-        onOpenBiodataWizard={() => setIsBiodataWizardOpen(true)}
+        onOpenBiodataWizard={handleOpenBiodataWizard}
         hasBiodataUploaded={Boolean(currentUserProfile?.biodata_uploaded || currentUserProfile?.biodata_document_name || currentUserProfile?.biodata_document_url)}
       />
 
@@ -2235,7 +2272,7 @@ export default function App() {
 
               <button
                 type="button"
-                onClick={() => setIsBiodataWizardOpen(true)}
+                onClick={handleOpenBiodataWizard}
                 className="px-4 py-2 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0 self-end sm:self-center animate-pulse"
               >
                 <span>Upload Biodata</span>
@@ -3194,6 +3231,11 @@ export default function App() {
         isPremium={effectiveIsPremium}
         planName={effectivePlanName}
         isPostPremium={isPostPremiumBiodataUpload && isAdminApproved}
+        onOpenPremium={() => {
+          setIsCreateAccountOpen(false);
+          setIsEditingProfile(false);
+          handleOpenPremium();
+        }}
         onClose={() => {
           setIsCreateAccountOpen(false);
           setIsEditingProfile(false);
@@ -3220,6 +3262,11 @@ export default function App() {
         initialData={currentUserProfile}
         userMemberId={effectiveMemberId}
         isApproved={isAdminApproved}
+        isPremium={effectiveIsPremium}
+        onOpenPremium={() => {
+          setIsBiodataWizardOpen(false);
+          handleOpenPremium();
+        }}
       />
 
       <PremiumModal

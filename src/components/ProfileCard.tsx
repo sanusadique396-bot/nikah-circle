@@ -88,6 +88,14 @@ export const ProfileCard: React.FC<Props> = ({
           </div>
         )}
 
+        {/* Top-Left: Sequential Member ID Badge (NCSM1001, NCSM1002...) */}
+        <div className="absolute top-3 left-3 z-10 pointer-events-none">
+          <span className="font-mono text-[10px] sm:text-[11px] font-bold bg-[#4b001f] text-white px-2.5 py-1 rounded-lg tracking-wider shadow-sm border border-[#c9973e]/50 flex items-center gap-1.5 backdrop-blur-xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#c9973e] animate-pulse" />
+            <span>{profile.member_id || (profile.id?.startsWith('NCSM') ? profile.id : 'NCSM1001')}</span>
+          </span>
+        </div>
+
         {/* Top Right: Admin Verified Badge & Photo Privacy / Shortlist */}
         <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
           {(profile.profile_status === 'APPROVED' || profile.is_verified) && (

@@ -18,7 +18,8 @@ import {
   LogIn,
   FileText,
   FileCheck,
-  Upload
+  Upload,
+  Lock
 } from 'lucide-react';
 import { Profile, normalizeGender } from '../types';
 
@@ -77,6 +78,7 @@ interface Props {
   initialData?: Partial<UserProfileData> | null;
   isEditing?: boolean;
   onSwitchToLogin?: () => void;
+  onOpenPremium?: () => void;
   isApproved?: boolean;
   isAdminApproved?: boolean;
   isPremium?: boolean;
@@ -143,6 +145,7 @@ export const UserProfileModal: React.FC<Props> = ({
   initialData,
   isEditing = false,
   onSwitchToLogin,
+  onOpenPremium,
   isApproved = false,
   isAdminApproved,
   isPremium = false,
@@ -200,6 +203,10 @@ export const UserProfileModal: React.FC<Props> = ({
     : 24;
 
   const handleBiodataUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isPremium) {
+      alert('Matrimonial biodata upload is exclusively reserved for Premium members. Please upgrade your plan.');
+      return;
+    }
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 15 * 1024 * 1024) {
@@ -501,7 +508,26 @@ export const UserProfileModal: React.FC<Props> = ({
               className="hidden"
             />
 
-            {formData.biodata_uploaded || formData.biodata_document_name ? (
+            {!isPremium ? (
+              <div className="p-3.5 rounded-xl bg-amber-50/90 border border-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 text-xs text-amber-950 font-medium">
+                  <Lock className="w-4 h-4 text-amber-700 shrink-0" />
+                  <span>
+                    <strong>Premium Only:</strong> Matrimonial biodata upload & publishing is reserved for active Premium members.
+                  </span>
+                </div>
+                {onOpenPremium && (
+                  <button
+                    type="button"
+                    onClick={onOpenPremium}
+                    className="px-3.5 py-1.5 rounded-lg bg-[#4b001f] text-white text-[11px] font-bold shrink-0 hover:bg-[#350016] transition-colors cursor-pointer shadow-xs inline-flex items-center gap-1.5 self-start sm:self-center"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-[#c9973e]" />
+                    <span>Upgrade Plan</span>
+                  </button>
+                )}
+              </div>
+            ) : formData.biodata_uploaded || formData.biodata_document_name ? (
               <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-300 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-xs text-emerald-950 font-bold truncate">
                   <FileCheck className="w-4 h-4 text-emerald-600 shrink-0" />

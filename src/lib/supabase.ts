@@ -417,13 +417,24 @@ export function parseSupabaseProfile(p: any, defaultIndex?: number): Profile {
 }
 
 // Full Fresh Database and User Reset System
-const CLEAN_RESET_KEY = 'nikah_circle_clean_reset_v1002';
+const CLEAN_RESET_KEY = 'nikah_circle_clean_reset_v1008';
 
 export function performInitialResetIfRequired() {
   try {
     if (localStorage.getItem(CLEAN_RESET_KEY) !== 'true') {
+      localStorage.removeItem('nikah_circle_profiles_v2');
+      localStorage.removeItem('nikah_circle_payments_v2');
+      localStorage.removeItem('nikah_circle_bookmarks_v2');
+      localStorage.removeItem('nikah_circle_premium_requests_v1');
+      localStorage.removeItem('nikah_circle_member_id_seq_v5');
+      localStorage.removeItem('nikah_circle_member_id_seq_v4');
+      localStorage.removeItem('nikah_circle_user_profile');
+      localStorage.removeItem('nikah_circle_user');
+      localStorage.removeItem('nikah_circle_user_is_premium');
+      localStorage.removeItem('nikah_circle_user_plan');
       localStorage.removeItem('nikah_circle_incoming_interests_v2');
       localStorage.removeItem('nikah_circle_incoming_interests');
+      localStorage.removeItem('nikah_circle_interests_map_v3');
       localStorage.removeItem('nikah_circle_interests_map_v2');
       localStorage.removeItem('nikah_circle_proposals_registry_v2');
       localStorage.removeItem('nikah_circle_proposals_registry_v3');
