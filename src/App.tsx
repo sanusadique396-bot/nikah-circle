@@ -11,7 +11,7 @@ import { AdminPortal } from './components/AdminPortal';
 import { UserProfileModal, UserProfileData } from './components/UserProfileModal';
 import { Footer } from './components/Footer';
 import { OfflineBanner } from './components/OfflineBanner';
-import { Profile, Payment, SearchFilters, PremiumRequest } from './types';
+import { Profile, Payment, SearchFilters, PremiumRequest, IncomingInterest } from './types';
 import {
   supabase,
   getStoredProfiles,
@@ -33,9 +33,92 @@ import {
   Sparkles,
   Lock,
   CheckCircle2,
-  Users
+  Users,
+  Inbox,
+  Phone,
+  MessageCircle,
+  Check,
+  MapPin,
+  GraduationCap,
+  Briefcase,
+  Calendar,
+  ShieldCheck,
+  X as XIcon,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+
+const INCOMING_INTERESTS_STORAGE_KEY = 'nikah_circle_incoming_interests_v2';
+
+function getDefaultIncomingInterests(gender?: 'Male' | 'Female'): IncomingInterest[] {
+  if (gender === 'Male') {
+    return [
+      {
+        id: 'inc-001',
+        sender_name: 'Dr. Ayesha Fathima',
+        sender_age: 25,
+        sender_gender: 'Female',
+        sender_profession: 'MBBS Resident Doctor',
+        sender_education: 'MBBS, Calicut Medical College',
+        sender_location: 'Calicut, Kerala',
+        guardian_name: 'Dr. Usman K. (Father)',
+        guardian_mobile: '+91 98461 11223',
+        guardian_relation: 'Father',
+        received_at: 'Today, 10:15 AM',
+        status: 'pending',
+        notes: 'Assalamu Alaikum. We reviewed your profile and found good alignment with our family principles.',
+      },
+      {
+        id: 'inc-002',
+        sender_name: 'Shahana Mariyam',
+        sender_age: 23,
+        sender_gender: 'Female',
+        sender_profession: 'Data Science Analyst',
+        sender_education: 'M.Sc Computer Science',
+        sender_location: 'Malappuram, Kerala',
+        guardian_name: 'Abdul Kareem P. (Father)',
+        guardian_mobile: '+91 94471 22334',
+        guardian_relation: 'Father',
+        received_at: 'Yesterday, 4:30 PM',
+        status: 'pending',
+        notes: 'Seeking a pious, family-oriented partner. Our guardian would be pleased to speak with your family.',
+      },
+    ];
+  } else {
+    // Default or Female user: proposals from eligible Grooms
+    return [
+      {
+        id: 'inc-001',
+        sender_name: 'Er. Mohammed Nihal',
+        sender_age: 29,
+        sender_gender: 'Male',
+        sender_profession: 'Senior Software Architect',
+        sender_education: 'B.Tech Computer Science, NIT Calicut',
+        sender_location: 'Kochi, Kerala (Currently in Dubai)',
+        guardian_name: 'Haji K. Muhammed (Father)',
+        guardian_mobile: '+91 98460 77889',
+        guardian_relation: 'Father',
+        received_at: 'Today, 09:45 AM',
+        status: 'pending',
+        notes: 'Assalamu Alaikum. Our family reviewed your profile with great interest and would like to proceed with mutual proposal discussion.',
+      },
+      {
+        id: 'inc-002',
+        sender_name: 'Dr. Rashid Ali P.',
+        sender_age: 30,
+        sender_gender: 'Male',
+        sender_profession: 'MD General Medicine',
+        sender_education: 'MD Medicine, AIIMS',
+        sender_location: 'Perinthalmanna, Malappuram',
+        guardian_name: 'Ali Akbar (Father)',
+        guardian_mobile: '+91 98472 11223',
+        guardian_relation: 'Father',
+        received_at: 'Yesterday, 6:20 PM',
+        status: 'pending',
+        notes: 'Seeking a pious life partner with good family values. Guardian is ready to connect with your family.',
+      },
+    ];
+  }
+}
 
 export default function App() {
   // Navigation: 'home' | 'profiles' | 'shortlist' | 'interests' | 'admin'
@@ -50,9 +133,30 @@ export default function App() {
     const map = getStoredInterestsMap();
     if (map['nc-002']) {
       delete map['nc-002'];
+      saveStoredInterestsMap(map);
     }
     return map;
   });
+
+  // Incoming proposal interests that have come to this user's profile
+  const [incomingInterests, setIncomingInterests] = useState<IncomingInterest[]>(() => {
+    try {
+      const raw = localStorage.getItem(INCOMING_INTERESTS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return getDefaultIncomingInterests();
+  });
+
+  const [interestsActiveTab, setInterestsActiveTab] = useState<'received' | 'sent'>('received');
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(INCOMING_INTERESTS_STORAGE_KEY, JSON.stringify(incomingInterests));
+    } catch {}
+  }, [incomingInterests]);
 
   // Authentication & User Profile State
   const [currentUser, setCurrentUser] = useState<{ email?: string; id?: string } | null>(() => {
@@ -125,8 +229,14 @@ export default function App() {
       const adminStatus = localStorage.getItem('nikah_circle_premium_admin_status');
       if (adminStatus === 'ADMIN_OFF' || adminStatus === 'EXPIRED') return false;
     } catch {}
-    return isUserPremium || !!userApprovedRequest || !!userMatchedProfile?.is_premium;
-  }, [isUserPremium, userApprovedRequest, userMatchedProfile]);
+    return (
+      isUserPremium ||
+      Boolean(currentUserProfile?.is_premium) ||
+      Boolean(userApprovedRequest) ||
+      Boolean(userMatchedProfile?.is_premium) ||
+      localStorage.getItem('nikah_circle_user_is_premium') === 'true'
+    );
+  }, [isUserPremium, currentUserProfile, userApprovedRequest, userMatchedProfile]);
 
   const effectivePlanName = useMemo(() => {
     if (userApprovedRequest?.plan_name) return userApprovedRequest.plan_name;
@@ -352,6 +462,38 @@ export default function App() {
   };
 
   const handleSendInterest = async (profileId: string) => {
+    // Premium requirement check
+    const hasPremium = effectiveIsPremium || localStorage.getItem('nikah_circle_user_is_premium') === 'true';
+    if (!hasPremium) {
+      setIsPremiumOpen(true);
+      return;
+    }
+
+    const targetProfile = profiles.find((p) => p.id === profileId);
+    if (targetProfile) {
+      // Cannot send interest to own profile
+      const isSelf =
+        (currentUserProfile?.id && targetProfile.id === currentUserProfile.id) ||
+        (currentUser?.id && targetProfile.id === currentUser.id) ||
+        (currentUserProfile?.mobile &&
+          targetProfile.mobile &&
+          targetProfile.mobile.replace(/\D/g, '').slice(-8) ===
+            currentUserProfile.mobile.replace(/\D/g, '').slice(-8));
+
+      if (isSelf) {
+        showToast('You cannot send a proposal interest to your own profile.');
+        return;
+      }
+
+      // Halal Matrimony Gender rule: Male to Female only, Female to Male only
+      const userGender = currentUserProfile?.gender;
+      if (userGender && targetProfile.gender === userGender) {
+        const needed = userGender === 'Female' ? 'Groom (Male)' : 'Bride (Female)';
+        showToast(`Halal Matrimony: You can only send proposals to ${needed} profiles.`);
+        return;
+      }
+    }
+
     if (interestsMap[profileId]) {
       showToast('Interest has already been sent to this profile.');
       return;
@@ -375,6 +517,27 @@ export default function App() {
     setInterestsMap(updated);
     saveStoredInterestsMap(updated);
     showToast('Interest cancelled successfully.');
+  };
+
+  const handleAcceptIncomingInterest = (id: string) => {
+    const updated = incomingInterests.map((item) =>
+      item.id === id ? { ...item, status: 'accepted' as const } : item
+    );
+    setIncomingInterests(updated);
+    showToast('Proposal accepted! Guardian contact details & biodata are unlocked.');
+    confetti({
+      particleCount: 60,
+      spread: 60,
+      origin: { y: 0.6 },
+    });
+  };
+
+  const handleDeclineIncomingInterest = (id: string) => {
+    const updated = incomingInterests.map((item) =>
+      item.id === id ? { ...item, status: 'declined' as const } : item
+    );
+    setIncomingInterests(updated);
+    showToast('Proposal politely declined.');
   };
 
   const handleSaveUserProfile = async (data: UserProfileData) => {
@@ -1066,6 +1229,7 @@ export default function App() {
         onLogout={handleLogout}
         savedCount={bookmarks.length}
         interestsCount={Object.keys(interestsMap).length}
+        receivedInterestsCount={incomingInterests.filter((i) => i.status === 'pending').length}
         isUserPremium={effectiveIsPremium}
         isUserApproved={isUserApproved}
         currentPlanName={effectivePlanName}
@@ -1184,6 +1348,12 @@ export default function App() {
                     interestStatus={interestsMap[profile.id]}
                     isUserPremium={effectiveIsPremium}
                     onOpenPremium={() => setIsPremiumOpen(true)}
+                    currentUserGender={currentUserProfile?.gender}
+                    currentUserId={currentUserProfile?.id || currentUser?.id}
+                    currentUserMobile={currentUserProfile?.mobile}
+                    onOppositeGenderRequired={(genderNeeded) => {
+                      showToast(`Proposals can only be exchanged between opposite gender profiles (${genderNeeded}).`);
+                    }}
                   />
                 ))}
               </div>
@@ -1323,6 +1493,12 @@ export default function App() {
                   interestStatus={interestsMap[profile.id]}
                   isUserPremium={effectiveIsPremium}
                   onOpenPremium={() => setIsPremiumOpen(true)}
+                  currentUserGender={currentUserProfile?.gender}
+                  currentUserId={currentUserProfile?.id || currentUser?.id}
+                  currentUserMobile={currentUserProfile?.mobile}
+                  onOppositeGenderRequired={(genderNeeded) => {
+                    showToast(`Proposals can only be exchanged between opposite gender profiles (${genderNeeded}).`);
+                  }}
                 />
               ))}
             </div>
@@ -1378,6 +1554,12 @@ export default function App() {
                   interestStatus={interestsMap[profile.id]}
                   isUserPremium={effectiveIsPremium}
                   onOpenPremium={() => setIsPremiumOpen(true)}
+                  currentUserGender={currentUserProfile?.gender}
+                  currentUserId={currentUserProfile?.id || currentUser?.id}
+                  currentUserMobile={currentUserProfile?.mobile}
+                  onOppositeGenderRequired={(genderNeeded) => {
+                    showToast(`Proposals can only be exchanged between opposite gender profiles (${genderNeeded}).`);
+                  }}
                 />
               ))}
             </div>
@@ -1386,119 +1568,396 @@ export default function App() {
       )}
 
       {/* =========================================
-          VIEW 4: MY INTERESTS & BIODATA UNLOCKS
+          VIEW 4: INTERESTS & PROPOSAL SANCTUARY
+          - Tab 1: Received Proposals (Interests that came to your profile)
+          - Tab 2: Sent Interests (Proposals you sent to others)
          ========================================= */}
       {activeView === 'interests' && (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6 flex-1">
-          <div className="flex items-center justify-between pb-4 border-b border-[#eadfe4]">
+          {/* Header & Sub-Tab Switcher */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#eadfe4]">
             <div>
-              <h2 className="font-serif text-2xl font-bold text-[#4b001f] flex items-center gap-2">
-                <UserCheck className="w-6 h-6 text-emerald-600" />
-                <span>My Interests & Mutual Unlocks ({interestedProfiles.length})</span>
+              <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#4b001f] flex items-center gap-2.5">
+                <Inbox className="w-7 h-7 text-[#c9973e]" />
+                <span>Interests & Proposals Hub</span>
               </h2>
-              <p className="text-xs text-stone-500 mt-0.5">
-                Profiles where you sent an interest. When accepted, full biodata is unlocked.
+              <p className="text-xs text-stone-500 mt-1">
+                Manage incoming proposals received for your profile and view sent proposal requests.
               </p>
             </div>
 
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <button
+                onClick={() => setActiveView('profiles')}
+                className="px-4 py-2 rounded-xl border border-[#4b001f] text-[#4b001f] text-xs font-bold hover:bg-[#fff6fa] transition-colors cursor-pointer"
+              >
+                Browse Profiles
+              </button>
+            </div>
+          </div>
+
+          {/* Sub-Tabs: Received Proposals vs Sent Interests */}
+          <div className="flex items-center gap-3 border-b border-stone-200 pb-2">
             <button
-              onClick={() => setActiveView('profiles')}
-              className="px-4 py-2 rounded-xl border border-[#4b001f] text-[#4b001f] text-xs font-bold hover:bg-[#fff6fa] transition-colors cursor-pointer"
+              type="button"
+              onClick={() => setInterestsActiveTab('received')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                interestsActiveTab === 'received'
+                  ? 'bg-[#4b001f] text-white shadow-sm'
+                  : 'bg-stone-100 hover:bg-stone-200 text-stone-700'
+              }`}
             >
-              Browse Profiles
+              <Inbox className="w-4 h-4 text-[#c9973e]" />
+              <span>Received Proposals</span>
+              <span
+                className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                  interestsActiveTab === 'received'
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-[#4b001f] text-white'
+                }`}
+              >
+                {incomingInterests.filter((i) => i.status === 'pending').length} New
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setInterestsActiveTab('sent')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                interestsActiveTab === 'sent'
+                  ? 'bg-[#4b001f] text-white shadow-sm'
+                  : 'bg-stone-100 hover:bg-stone-200 text-stone-700'
+              }`}
+            >
+              <UserCheck className="w-4 h-4 text-emerald-400" />
+              <span>Sent Interests</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-stone-200 text-stone-800">
+                {interestedProfiles.length}
+              </span>
             </button>
           </div>
 
-          {interestedProfiles.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-[#eadfe4] p-12 text-center space-y-3">
-              <Clock className="w-12 h-12 text-stone-300 mx-auto" />
-              <h3 className="font-serif text-xl font-bold text-[#4b001f]">
-                No Interests Sent Yet
-              </h3>
-              <p className="text-xs text-stone-500">
-                Explore profiles and send an interest to request their biodata.
-              </p>
-            </div>
-          ) : (
+          {/* TAB 1: RECEIVED PROPOSALS (Incoming Interests to this Profile) */}
+          {interestsActiveTab === 'received' && (
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {interestedProfiles.map((p) => {
-                  const status = interestsMap[p.id];
-                  const isAccepted = status === 'accepted';
-                  return (
-                    <div
-                      key={p.id}
-                      className="p-5 rounded-2xl bg-white border border-[#eadfe4] shadow-xs flex flex-col justify-between space-y-3"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-serif font-bold text-lg text-[#4b001f]">
-                            {p.full_name}
-                          </h3>
-                          <span className="text-xs text-stone-500">
-                            {p.gender} · {p.location} · {p.education}
+              {incomingInterests.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-[#eadfe4] p-12 text-center space-y-3">
+                  <Inbox className="w-12 h-12 text-stone-300 mx-auto" />
+                  <h3 className="font-serif text-xl font-bold text-[#4b001f]">
+                    No Proposals Received Yet
+                  </h3>
+                  <p className="text-xs text-stone-500 max-w-md mx-auto">
+                    When other candidates and their families view your profile and send proposal interest, they will appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                  {incomingInterests.map((item) => {
+                    const isAccepted = item.status === 'accepted';
+                    const isDeclined = item.status === 'declined';
+                    const cleanPhone = item.guardian_mobile.replace(/\D/g, '');
+
+                    return (
+                      <div
+                        key={item.id}
+                        className={`p-6 rounded-2xl bg-white border shadow-xs transition-all space-y-4 ${
+                          isAccepted
+                            ? 'border-emerald-300 ring-1 ring-emerald-200'
+                            : isDeclined
+                            ? 'border-stone-200 opacity-70'
+                            : 'border-[#eadfe4] hover:shadow-md'
+                        }`}
+                      >
+                        {/* Candidate Top Header */}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#4b001f] to-[#7a183b] text-white flex items-center justify-center font-bold text-base shadow-sm shrink-0 border border-[#c9973e]/40">
+                              {item.sender_name.charAt(0)}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-serif font-bold text-lg text-[#4b001f]">
+                                  {item.sender_name}
+                                </h3>
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md">
+                                  <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                                  Admin Approved
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-stone-500 mt-0.5">
+                                <span>{item.sender_age} yrs</span>
+                                <span>·</span>
+                                <span>{item.sender_gender === 'Male' ? 'Groom' : 'Bride'}</span>
+                                <span>·</span>
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="w-3 h-3 text-[#c9973e]" />
+                                  {item.sender_location}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Proposal Status Badge */}
+                          <span
+                            className={`text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-2xs ${
+                              isAccepted
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                : isDeclined
+                                ? 'bg-stone-100 text-stone-600 border border-stone-200'
+                                : 'bg-amber-100 text-amber-900 border border-amber-300'
+                            }`}
+                          >
+                            {isAccepted
+                              ? '✓ Proposal Accepted'
+                              : isDeclined
+                              ? 'Declined'
+                              : '⏳ Proposal Received'}
                           </span>
                         </div>
 
-                        <span
-                          className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                            isAccepted
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-amber-100 text-amber-800'
-                          }`}
-                        >
-                          {isAccepted ? '✓ Interest Accepted' : '⏳ Awaiting Acceptance'}
-                        </span>
-                      </div>
+                        {/* Candidate Profession & Education Highlights */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-stone-700 bg-stone-50 p-3 rounded-xl border border-stone-100">
+                          <div className="flex items-center gap-2">
+                            <Briefcase className="w-4 h-4 text-[#c9973e] shrink-0" />
+                            <span className="truncate">{item.sender_profession}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <GraduationCap className="w-4 h-4 text-[#c9973e] shrink-0" />
+                            <span className="truncate">{item.sender_education}</span>
+                          </div>
+                        </div>
 
-                      <div className="p-3 rounded-xl bg-stone-50 text-xs text-stone-700">
+                        {/* Proposal Note from Family */}
+                        {item.notes && (
+                          <div className="text-xs text-stone-600 bg-[#fff9fa] border-l-2 border-[#4b001f] p-3 rounded-r-xl italic">
+                            "{item.notes}"
+                          </div>
+                        )}
+
+                        <div className="text-[11px] text-stone-400 flex items-center justify-between">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5 text-stone-400" />
+                            Received {item.received_at}
+                          </span>
+                        </div>
+
+                        {/* UNLOCKED GUARDIAN CONTACT SECTION (Once Accepted) */}
                         {isAccepted ? (
-                          <div className="space-y-1">
-                            <p className="text-emerald-800 font-bold">
-                              ✓ Biodata & Guardian Contact Unlocked!
-                            </p>
-                            <p>
-                              <strong>Guardian Phone:</strong>{' '}
-                              <span className="text-stone-900 font-bold">
-                                {p.guardian_mobile || p.mobile}
-                              </span>
-                            </p>
+                          <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-3">
+                            <div className="flex items-center gap-2 text-emerald-900 font-bold text-xs">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                              <span>Mutual Consent Established! Guardian Details Unlocked:</span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <span className="text-stone-500 block text-[10px]">Family Guardian:</span>
+                                <span className="font-bold text-stone-900">{item.guardian_name}</span>
+                              </div>
+                              <div>
+                                <span className="text-stone-500 block text-[10px]">Guardian Contact:</span>
+                                <span className="font-bold text-stone-900">{item.guardian_mobile}</span>
+                              </div>
+                            </div>
+
+                            <div className="pt-2 flex flex-wrap items-center gap-2">
+                              <a
+                                href={`tel:${item.guardian_mobile}`}
+                                className="flex-1 min-w-[120px] py-2 px-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 shadow-2xs"
+                              >
+                                <Phone className="w-3.5 h-3.5" />
+                                <span>Call Guardian</span>
+                              </a>
+
+                              <a
+                                href={`https://wa.me/${cleanPhone}?text=${encodeURIComponent(
+                                  `Assalamu Alaikum. This is regarding the matrimonial proposal on Nikah Circle for ${item.sender_name}. We have accepted the proposal and would like to connect families.`
+                                )}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex-1 min-w-[120px] py-2 px-3 rounded-xl bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 shadow-2xs"
+                              >
+                                <MessageCircle className="w-3.5 h-3.5" />
+                                <span>Chat on WhatsApp</span>
+                              </a>
+                            </div>
+                          </div>
+                        ) : !isDeclined ? (
+                          /* PENDING ACTIONS */
+                          <div className="pt-2 border-t border-stone-100 flex items-center justify-end gap-2.5">
+                            <button
+                              type="button"
+                              onClick={() => handleDeclineIncomingInterest(item.id)}
+                              className="px-3.5 py-2.5 rounded-xl border border-stone-200 text-stone-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200 text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1"
+                            >
+                              <XIcon className="w-3.5 h-3.5" />
+                              <span>Decline</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleAcceptIncomingInterest(item.id)}
+                              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer transition-all shadow-xs flex items-center gap-1.5"
+                            >
+                              <Check className="w-4 h-4" />
+                              <span>Accept Proposal & Unlock Contact</span>
+                            </button>
                           </div>
                         ) : (
-                          <div className="flex items-center justify-between">
-                            <span className="text-stone-500">
-                              Biodata is locked.
-                            </span>
+                          <div className="pt-2 border-t border-stone-100 text-right">
                             <button
-                              onClick={() => handleAcceptInterest(p.id)}
-                              className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold cursor-pointer"
+                              type="button"
+                              onClick={() => handleAcceptIncomingInterest(item.id)}
+                              className="text-xs text-[#4b001f] hover:underline font-semibold cursor-pointer"
                             >
-                              (Test) Accept Interest
+                              Reconsider & Accept Proposal
                             </button>
                           </div>
                         )}
                       </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
-                      <div className="pt-2 border-t border-stone-100 flex items-center justify-end gap-2">
-                        {!isAccepted && (
-                          <button
-                            onClick={() => handleCancelInterest(p.id)}
-                            className="px-3 py-2 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold cursor-pointer"
+          {/* TAB 2: SENT INTERESTS (Outbox - Profiles you sent an interest to) */}
+          {interestsActiveTab === 'sent' && (
+            <div className="space-y-4">
+              {interestedProfiles.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-[#eadfe4] p-12 text-center space-y-3">
+                  <Clock className="w-12 h-12 text-stone-300 mx-auto" />
+                  <h3 className="font-serif text-xl font-bold text-[#4b001f]">
+                    No Sent Interests Yet
+                  </h3>
+                  <p className="text-xs text-stone-500 max-w-md mx-auto">
+                    You have not sent an interest to any profile yet. Explore verified profiles and click "Send Interest" to begin.
+                  </p>
+                  <div className="pt-3">
+                    <button
+                      onClick={() => setActiveView('profiles')}
+                      className="px-5 py-2.5 rounded-xl bg-[#4b001f] text-white text-xs font-bold hover:bg-[#350016] transition-colors cursor-pointer shadow-xs"
+                    >
+                      Explore Profiles Now
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {interestedProfiles.map((p) => {
+                    const status = interestsMap[p.id];
+                    const isAccepted = status === 'accepted';
+                    const cleanPhone = (p.guardian_mobile || p.mobile || '').replace(/\D/g, '');
+
+                    return (
+                      <div
+                        key={p.id}
+                        className="p-5 rounded-2xl bg-white border border-[#eadfe4] shadow-xs flex flex-col justify-between space-y-3 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-serif font-bold text-lg text-[#4b001f]">
+                                {p.full_name}
+                              </h3>
+                              {(p.profile_status === 'APPROVED' || p.is_verified) && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md">
+                                  <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                                  Admin Approved
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-stone-500">
+                              {p.gender} · {p.location} · {p.education}
+                            </span>
+                          </div>
+
+                          <span
+                            className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                              isAccepted
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-amber-100 text-amber-800'
+                            }`}
                           >
-                            Cancel Interest
+                            {isAccepted ? '✓ Interest Accepted' : '⏳ Awaiting Acceptance'}
+                          </span>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-stone-50 text-xs text-stone-700">
+                          {isAccepted ? (
+                            <div className="space-y-2">
+                              <p className="text-emerald-800 font-bold flex items-center gap-1.5">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                <span>Biodata & Guardian Contact Unlocked!</span>
+                              </p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                <div>
+                                  <span className="text-stone-500 block text-[10px]">Guardian:</span>
+                                  <span className="font-bold text-stone-900">{p.guardian_name}</span>
+                                </div>
+                                <div>
+                                  <span className="text-stone-500 block text-[10px]">Guardian Phone:</span>
+                                  <span className="font-bold text-stone-900">{p.guardian_mobile || p.mobile}</span>
+                                </div>
+                              </div>
+                              <div className="pt-2 flex items-center gap-2">
+                                <a
+                                  href={`tel:${p.guardian_mobile || p.mobile}`}
+                                  className="flex-1 py-1.5 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold text-center flex items-center justify-center gap-1"
+                                >
+                                  <Phone className="w-3 h-3" />
+                                  <span>Call Guardian</span>
+                                </a>
+                                {cleanPhone && (
+                                  <a
+                                    href={`https://wa.me/${cleanPhone}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex-1 py-1.5 px-2 rounded-lg bg-[#25D366] hover:bg-[#20ba5a] text-white text-[11px] font-bold text-center flex items-center justify-center gap-1"
+                                  >
+                                    <MessageCircle className="w-3 h-3" />
+                                    <span>WhatsApp</span>
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between">
+                              <span className="text-stone-500">
+                                Biodata is locked until candidate accepts.
+                              </span>
+                              <button
+                                onClick={() => handleAcceptInterest(p.id)}
+                                className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold cursor-pointer"
+                              >
+                                (Test) Accept Interest
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pt-2 border-t border-stone-100 flex items-center justify-end gap-2">
+                          {!isAccepted && (
+                            <button
+                              onClick={() => handleCancelInterest(p.id)}
+                              className="px-3 py-2 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold cursor-pointer"
+                            >
+                              Cancel Interest
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setSelectedProfile(p)}
+                            className="px-4 py-2 rounded-xl bg-[#4b001f] text-white text-xs font-bold cursor-pointer"
+                          >
+                            {isAccepted ? 'View Complete Biodata' : 'View Profile Details'}
                           </button>
-                        )}
-                        <button
-                          onClick={() => setSelectedProfile(p)}
-                          className="px-4 py-2 rounded-xl bg-[#4b001f] text-white text-xs font-bold cursor-pointer"
-                        >
-                          {isAccepted ? 'View Complete Biodata' : 'View Profile Details'}
-                        </button>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </main>
@@ -1519,6 +1978,8 @@ export default function App() {
         }}
         isUserPremium={effectiveIsPremium}
         onAcceptInterestTest={handleAcceptInterest}
+        currentUserGender={currentUserProfile?.gender}
+        currentUserMobile={currentUserProfile?.mobile}
       />
 
       {/* Mandatory Profile Account Setup on First Open / Edit Anytime */}

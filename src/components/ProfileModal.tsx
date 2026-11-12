@@ -25,6 +25,8 @@ interface Props {
   onOpenPremium: () => void;
   isUserPremium: boolean;
   onAcceptInterestTest?: (profileId: string) => void;
+  currentUserGender?: 'Male' | 'Female' | null;
+  currentUserMobile?: string | null;
 }
 
 export const ProfileModal: React.FC<Props> = ({
@@ -38,6 +40,8 @@ export const ProfileModal: React.FC<Props> = ({
   onOpenPremium,
   isUserPremium,
   onAcceptInterestTest,
+  currentUserGender,
+  currentUserMobile,
 }) => {
   if (!profile) return null;
 
@@ -91,15 +95,9 @@ export const ProfileModal: React.FC<Props> = ({
                   {profile.full_name}
                 </h2>
                 {(profile.profile_status === 'APPROVED' || profile.is_verified) && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 px-2 py-0.5 rounded-md">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 px-2.5 py-1 rounded-md shadow-xs">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
                     Admin Approved
-                  </span>
-                )}
-                {profile.is_premium && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-gradient-to-r from-amber-500/30 to-[#c9973e]/40 text-[#dfb25d] border border-[#c9973e]/50 px-2 py-0.5 rounded-md">
-                    <Sparkles className="w-3 h-3 text-[#dfb25d]" />
-                    {profile.premium_plan || 'Premium Member'}
                   </span>
                 )}
               </div>
@@ -155,10 +153,19 @@ export const ProfileModal: React.FC<Props> = ({
                       </button>
                     )}
                   </div>
+                ) : (currentUserMobile && profile.mobile && profile.mobile.replace(/\D/g, '').slice(-8) === currentUserMobile.replace(/\D/g, '').slice(-8)) ? (
+                  <div className="px-5 py-2.5 rounded-xl bg-stone-100 text-stone-600 border border-stone-200 text-xs font-semibold">
+                    This is your own profile
+                  </div>
+                ) : (currentUserGender && profile.gender === currentUserGender) ? (
+                  <div className="px-5 py-2.5 rounded-xl bg-stone-100 text-stone-600 border border-stone-200 text-xs font-semibold text-center">
+                    Proposals can only be exchanged between Groom and Bride profiles
+                  </div>
                 ) : (
                   <button
                     onClick={() => {
-                      if (!isUserPremium) {
+                      const hasPrem = isUserPremium || localStorage.getItem('nikah_circle_user_is_premium') === 'true';
+                      if (!hasPrem) {
                         onOpenPremium();
                       } else {
                         onSendInterest(profile.id);

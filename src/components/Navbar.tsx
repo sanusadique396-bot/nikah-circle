@@ -8,6 +8,9 @@ import {
   Sparkles,
   Heart,
   UserCheck,
+  Inbox,
+  HeartHandshake,
+  Bell,
   Menu,
   X
 } from 'lucide-react';
@@ -26,6 +29,7 @@ interface Props {
   onLogout: () => void;
   savedCount: number;
   interestsCount: number;
+  receivedInterestsCount?: number;
   isUserPremium?: boolean;
   isUserApproved?: boolean;
   currentPlanName?: string | null;
@@ -44,6 +48,7 @@ export const Navbar: React.FC<Props> = ({
   onLogout,
   savedCount,
   interestsCount,
+  receivedInterestsCount = 0,
   isUserPremium = false,
   isUserApproved = false,
   currentPlanName,
@@ -121,6 +126,25 @@ export const Navbar: React.FC<Props> = ({
               <span>Shortlist ({savedCount})</span>
             </button>
 
+            {/* Special Icon to see interests that have come to this profile */}
+            <button
+              onClick={() => onNavigate('interests')}
+              className={`hover:text-[#4b001f] transition-colors whitespace-nowrap cursor-pointer py-1 flex items-center gap-1.5 ${
+                activeView === 'interests'
+                  ? 'text-[#4b001f] font-bold border-b-2 border-[#4b001f]'
+                  : ''
+              }`}
+              title="View proposal interests received for your profile"
+            >
+              <Inbox className="w-4 h-4 text-[#c9973e]" />
+              <span>Received</span>
+              {receivedInterestsCount > 0 && (
+                <span className="bg-[#4b001f] text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow-2xs">
+                  {receivedInterestsCount} New
+                </span>
+              )}
+            </button>
+
             <button
               onClick={() => onNavigate('interests')}
               className={`hover:text-[#4b001f] transition-colors whitespace-nowrap cursor-pointer py-1 flex items-center gap-1.5 ${
@@ -130,7 +154,7 @@ export const Navbar: React.FC<Props> = ({
               }`}
             >
               <UserCheck className="w-4 h-4 text-emerald-600" />
-              <span>Interests ({interestsCount})</span>
+              <span>Sent ({interestsCount})</span>
             </button>
 
             {/* Prominent Plan Button at Top Navbar (Free Plan or Premium Plan) */}
@@ -157,8 +181,33 @@ export const Navbar: React.FC<Props> = ({
             </button>
           </nav>
 
-          {/* Zone 3: Profile Avatar & Quick Actions (3-dot menu completely removed) */}
+          {/* Zone 3: Profile Avatar, Received Interests Pill & Quick Actions */}
           <div className="flex items-center gap-2 relative shrink-0">
+            {/* Dedicated Received Interests Icon Button */}
+            <button
+              type="button"
+              onClick={() => onNavigate('interests')}
+              className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all cursor-pointer shadow-2xs ${
+                receivedInterestsCount > 0
+                  ? 'bg-[#fff6fa] border-[#4b001f]/30 text-[#4b001f] hover:bg-[#f7dce8]'
+                  : 'bg-stone-50 border-stone-200 text-stone-600 hover:bg-stone-100'
+              }`}
+              title="View proposal interests that have come to your profile"
+            >
+              <div className="relative">
+                <Inbox className="w-4 h-4 text-[#c9973e]" />
+                {receivedInterestsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                )}
+              </div>
+              <span className="text-xs font-bold">Proposals</span>
+              {receivedInterestsCount > 0 && (
+                <span className="bg-[#4b001f] text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+                  {receivedInterestsCount} New
+                </span>
+              )}
+            </button>
+
             {/* Top Right Profile Avatar / Icon for Quick Edit */}
             {userProfile ? (
               <div className="flex items-center gap-1.5">
@@ -293,7 +342,31 @@ export const Navbar: React.FC<Props> = ({
             }}
             className="w-full text-left px-3 py-2 text-sm font-semibold text-stone-700 hover:bg-[#fff6fa] rounded-lg flex items-center justify-between"
           >
-            <span>My Interests</span>
+            <div className="flex items-center gap-2">
+              <Inbox className="w-4 h-4 text-[#c9973e]" />
+              <span>Received Interests</span>
+            </div>
+            {receivedInterestsCount > 0 ? (
+              <span className="px-2 py-0.5 text-xs bg-[#4b001f] text-white rounded-full font-bold">
+                {receivedInterestsCount} New
+              </span>
+            ) : (
+              <span className="px-2 py-0.5 text-xs bg-stone-100 text-stone-600 rounded-full font-bold">
+                0
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => {
+              onNavigate('interests');
+              setMobileMenuOpen(false);
+            }}
+            className="w-full text-left px-3 py-2 text-sm font-semibold text-stone-700 hover:bg-[#fff6fa] rounded-lg flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2">
+              <UserCheck className="w-4 h-4 text-emerald-600" />
+              <span>Sent Interests</span>
+            </div>
             <span className="px-2 py-0.5 text-xs bg-emerald-100 text-emerald-800 rounded-full font-bold">
               {interestsCount}
             </span>

@@ -12,6 +12,10 @@ interface Props {
   interestStatus?: 'pending' | 'accepted' | 'declined' | null;
   isUserPremium: boolean;
   onOpenPremium: () => void;
+  currentUserGender?: 'Male' | 'Female' | null;
+  currentUserId?: string | null;
+  currentUserMobile?: string | null;
+  onOppositeGenderRequired?: (genderNeeded: string) => void;
 }
 
 export const ProfileCard: React.FC<Props> = ({
@@ -24,6 +28,10 @@ export const ProfileCard: React.FC<Props> = ({
   interestStatus,
   isUserPremium,
   onOpenPremium,
+  currentUserGender,
+  currentUserId,
+  currentUserMobile,
+  onOppositeGenderRequired,
 }) => {
   // Respect user privacy: default to modest blur unless interest is accepted and user unblurs
   const isUnlocked = interestStatus === 'accepted';
@@ -31,9 +39,25 @@ export const ProfileCard: React.FC<Props> = ({
 
   const age = profile.age || (profile.date_of_birth ? new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear() : 26);
 
+  // Check if own profile or same gender
+  const isOwnProfile = Boolean(
+    (currentUserId && profile.id === currentUserId) ||
+    (currentUserMobile && profile.mobile && profile.mobile.replace(/\D/g, '').slice(-8) === currentUserMobile.replace(/\D/g, '').slice(-8))
+  );
+
+  const isSameGender = Boolean(
+    currentUserGender && profile.gender === currentUserGender
+  );
+
   const handleInterestClick = () => {
-    if (!isUserPremium) {
+    const hasPremium = isUserPremium || localStorage.getItem('nikah_circle_user_is_premium') === 'true';
+    if (!hasPremium) {
       onOpenPremium();
+      return;
+    }
+    if (isSameGender) {
+      const needed = currentUserGender === 'Female' ? 'Groom (Male)' : 'Bride (Female)';
+      onOppositeGenderRequired?.(needed);
       return;
     }
     onSendInterest(profile.id);
@@ -61,19 +85,12 @@ export const ProfileCard: React.FC<Props> = ({
           </div>
         )}
 
-        {/* Top Left Badges */}
-        <div className="absolute top-3 left-3 flex flex-col items-start gap-1 z-10">
+        {/* Top Left Badge: Admin Approved Only (No premium badge on cards) */}
+        <div className="absolute top-3 left-3 z-10">
           {(profile.profile_status === 'APPROVED' || profile.is_verified) && (
-            <span className="flex items-center gap-1 bg-emerald-600/95 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-xs">
-              <ShieldCheck className="w-3 h-3 text-white" />
+            <span className="flex items-center gap-1 bg-emerald-600/95 backdrop-blur-xs text-white text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-xs">
+              <ShieldCheck className="w-3.5 h-3.5 text-white" />
               <span>Admin Approved</span>
-            </span>
-          )}
-
-          {profile.is_premium && (
-            <span className="flex items-center gap-1 bg-gradient-to-r from-amber-500 to-[#c9973e] text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-xs">
-              <Sparkles className="w-3 h-3 text-white" />
-              <span>{profile.premium_plan || 'Premium'}</span>
             </span>
           )}
         </div>
@@ -185,6 +202,22 @@ export const ProfileCard: React.FC<Props> = ({
               <UserCheck className="w-3.5 h-3.5" />
               <span>Contact Guardian</span>
             </button>
+          ) : isOwnProfile ? (
+            <div className="flex-1 py-2 px-2 rounded-xl bg-stone-100 text-stone-600 border border-stone-200 text-xs font-semibold text-center select-none">
+              Your Profile
+            </div>
+          ) : isSameGender ? (
+            <button
+              type="button"
+              onClick={() => {
+                const needed = currentUserGender === 'Female' ? 'Groom (Male)' : 'Bride (Female)';
+                onOppositeGenderRequired?.(needed);
+              }}
+              className="flex-1 py-2 px-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-600 border border-stone-200 text-xs font-semibold text-center cursor-pointer transition-colors"
+              title={`Proposals are exchanged between opposite gender only (${currentUserGender === 'Female' ? 'Male' : 'Female'})`}
+            >
+              {profile.gender === 'Female' ? 'Bride Profile' : 'Groom Profile'}
+            </button>
           ) : interestStatus === 'pending' ? (
             <div className="flex-1 flex items-center gap-1.5">
               <div className="flex-1 py-2 px-1.5 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold text-center truncate">
@@ -202,7 +235,7 @@ export const ProfileCard: React.FC<Props> = ({
           ) : (
             <button
               onClick={handleInterestClick}
-              className="flex-1 py-2 px-2.5 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1"
+              className="flex-1 py-2 px-2.5 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1 shadow-xs"
             >
               <Heart className="w-3.5 h-3.5 text-[#c9973e]" />
               <span>Send Interest</span>

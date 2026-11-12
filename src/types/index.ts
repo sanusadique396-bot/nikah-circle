@@ -73,6 +73,24 @@ export interface InterestRecord {
   created_at: string;
 }
 
+export interface IncomingInterest {
+  id: string;
+  sender_profile_id?: string;
+  sender_name: string;
+  sender_photo?: string | null;
+  sender_age: number;
+  sender_gender: 'Male' | 'Female';
+  sender_profession: string;
+  sender_location: string;
+  sender_education: string;
+  guardian_name: string;
+  guardian_mobile: string;
+  guardian_relation?: string;
+  received_at: string;
+  status: 'pending' | 'accepted' | 'declined';
+  notes?: string;
+}
+
 export interface SearchFilters {
   gender: string;
   ageRange: string;
