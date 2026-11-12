@@ -49,77 +49,61 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-const INCOMING_INTERESTS_STORAGE_KEY = 'nikah_circle_incoming_interests_v2';
+const PROPOSALS_REGISTRY_STORAGE_KEY = 'nikah_circle_proposals_registry_v3';
 
-function getDefaultIncomingInterests(gender?: 'Male' | 'Female'): IncomingInterest[] {
-  if (gender === 'Male') {
-    return [
-      {
-        id: 'inc-001',
-        sender_name: 'Dr. Ayesha Fathima',
-        sender_age: 25,
-        sender_gender: 'Female',
-        sender_profession: 'MBBS Resident Doctor',
-        sender_education: 'MBBS, Calicut Medical College',
-        sender_location: 'Calicut, Kerala',
-        guardian_name: 'Dr. Usman K. (Father)',
-        guardian_mobile: '+91 98461 11223',
-        guardian_relation: 'Father',
-        received_at: 'Today, 10:15 AM',
-        status: 'pending',
-        notes: 'Assalamu Alaikum. We reviewed your profile and found good alignment with our family principles.',
-      },
-      {
-        id: 'inc-002',
-        sender_name: 'Shahana Mariyam',
-        sender_age: 23,
-        sender_gender: 'Female',
-        sender_profession: 'Data Science Analyst',
-        sender_education: 'M.Sc Computer Science',
-        sender_location: 'Malappuram, Kerala',
-        guardian_name: 'Abdul Kareem P. (Father)',
-        guardian_mobile: '+91 94471 22334',
-        guardian_relation: 'Father',
-        received_at: 'Yesterday, 4:30 PM',
-        status: 'pending',
-        notes: 'Seeking a pious, family-oriented partner. Our guardian would be pleased to speak with your family.',
-      },
-    ];
-  } else {
-    // Default or Female user: proposals from eligible Grooms
-    return [
-      {
-        id: 'inc-001',
-        sender_name: 'Er. Mohammed Nihal',
-        sender_age: 29,
-        sender_gender: 'Male',
-        sender_profession: 'Senior Software Architect',
-        sender_education: 'B.Tech Computer Science, NIT Calicut',
-        sender_location: 'Kochi, Kerala (Currently in Dubai)',
-        guardian_name: 'Haji K. Muhammed (Father)',
-        guardian_mobile: '+91 98460 77889',
-        guardian_relation: 'Father',
-        received_at: 'Today, 09:45 AM',
-        status: 'pending',
-        notes: 'Assalamu Alaikum. Our family reviewed your profile with great interest and would like to proceed with mutual proposal discussion.',
-      },
-      {
-        id: 'inc-002',
-        sender_name: 'Dr. Rashid Ali P.',
-        sender_age: 30,
-        sender_gender: 'Male',
-        sender_profession: 'MD General Medicine',
-        sender_education: 'MD Medicine, AIIMS',
-        sender_location: 'Perinthalmanna, Malappuram',
-        guardian_name: 'Ali Akbar (Father)',
-        guardian_mobile: '+91 98472 11223',
-        guardian_relation: 'Father',
-        received_at: 'Yesterday, 6:20 PM',
-        status: 'pending',
-        notes: 'Seeking a pious life partner with good family values. Guardian is ready to connect with your family.',
-      },
-    ];
-  }
+// Clear legacy dummy proposal keys on startup so they never contaminate new accounts
+try {
+  localStorage.removeItem('nikah_circle_incoming_interests_v2');
+  localStorage.removeItem('nikah_circle_incoming_interests');
+  localStorage.removeItem('nikah_circle_interests_map_v2');
+} catch {}
+
+export function getStoredProposals(): IncomingInterest[] {
+  try {
+    const raw = localStorage.getItem(PROPOSALS_REGISTRY_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(
+          (p) =>
+            p &&
+            p.id !== 'inc-001' &&
+            p.id !== 'inc-002' &&
+            p.sender_name !== 'Er. Mohammed Nihal' &&
+            p.sender_name !== 'Dr. Rashid Ali P.'
+        );
+      }
+    }
+  } catch {}
+  return [];
+}
+
+export function saveStoredProposals(proposals: IncomingInterest[]) {
+  try {
+    localStorage.setItem(PROPOSALS_REGISTRY_STORAGE_KEY, JSON.stringify(proposals));
+  } catch {}
+}
+
+export function getUserSentInterestsKey(userKey: string) {
+  return `nikah_circle_sent_interests_v3_${userKey}`;
+}
+
+export function getStoredUserSentInterests(userKey: string): Record<string, 'pending' | 'accepted' | 'declined'> {
+  try {
+    const raw = localStorage.getItem(getUserSentInterestsKey(userKey));
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      delete parsed['nc-002'];
+      return parsed;
+    }
+  } catch {}
+  return {};
+}
+
+export function saveStoredUserSentInterests(userKey: string, map: Record<string, 'pending' | 'accepted' | 'declined'>) {
+  try {
+    localStorage.setItem(getUserSentInterestsKey(userKey), JSON.stringify(map));
+  } catch {}
 }
 
 const DELETED_RECORDS_STORAGE_KEY = 'nikah_circle_deleted_records_v2';
@@ -165,35 +149,6 @@ export default function App() {
   const [payments, setPayments] = useState<Payment[]>(() => getStoredPayments());
   const [premiumRequests, setPremiumRequests] = useState<PremiumRequest[]>(() => getStoredPremiumRequests());
   const [bookmarks, setBookmarks] = useState<string[]>(() => getStoredBookmarks());
-  const [interestsMap, setInterestsMap] = useState<Record<string, 'pending' | 'accepted' | 'declined'>>(() => {
-    const map = getStoredInterestsMap();
-    if (map['nc-002']) {
-      delete map['nc-002'];
-      saveStoredInterestsMap(map);
-    }
-    return map;
-  });
-
-  // Incoming proposal interests that have come to this user's profile
-  const [incomingInterests, setIncomingInterests] = useState<IncomingInterest[]>(() => {
-    try {
-      const raw = localStorage.getItem(INCOMING_INTERESTS_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch {}
-    return getDefaultIncomingInterests();
-  });
-
-  const [interestsActiveTab, setInterestsActiveTab] = useState<'received' | 'sent'>('received');
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(INCOMING_INTERESTS_STORAGE_KEY, JSON.stringify(incomingInterests));
-    } catch {}
-  }, [incomingInterests]);
-
   // Authentication & User Profile State
   const [currentUser, setCurrentUser] = useState<{ email?: string; id?: string } | null>(() => {
     try {
@@ -210,6 +165,70 @@ export default function App() {
     } catch {}
     return null;
   });
+
+  // Unique identifier for the logged-in member to scope sent interests
+  const currentUserKey = useMemo(() => {
+    if (currentUserProfile?.mobile) return `phone_${currentUserProfile.mobile.replace(/\D/g, '').slice(-8)}`;
+    if (currentUserProfile?.id) return `id_${currentUserProfile.id}`;
+    if (currentUser?.id) return `id_${currentUser.id}`;
+    if (currentUser?.email) return `email_${currentUser.email.replace(/\W/g, '_')}`;
+    return 'guest';
+  }, [currentUserProfile, currentUser]);
+
+  // Sent interests map scoped to current user (Starts 100% BLANK {} on every new account)
+  const [interestsMap, setInterestsMap] = useState<Record<string, 'pending' | 'accepted' | 'declined'>>(() => {
+    const userPhone = currentUserProfile?.mobile ? `phone_${currentUserProfile.mobile.replace(/\D/g, '').slice(-8)}` : null;
+    const initialKey = userPhone || (currentUserProfile?.id ? `id_${currentUserProfile.id}` : (currentUser?.id ? `id_${currentUser.id}` : 'guest'));
+    return getStoredUserSentInterests(initialKey);
+  });
+
+  // Re-sync sent interests whenever the logged-in user changes or registers
+  useEffect(() => {
+    setInterestsMap(getStoredUserSentInterests(currentUserKey));
+  }, [currentUserKey]);
+
+  // Persistent Proposal Registry (Holds all sent proposals across all members)
+  const [allProposals, setAllProposals] = useState<IncomingInterest[]>(() => getStoredProposals());
+
+  useEffect(() => {
+    saveStoredProposals(allProposals);
+  }, [allProposals]);
+
+  // Incoming proposals received strictly for this user (Starts 100% BLANK [] on every new account)
+  const incomingInterests = useMemo(() => {
+    if (!currentUserProfile && !currentUser) return [];
+
+    const userPhoneNorm = currentUserProfile?.mobile ? currentUserProfile.mobile.replace(/\D/g, '').slice(-8) : '';
+    const userNameNorm = (currentUserProfile?.full_name || '').toLowerCase().trim();
+    const userId = currentUserProfile?.id || currentUser?.id;
+
+    return allProposals.filter((p) => {
+      if (!p) return false;
+      // Filter out any obsolete dummy records
+      if (p.id === 'inc-001' || p.id === 'inc-002') return false;
+
+      // 1. Direct recipient profile ID match
+      if (userId && p.recipient_profile_id && p.recipient_profile_id === userId) return true;
+
+      // 2. Mobile number match
+      if (userPhoneNorm && p.recipient_mobile) {
+        const pPhoneNorm = p.recipient_mobile.replace(/\D/g, '').slice(-8);
+        if (pPhoneNorm && (pPhoneNorm === userPhoneNorm || userPhoneNorm.includes(pPhoneNorm) || pPhoneNorm.includes(userPhoneNorm))) {
+          return true;
+        }
+      }
+
+      // 3. Name match if name is non-empty
+      if (userNameNorm && p.recipient_name) {
+        const pNameNorm = p.recipient_name.toLowerCase().trim();
+        if (pNameNorm && pNameNorm === userNameNorm) return true;
+      }
+
+      return false;
+    });
+  }, [allProposals, currentUserProfile, currentUser]);
+
+  const [interestsActiveTab, setInterestsActiveTab] = useState<'received' | 'sent'>('received');
 
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
     try {
@@ -547,11 +566,55 @@ export default function App() {
       return;
     }
 
-    const updated = { ...interestsMap, [profileId]: 'pending' as const };
-    setInterestsMap(updated);
-    saveStoredInterestsMap(updated);
+    // 1. Update sender's sent interestsMap
+    const updatedMap = { ...interestsMap, [profileId]: 'pending' as const };
+    setInterestsMap(updatedMap);
+    saveStoredUserSentInterests(currentUserKey, updatedMap);
 
-    showToast('Interest sent successfully! Biodata will unlock once accepted.');
+    // 2. Deliver proposal into the persistent proposals registry targeting the recipient
+    const senderName = currentUserProfile?.full_name || currentUser?.email?.split('@')[0] || 'Premium Member';
+    const senderAge = currentUserProfile?.age || (currentUserProfile?.date_of_birth ? Math.max(18, new Date().getFullYear() - new Date(currentUserProfile.date_of_birth).getFullYear()) : 25);
+    const senderGender = (currentUserProfile?.gender as 'Male' | 'Female') || (targetProfile.gender === 'Female' ? 'Male' : 'Female');
+    const senderLocation = currentUserProfile?.location || (currentUserProfile?.place ? `${currentUserProfile.place}, ${currentUserProfile.district}` : 'Kerala');
+    const senderEducation = currentUserProfile?.education || 'Graduate';
+    const senderProfession = currentUserProfile?.profession || 'Professional';
+    const senderGuardianName = currentUserProfile?.guardian_name || `${senderName}'s Guardian`;
+    const senderGuardianPhone = currentUserProfile?.guardian_mobile || currentUserProfile?.mobile || '+91 90000 00000';
+
+    const newProposal: IncomingInterest = {
+      id: `prop-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      sender_profile_id: currentUserProfile?.id || currentUser?.id || `usr-${Date.now()}`,
+      sender_name: senderName,
+      sender_age: senderAge,
+      sender_gender: senderGender,
+      sender_profession: senderProfession,
+      sender_education: senderEducation,
+      sender_location: senderLocation,
+      guardian_name: senderGuardianName,
+      guardian_mobile: senderGuardianPhone,
+      guardian_relation: 'Parent (Guardian)',
+      received_at: 'Today, Just now',
+      status: 'pending',
+      notes: `Assalamu Alaikum. ${senderName} and family expressed interest in a matrimonial proposal with ${targetProfile.full_name}.`,
+      recipient_profile_id: targetProfile.id,
+      recipient_name: targetProfile.full_name,
+      recipient_mobile: targetProfile.mobile || targetProfile.guardian_mobile,
+    };
+
+    const updatedAllProposals = [
+      newProposal,
+      ...allProposals.filter(
+        (p) =>
+          !(
+            p.recipient_profile_id === targetProfile.id &&
+            p.sender_profile_id === (currentUserProfile?.id || currentUser?.id)
+          )
+      ),
+    ];
+    setAllProposals(updatedAllProposals);
+    saveStoredProposals(updatedAllProposals);
+
+    showToast(`Interest sent successfully to ${targetProfile.full_name}!`);
     confetti({
       particleCount: 50,
       spread: 50,
@@ -560,18 +623,61 @@ export default function App() {
   };
 
   const handleCancelInterest = (profileId: string) => {
-    const updated = { ...interestsMap };
-    delete updated[profileId];
-    setInterestsMap(updated);
-    saveStoredInterestsMap(updated);
+    // 1. Remove from sender's interestsMap
+    const updatedMap = { ...interestsMap };
+    delete updatedMap[profileId];
+    setInterestsMap(updatedMap);
+    saveStoredUserSentInterests(currentUserKey, updatedMap);
+
+    // 2. Remove proposal from allProposals
+    const userId = currentUserProfile?.id || currentUser?.id;
+    const userPhoneNorm = currentUserProfile?.mobile ? currentUserProfile.mobile.replace(/\D/g, '').slice(-8) : '';
+    const updatedProposals = allProposals.filter((p) => {
+      const matchRecipient = p.recipient_profile_id === profileId;
+      const matchSender =
+        (userId && p.sender_profile_id === userId) ||
+        (userPhoneNorm && p.guardian_mobile && p.guardian_mobile.replace(/\D/g, '').slice(-8) === userPhoneNorm);
+      return !(matchRecipient && matchSender);
+    });
+    setAllProposals(updatedProposals);
+    saveStoredProposals(updatedProposals);
+
     showToast('Interest cancelled successfully.');
   };
 
   const handleAcceptIncomingInterest = (id: string) => {
-    const updated = incomingInterests.map((item) =>
-      item.id === id ? { ...item, status: 'accepted' as const } : item
-    );
-    setIncomingInterests(updated);
+    let acceptedRecipientId = '';
+
+    const updatedAll = allProposals.map((item) => {
+      if (item.id === id) {
+        acceptedRecipientId = item.recipient_profile_id || '';
+        return { ...item, status: 'accepted' as const };
+      }
+      return item;
+    });
+
+    setAllProposals(updatedAll);
+    saveStoredProposals(updatedAll);
+
+    // Also update sender's sent interest in all user storage keys to accepted
+    if (acceptedRecipientId) {
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('nikah_circle_sent_interests_')) {
+            const raw = localStorage.getItem(key);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (parsed[acceptedRecipientId]) {
+                parsed[acceptedRecipientId] = 'accepted';
+                localStorage.setItem(key, JSON.stringify(parsed));
+              }
+            }
+          }
+        }
+      } catch {}
+    }
+
     showToast('Proposal accepted! Guardian contact details & biodata are unlocked.');
     confetti({
       particleCount: 60,
@@ -581,10 +687,11 @@ export default function App() {
   };
 
   const handleDeclineIncomingInterest = (id: string) => {
-    const updated = incomingInterests.map((item) =>
+    const updatedAll = allProposals.map((item) =>
       item.id === id ? { ...item, status: 'declined' as const } : item
     );
-    setIncomingInterests(updated);
+    setAllProposals(updatedAll);
+    saveStoredProposals(updatedAll);
     showToast('Proposal politely declined.');
   };
 
@@ -1146,6 +1253,7 @@ export default function App() {
     setCurrentUser(null);
     setCurrentUserProfile(null);
     setIsAdmin(false);
+    setInterestsMap({});
     localStorage.removeItem('nikah_circle_user');
     localStorage.removeItem('nikah_circle_user_profile');
     localStorage.removeItem('nikah_circle_is_admin');

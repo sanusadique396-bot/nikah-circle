@@ -89,6 +89,9 @@ export interface IncomingInterest {
   received_at: string;
   status: 'pending' | 'accepted' | 'declined';
   notes?: string;
+  recipient_profile_id?: string;
+  recipient_mobile?: string;
+  recipient_name?: string;
 }
 
 export interface SearchFilters {
