@@ -25,6 +25,8 @@ import {
   getStoredPremiumRequests,
   saveStoredPremiumRequests,
   getNextMemberId,
+  prepareSupabaseProfilePayload,
+  parseSupabaseProfile,
 } from './lib/supabase';
 import {
   Heart,
@@ -462,6 +464,79 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  // Comprehensive data refresh that loads ALL registered profiles from Supabase and merges with local
+  const refreshAllData = async () => {
+    try {
+      const { data: dbProfiles, error: profileErr } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      const localProfiles = getStoredProfiles();
+      const deleted = getDeletedRecords();
+
+      let merged: Profile[] = [];
+      if (!profileErr && dbProfiles) {
+        const parsedDb: Profile[] = dbProfiles.map((p: any, idx: number) => parseSupabaseProfile(p, idx));
+        const dbIds = new Set(parsedDb.map((p) => p.id));
+        const dbEmails = new Set(parsedDb.map((p) => p.email?.toLowerCase()).filter(Boolean));
+        const dbMobiles = new Set(parsedDb.map((p) => p.mobile).filter(Boolean));
+
+        const missingFromDb = localProfiles.filter(
+          (lp) =>
+            !dbIds.has(lp.id) &&
+            (!lp.email || !dbEmails.has(lp.email.toLowerCase())) &&
+            (!lp.mobile || !dbMobiles.has(lp.mobile))
+        );
+
+        // Async sync missing local profiles to Supabase
+        missingFromDb.forEach(async (lp) => {
+          try {
+            const payload = prepareSupabaseProfilePayload(lp);
+            await supabase.from('profiles').insert(payload);
+          } catch (e) {
+            console.warn('Syncing local profile error', e);
+          }
+        });
+
+        merged = [...parsedDb, ...missingFromDb].filter((p) => !isProfileDeleted(p, deleted));
+      } else {
+        merged = localProfiles.filter((p) => !isProfileDeleted(p, deleted));
+      }
+
+      // Ensure every profile has a sequential member_id starting at NCSM1001
+      const finalized = merged.map((p, idx) => ({
+        ...p,
+        member_id: p.member_id || `NCSM${1001 + idx}`,
+      }));
+
+      setProfiles(finalized);
+      saveStoredProfiles(finalized);
+
+      const { data: dbPayments, error: paymentErr } = await supabase
+        .from('payments')
+        .select('*')
+        .order('payment_date', { ascending: false });
+
+      if (!paymentErr && dbPayments && dbPayments.length > 0) {
+        setPayments(dbPayments);
+        saveStoredPayments(dbPayments);
+      }
+
+      const { data: dbRequests, error: reqErr } = await supabase
+        .from('premium_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!reqErr && dbRequests && dbRequests.length > 0) {
+        setPremiumRequests(dbRequests);
+        saveStoredPremiumRequests(dbRequests);
+      }
+    } catch (err) {
+      console.warn('Data sync offline fallback', err);
+    }
+  };
+
   // Sync Supabase on Mount
   useEffect(() => {
     async function loadData() {
@@ -474,38 +549,7 @@ export default function App() {
             setIsAdmin(true);
           }
         }
-
-        const { data: dbProfiles, error: profileErr } = await supabase
-          .from('profiles')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (!profileErr && dbProfiles && dbProfiles.length > 0) {
-          const deleted = getDeletedRecords();
-          const clean = dbProfiles.filter((p) => !isProfileDeleted(p, deleted));
-          setProfiles(clean);
-          saveStoredProfiles(clean);
-        }
-
-        const { data: dbPayments, error: paymentErr } = await supabase
-          .from('payments')
-          .select('*')
-          .order('payment_date', { ascending: false });
-
-        if (!paymentErr && dbPayments && dbPayments.length > 0) {
-          setPayments(dbPayments);
-          saveStoredPayments(dbPayments);
-        }
-
-        const { data: dbRequests, error: reqErr } = await supabase
-          .from('premium_requests')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (!reqErr && dbRequests && dbRequests.length > 0) {
-          setPremiumRequests(dbRequests);
-          saveStoredPremiumRequests(dbRequests);
-        }
+        await refreshAllData();
       } catch (err) {
         console.warn('Offline fallback loaded', err);
       }
@@ -794,6 +838,35 @@ export default function App() {
 
     setProfiles(updatedProfiles);
     saveStoredProfiles(updatedProfiles);
+
+    // Sync directly to Supabase profiles database table
+    try {
+      const payload = prepareSupabaseProfilePayload(profilePayload);
+      const isUUID = (str?: string) => !!str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
+      if (profilePayload.id && isUUID(profilePayload.id)) {
+        await supabase.from('profiles').upsert(payload);
+      } else {
+        const { data: existingDb } = await supabase
+          .from('profiles')
+          .select('id')
+          .or(`email.eq.${profilePayload.email},mobile.eq.${profilePayload.mobile}`)
+          .maybeSingle();
+
+        if (existingDb?.id) {
+          await supabase.from('profiles').update(payload).eq('id', existingDb.id);
+          profilePayload.id = existingDb.id;
+        } else {
+          delete payload.id;
+          const { data: dbCreated } = await supabase.from('profiles').insert(payload).select().single();
+          if (dbCreated?.id) {
+            profilePayload.id = dbCreated.id;
+          }
+        }
+      }
+    } catch (dbErr) {
+      console.warn('Syncing user profile to Supabase', dbErr);
+    }
 
     setIsCreateAccountOpen(false);
     setIsEditingProfile(false);
@@ -1134,7 +1207,8 @@ export default function App() {
       saveStoredProfiles(updated);
 
       try {
-        await supabase.from('profiles').update(profileData).eq('id', profileData.id);
+        const updatePayload = prepareSupabaseProfilePayload(targetProfile);
+        await supabase.from('profiles').update(updatePayload).eq('id', targetProfile.id);
       } catch (e) {
         console.warn('Saved locally', e);
       }
@@ -1167,10 +1241,7 @@ export default function App() {
       saveStoredProfiles(updated);
 
       try {
-        const insertPayload: any = { ...targetProfile };
-        if (!isUUID(insertPayload.id)) {
-          delete insertPayload.id;
-        }
+        const insertPayload: any = prepareSupabaseProfilePayload(targetProfile);
         const { data: dbCreated } = await supabase.from('profiles').insert(insertPayload).select().single();
         if (dbCreated && dbCreated.id) {
           targetProfile.id = dbCreated.id;
@@ -1462,6 +1533,7 @@ export default function App() {
           onDeactivatePremium={handleDeactivatePremium}
           onExitAdmin={() => setActiveView('home')}
           adminEmail="nikahcircle01@gmail.com"
+          onRefreshData={refreshAllData}
         />
       </>
     );
@@ -2444,6 +2516,51 @@ export default function App() {
           localStorage.setItem('nikah_circle_user', JSON.stringify(user));
           localStorage.setItem('nikah_circle_is_admin', String(isAdminUser));
           setIsLoginOpen(false);
+
+          // If a new regular user logs in and does not have a profile, register base account
+          if (!isAdminUser && user.email) {
+            const hasExisting = profiles.some(
+              (p) => p.email && p.email.toLowerCase() === user.email.toLowerCase()
+            );
+            if (!hasExisting) {
+              const newMemberId = getNextMemberId();
+              const autoProfile: Profile = {
+                id: `usr-${Date.now().toString().slice(-6)}`,
+                member_id: newMemberId,
+                full_name: user.email.split('@')[0],
+                email: user.email,
+                mobile: '',
+                gender: 'Female',
+                marital_status: 'Never Married',
+                location: 'Kerala',
+                registration_type: 'ONLINE',
+                profile_status: 'APPROVED',
+                is_verified: true,
+                is_premium: false,
+                created_at: new Date().toISOString(),
+              };
+              const updated = [autoProfile, ...profiles];
+              setProfiles(updated);
+              saveStoredProfiles(updated);
+
+              try {
+                const payload = prepareSupabaseProfilePayload(autoProfile);
+                supabase
+                  .from('profiles')
+                  .insert(payload)
+                  .select()
+                  .single()
+                  .then(({ data: createdDb }) => {
+                    if (createdDb?.id) {
+                      autoProfile.id = createdDb.id;
+                    }
+                  });
+              } catch (e) {
+                console.warn('Auto profile register error', e);
+              }
+            }
+          }
+
           if (isAdminUser) {
             showToast('Admin login successful!');
             setActiveView('admin');

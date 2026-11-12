@@ -32,6 +32,11 @@ import {
   FileText,
   UserCheck,
   Calendar,
+  Phone,
+  Mail,
+  MapPin,
+  RotateCw,
+  MessageCircle,
 } from 'lucide-react';
 
 interface Props {
@@ -47,6 +52,7 @@ interface Props {
   onDeactivatePremium?: (profileIdOrPhone: string) => Promise<void>;
   onExitAdmin: () => void;
   adminEmail: string;
+  onRefreshData?: () => Promise<void>;
 }
 
 type TabType =
@@ -104,6 +110,7 @@ export const AdminPortal: React.FC<Props> = ({
   onDeactivatePremium,
   onExitAdmin,
   adminEmail,
+  onRefreshData,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
@@ -115,6 +122,23 @@ export const AdminPortal: React.FC<Props> = ({
   const [premiumTabFilter, setPremiumTabFilter] = useState<'ALL' | 'PENDING' | 'UPI_QR' | 'CASH_OFFICE' | 'FREE_REQUEST'>('ALL');
   const [profileToDelete, setProfileToDelete] = useState<Profile | null>(null);
   const [isDeletingProfile, setIsDeletingProfile] = useState(false);
+
+  // User Accounts Tab state
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userPlanFilter, setUserPlanFilter] = useState<'ALL' | 'FREE' | 'PREMIUM'>('ALL');
+  const [userStatusFilter, setUserStatusFilter] = useState<'ALL' | 'APPROVED' | 'PENDING'>('ALL');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    if (onRefreshData) {
+      setIsRefreshing(true);
+      try {
+        await onRefreshData();
+      } finally {
+        setIsRefreshing(false);
+      }
+    }
+  };
 
   // Form State
   const [formData, setFormData] = useState<Partial<Profile> & { amount?: number; pay_method?: string; pay_status?: string }>({
@@ -380,7 +404,7 @@ export const AdminPortal: React.FC<Props> = ({
                 <span>User Accounts</span>
               </div>
               <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800 font-bold">
-                {profiles.filter((p) => p.registration_type === 'ONLINE').length}
+                {profiles.length}
               </span>
             </button>
 
@@ -641,77 +665,121 @@ export const AdminPortal: React.FC<Props> = ({
             {/* Recent Profiles */}
             <div className="bg-white rounded-2xl border border-stone-200 shadow-xs overflow-hidden">
               <div className="p-4 border-b border-stone-200 flex items-center justify-between">
-                <h3 className="font-serif font-bold text-base text-[#4b001f]">
-                  Recent Profiles
-                </h3>
+                <div>
+                  <h3 className="font-serif font-bold text-base text-[#4b001f]">
+                    Recent Registered Members
+                  </h3>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    Click any member row to view full biodata, contact info, and subscription status.
+                  </p>
+                </div>
                 <button
-                  onClick={() => setActiveTab('profiles')}
-                  className="text-xs font-semibold text-[#4b001f] hover:underline cursor-pointer"
+                  onClick={() => setActiveTab('user_accounts')}
+                  className="text-xs font-semibold text-[#4b001f] hover:underline cursor-pointer flex items-center gap-1"
                 >
-                  View All →
+                  View All ({profiles.length}) →
                 </button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-stone-50 text-stone-500 border-b border-stone-200">
+                  <thead className="bg-stone-50 text-stone-500 border-b border-stone-200 font-semibold uppercase tracking-wider text-[10px]">
                     <tr>
-                      <th className="p-3">Candidate</th>
-                      <th className="p-3">Guardian Mobile</th>
+                      <th className="p-3">Member ID & Candidate</th>
+                      <th className="p-3">Contact & Location</th>
+                      <th className="p-3">Plan Status</th>
                       <th className="p-3">Status</th>
                       <th className="p-3 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-100">
-                    {profiles.slice(0, 6).map((p) => (
-                      <tr key={p.id} className="hover:bg-stone-50">
-                        <td className="p-3 font-semibold text-stone-900">
-                          {p.full_name} ({p.gender})
-                          <span className="block text-[11px] text-stone-400 font-normal">
-                            {p.location || 'Kerala'}
-                          </span>
-                        </td>
-                        <td className="p-3 text-stone-700">
-                          {p.guardian_mobile ? (
-                            <span className="font-semibold text-emerald-800">
-                              {p.guardian_mobile} ({p.guardian_relation || 'Guardian'})
-                            </span>
-                          ) : (
-                            <span className="text-stone-400">{p.mobile || '-'}</span>
-                          )}
-                        </td>
-                        <td className="p-3">
-                          <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                              p.profile_status === 'APPROVED'
-                                ? 'bg-emerald-50 text-emerald-700'
-                                : p.profile_status === 'PENDING'
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'bg-red-50 text-red-700'
-                            }`}
-                          >
-                            {p.profile_status}
-                          </span>
-                        </td>
-                        <td className="p-3 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              onClick={() => handleEditClick(p)}
-                              className="px-2.5 py-1 text-xs rounded-lg border border-stone-200 hover:bg-stone-100 text-stone-700 font-semibold cursor-pointer"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setProfileToDelete(p)}
-                              title="Delete Profile"
-                              className="p-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                    {profiles.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="p-8 text-center text-stone-400">
+                          No registered users found.
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      profiles.slice(0, 8).map((p) => (
+                        <tr
+                          key={p.id}
+                          onClick={() => setViewingProfile(p)}
+                          className="hover:bg-amber-50/50 cursor-pointer transition-colors group"
+                          title="Click to view full details"
+                        >
+                          <td className="p-3">
+                            <div className="flex items-center gap-2.5">
+                              <span className="font-mono text-[11px] font-bold bg-[#4b001f] text-white px-2 py-0.5 rounded shadow-2xs">
+                                {p.member_id || (p.id?.startsWith('NCSM') ? p.id : 'NCSM1001')}
+                              </span>
+                              <div>
+                                <span className="font-bold text-stone-900 group-hover:text-[#4b001f] transition-colors">
+                                  {p.full_name}
+                                </span>
+                                <span className="block text-[11px] text-stone-400 font-normal">
+                                  {p.gender} · {p.age || 24} yrs
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-3 text-stone-700">
+                            <div className="font-semibold text-stone-800">{p.mobile || '-'}</div>
+                            <div className="text-[11px] text-stone-500">{p.location || `${p.place || ''}, ${p.district || ''}`.replace(/^,\s*|,\s*$/g, '') || 'Kerala'}</div>
+                          </td>
+                          <td className="p-3">
+                            {p.is_premium ? (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                                ★ Premium
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-600 border border-stone-200">
+                                Free Plan
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-3">
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                p.profile_status === 'APPROVED'
+                                  ? 'bg-emerald-50 text-emerald-700'
+                                  : p.profile_status === 'PENDING'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-red-50 text-red-700'
+                              }`}
+                            >
+                              {p.profile_status}
+                            </span>
+                          </td>
+                          <td className="p-3 text-right">
+                            <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                type="button"
+                                onClick={() => setViewingProfile(p)}
+                                className="px-2 py-1 text-xs rounded-lg border border-[#4b001f]/20 bg-[#4b001f]/5 text-[#4b001f] hover:bg-[#4b001f] hover:text-white font-semibold cursor-pointer transition-colors flex items-center gap-1"
+                                title="View Details"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>Details</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleEditClick(p)}
+                                className="px-2 py-1 text-xs rounded-lg border border-stone-200 hover:bg-stone-100 text-stone-700 font-semibold cursor-pointer"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setProfileToDelete(p)}
+                                title="Delete Profile"
+                                className="p-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 cursor-pointer transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -772,7 +840,12 @@ export const AdminPortal: React.FC<Props> = ({
                       </tr>
                     ) : (
                       filteredProfiles.map((p) => (
-                        <tr key={p.id} className="hover:bg-stone-50/80 transition-colors">
+                        <tr
+                          key={p.id}
+                          onClick={() => setViewingProfile(p)}
+                          className="hover:bg-amber-50/50 transition-colors cursor-pointer group"
+                          title="Click to view full candidate biodata & details"
+                        >
                           <td className="p-3.5">
                             <div className="flex items-center gap-2.5">
                               <div className="w-9 h-9 rounded-xl overflow-hidden bg-stone-100 border border-stone-200 shrink-0">
@@ -789,7 +862,7 @@ export const AdminPortal: React.FC<Props> = ({
                                   <span className="font-mono text-[10px] font-bold bg-[#4b001f] text-white px-1.5 py-0.5 rounded shadow-2xs">
                                     {p.member_id || (p.id?.startsWith('NCSM') ? p.id : `NCSM${p.id?.replace(/\D/g, '').slice(-4) || '1001'}`)}
                                   </span>
-                                  <span className="font-bold text-stone-900">{p.full_name}</span>
+                                  <span className="font-bold text-stone-900 group-hover:text-[#4b001f] transition-colors">{p.full_name}</span>
                                 </div>
                                 <span className="text-[10px] text-stone-400">ID: {p.id.slice(0, 8)}</span>
                               </div>
@@ -835,7 +908,7 @@ export const AdminPortal: React.FC<Props> = ({
                             </div>
                           </td>
                           <td className="p-3.5 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
+                            <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
                               <button
                                 onClick={() => setViewingProfile(p)}
                                 title="View Full Biodata"
@@ -863,154 +936,355 @@ export const AdminPortal: React.FC<Props> = ({
         )}
 
         {/* TAB: USER ACCOUNTS */}
-        {activeTab === 'user_accounts' && (
-          <div className="space-y-4">
-            <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h3 className="font-serif font-bold text-lg text-[#4b001f] flex items-center gap-2">
-                  <UserCheck className="w-5 h-5 text-emerald-600" />
-                  <span>User Created Accounts</span>
-                </h3>
-                <p className="text-xs text-stone-500 mt-0.5">
-                  Accounts and biodata of users who registered directly from the app. Total: {profiles.filter((p) => p.registration_type === 'ONLINE').length} users.
-                </p>
-              </div>
-            </div>
+        {activeTab === 'user_accounts' && (() => {
+          const totalCount = profiles.length;
+          const freeCount = profiles.filter((p) => !p.is_premium).length;
+          const premiumCount = profiles.filter((p) => p.is_premium).length;
+          const approvedCount = profiles.filter((p) => p.profile_status === 'APPROVED').length;
+          const pendingCount = profiles.filter((p) => p.profile_status === 'PENDING').length;
 
-            <div className="bg-white rounded-2xl border border-stone-200 shadow-xs overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-[#fff6fa] text-[#4b001f] border-b border-stone-200 font-bold uppercase tracking-wider text-[10px]">
-                    <tr>
-                      <th className="p-3.5">User Details</th>
-                      <th className="p-3.5">Contact & Place</th>
-                      <th className="p-3.5">Guardian Contact</th>
-                      <th className="p-3.5 whitespace-nowrap">Joined Date</th>
-                      <th className="p-3.5">Hobbies & Interests</th>
-                      <th className="p-3.5">Plan Status</th>
-                      <th className="p-3.5">Profile Status</th>
-                      <th className="p-3.5 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-100">
-                    {profiles.filter((p) => p.registration_type === 'ONLINE').length === 0 ? (
-                      <tr>
-                        <td colSpan={8} className="p-8 text-center text-stone-500">
-                          No online user registrations yet.
-                        </td>
-                      </tr>
-                    ) : (
-                      profiles
-                        .filter((p) => p.registration_type === 'ONLINE')
-                        .map((p) => (
-                          <tr key={p.id} className="hover:bg-stone-50/80 transition-colors">
-                            <td className="p-3.5">
-                              <div className="flex items-center gap-2.5">
-                                <div className="w-9 h-9 rounded-xl overflow-hidden bg-stone-100 border border-stone-200 shrink-0">
-                                  {p.profile_photo ? (
-                                    <img src={p.profile_photo} alt={p.full_name} className="w-full h-full object-cover" />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center font-bold text-[#4b001f] text-xs">
-                                      {(p.full_name || 'U').charAt(0)}
-                                    </div>
-                                  )}
-                                </div>
-                                <div>
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="font-mono text-[10px] font-bold bg-[#4b001f] text-white px-1.5 py-0.5 rounded shadow-2xs">
-                                      {p.member_id || (p.id?.startsWith('NCSM') ? p.id : `NCSM${p.id?.replace(/\D/g, '').slice(-4) || '1001'}`)}
-                                    </span>
-                                    <span className="font-bold text-stone-900">{p.full_name}</span>
-                                  </div>
-                                  <span className="text-[11px] text-stone-500">{p.gender} · {p.age || 25} yrs</span>
-                                  <div className="flex items-center gap-1 text-[10px] text-[#c9973e] font-semibold mt-0.5">
-                                    <Calendar className="w-3 h-3 text-[#c9973e]" />
-                                    <span>Joined {formatDate(p.created_at)}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="p-3.5">
-                              <div className="font-bold text-stone-800">{p.mobile || '-'}</div>
-                              <div className="text-[11px] text-stone-500">{p.place || p.district || 'Kerala'}</div>
-                              <div className="text-[10px] text-stone-400">{p.email}</div>
-                            </td>
-                            <td className="p-3.5">
-                              <div className="font-bold text-emerald-800">{p.guardian_mobile || '-'}</div>
-                              <div className="text-[11px] text-stone-500">{p.guardian_name || 'Guardian'}</div>
-                            </td>
-                            <td className="p-3.5 whitespace-nowrap">
-                              <div className="flex items-center gap-1.5 font-bold text-stone-800">
-                                <Calendar className="w-3.5 h-3.5 text-[#c9973e]" />
-                                <span>{formatDate(p.created_at)}</span>
-                              </div>
-                              <div className="text-[10px] text-stone-400 mt-0.5">
-                                {formatTime(p.created_at)}
-                              </div>
-                            </td>
-                            <td className="p-3.5 max-w-[180px]">
-                              <div className="text-[11px] text-stone-700 truncate font-medium">
-                                {Array.isArray(p.hobbies) ? p.hobbies.join(', ') : (p.hobbies || '-')}
-                              </div>
-                              <div className="text-[10px] text-stone-500 truncate">
-                                {Array.isArray(p.interests) ? p.interests.join(', ') : (p.interests || '-')}
-                              </div>
-                            </td>
-                            <td className="p-3.5">
-                              {p.is_premium ? (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                                  ★ Premium
-                                </span>
-                              ) : (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-600 border border-stone-200">
-                                  Free Plan
-                                </span>
-                              )}
-                            </td>
-                            <td className="p-3.5">
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                p.profile_status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                              }`}>
-                                {p.profile_status}
-                              </span>
-                            </td>
-                            <td className="p-3.5 text-right">
-                              <div className="flex items-center justify-end gap-1.5">
-                                {p.profile_status === 'PENDING' && (
-                                  <button
-                                    onClick={() => onApproveProfile(p.id)}
-                                    className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold cursor-pointer"
-                                  >
-                                    Approve
-                                  </button>
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() => setViewingProfile(p)}
-                                  className="p-1.5 rounded-lg border border-stone-200 text-stone-700 hover:bg-stone-50 cursor-pointer"
-                                  title="View Full Biodata"
-                                >
-                                  <Eye className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setProfileToDelete(p)}
-                                  className="p-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 cursor-pointer transition-colors"
-                                  title="Delete & Remove Profile"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
+          const filtered = profiles.filter((p) => {
+            if (userPlanFilter === 'FREE' && p.is_premium) return false;
+            if (userPlanFilter === 'PREMIUM' && !p.is_premium) return false;
+            if (userStatusFilter !== 'ALL' && p.profile_status !== userStatusFilter) return false;
+
+            if (userSearchQuery.trim()) {
+              const q = userSearchQuery.trim().toLowerCase();
+              const qDigits = q.replace(/\D/g, '');
+              const name = (p.full_name || '').toLowerCase();
+              const memberId = (p.member_id || '').toLowerCase();
+              const email = (p.email || '').toLowerCase();
+              const location = (p.location || `${p.place || ''}, ${p.district || ''}`).toLowerCase();
+              const mobile = (p.mobile || '').replace(/\D/g, '');
+              const gMobile = (p.guardian_mobile || '').replace(/\D/g, '');
+
+              const matchText = name.includes(q) || memberId.includes(q) || email.includes(q) || location.includes(q);
+              const matchPhone = qDigits.length > 0 && (mobile.includes(qDigits) || gMobile.includes(qDigits));
+              return matchText || matchPhone;
+            }
+            return true;
+          });
+
+          return (
+            <div className="space-y-4">
+              {/* Header Card */}
+              <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-serif font-bold text-lg text-[#4b001f] flex items-center gap-2">
+                    <UserCheck className="w-5 h-5 text-emerald-600" />
+                    <span>All Registered User Accounts</span>
+                  </h3>
+                  <p className="text-xs text-stone-500 mt-1">
+                    Displaying all registered and logged-in members (both Free and Premium subscriptions). Total: <span className="font-bold text-stone-800">{totalCount} users</span>.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleRefresh}
+                    disabled={isRefreshing}
+                    className="px-3.5 py-2 rounded-xl border border-stone-200 hover:bg-stone-50 text-stone-700 text-xs font-bold transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-60 shadow-2xs"
+                    title="Refresh data from database"
+                  >
+                    <RotateCw className={`w-3.5 h-3.5 text-[#c9973e] ${isRefreshing ? 'animate-spin' : ''}`} />
+                    <span>{isRefreshing ? 'Refreshing...' : 'Refresh List'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Search & Filter Bar */}
+              <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs space-y-3">
+                <div className="flex flex-col md:flex-row gap-3">
+                  <div className="relative flex-1">
+                    <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={userSearchQuery}
+                      onChange={(e) => setUserSearchQuery(e.target.value)}
+                      placeholder="Search by Name, NCSM ID (e.g. NCSM1001), phone, email, place..."
+                      className="w-full pl-9 pr-8 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:border-[#4b001f] focus:bg-white transition-colors"
+                    />
+                    {userSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setUserSearchQuery('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
                     )}
-                  </tbody>
-                </table>
+                  </div>
+                </div>
+
+                {/* Filter Pills */}
+                <div className="flex flex-wrap items-center gap-2 text-xs font-semibold pt-1">
+                  <span className="text-stone-400 text-[11px] mr-1">Filter by Plan:</span>
+                  <button
+                    type="button"
+                    onClick={() => setUserPlanFilter('ALL')}
+                    className={`px-3 py-1.5 rounded-xl border transition-colors cursor-pointer ${
+                      userPlanFilter === 'ALL'
+                        ? 'bg-[#4b001f] text-white border-[#4b001f] shadow-2xs'
+                        : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
+                    }`}
+                  >
+                    All Accounts ({totalCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUserPlanFilter('FREE')}
+                    className={`px-3 py-1.5 rounded-xl border transition-colors cursor-pointer ${
+                      userPlanFilter === 'FREE'
+                        ? 'bg-[#4b001f] text-white border-[#4b001f] shadow-2xs'
+                        : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
+                    }`}
+                  >
+                    Free Plan ({freeCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUserPlanFilter('PREMIUM')}
+                    className={`px-3 py-1.5 rounded-xl border transition-colors cursor-pointer ${
+                      userPlanFilter === 'PREMIUM'
+                        ? 'bg-[#4b001f] text-white border-[#4b001f] shadow-2xs'
+                        : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
+                    }`}
+                  >
+                    ★ Premium Plan ({premiumCount})
+                  </button>
+
+                  <div className="h-4 w-px bg-stone-200 mx-1 hidden sm:block" />
+
+                  <span className="text-stone-400 text-[11px] mr-1">Status:</span>
+                  <button
+                    type="button"
+                    onClick={() => setUserStatusFilter('ALL')}
+                    className={`px-3 py-1.5 rounded-xl border transition-colors cursor-pointer ${
+                      userStatusFilter === 'ALL'
+                        ? 'bg-[#c9973e] text-[#350016] border-[#c9973e] font-bold shadow-2xs'
+                        : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
+                    }`}
+                  >
+                    All Status
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUserStatusFilter('APPROVED')}
+                    className={`px-3 py-1.5 rounded-xl border transition-colors cursor-pointer ${
+                      userStatusFilter === 'APPROVED'
+                        ? 'bg-emerald-600 text-white border-emerald-600 font-bold shadow-2xs'
+                        : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
+                    }`}
+                  >
+                    Approved ({approvedCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUserStatusFilter('PENDING')}
+                    className={`px-3 py-1.5 rounded-xl border transition-colors cursor-pointer ${
+                      userStatusFilter === 'PENDING'
+                        ? 'bg-amber-600 text-white border-amber-600 font-bold shadow-2xs'
+                        : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
+                    }`}
+                  >
+                    Pending ({pendingCount})
+                  </button>
+                </div>
+              </div>
+
+              {/* Users Table */}
+              <div className="bg-white rounded-2xl border border-stone-200 shadow-xs overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[#fff6fa] text-[#4b001f] border-b border-stone-200 font-bold uppercase tracking-wider text-[10px]">
+                      <tr>
+                        <th className="p-3.5">NCSM ID & User Name</th>
+                        <th className="p-3.5">Contact & Location</th>
+                        <th className="p-3.5">Guardian Details</th>
+                        <th className="p-3.5">Subscription Plan</th>
+                        <th className="p-3.5">Biodata Status</th>
+                        <th className="p-3.5">Profile Status</th>
+                        <th className="p-3.5 whitespace-nowrap">Joined Date</th>
+                        <th className="p-3.5 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100">
+                      {filtered.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="p-12 text-center text-stone-500">
+                            <Users className="w-8 h-8 text-stone-300 mx-auto mb-2" />
+                            <p className="font-semibold text-stone-700">No registered users found</p>
+                            <p className="text-xs text-stone-400 mt-1">
+                              {userSearchQuery || userPlanFilter !== 'ALL' || userStatusFilter !== 'ALL'
+                                ? 'Try resetting search or filters to see all accounts.'
+                                : 'Newly registered and logged-in users will automatically appear here.'}
+                            </p>
+                            {(userSearchQuery || userPlanFilter !== 'ALL' || userStatusFilter !== 'ALL') && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setUserSearchQuery('');
+                                  setUserPlanFilter('ALL');
+                                  setUserStatusFilter('ALL');
+                                }}
+                                className="mt-3 px-3 py-1.5 rounded-lg bg-stone-100 text-stone-700 hover:bg-stone-200 text-xs font-bold cursor-pointer transition-colors"
+                              >
+                                Clear Filters
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ) : (
+                        filtered.map((p) => {
+                          const displayMemberId = p.member_id || (p.id?.startsWith('NCSM') ? p.id : 'NCSM1001');
+                          return (
+                            <tr
+                              key={p.id}
+                              onClick={() => setViewingProfile(p)}
+                              className="hover:bg-amber-50/50 transition-colors cursor-pointer group"
+                              title="Click to view full candidate details and biodata"
+                            >
+                              <td className="p-3.5">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-xl overflow-hidden bg-stone-100 border border-stone-200 shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                                    {p.profile_photo ? (
+                                      <img src={p.profile_photo} alt={p.full_name} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center font-bold text-[#4b001f] text-sm bg-gradient-to-br from-[#fff0f5] to-[#fce7f3]">
+                                        {(p.full_name || 'U').charAt(0).toUpperCase()}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="font-mono text-[11px] font-bold bg-[#4b001f] text-white px-2 py-0.5 rounded shadow-2xs tracking-wide">
+                                        {displayMemberId}
+                                      </span>
+                                      <span className="font-bold text-stone-900 group-hover:text-[#4b001f] transition-colors text-sm">
+                                        {p.full_name}
+                                      </span>
+                                    </div>
+                                    <div className="text-[11px] text-stone-500 mt-0.5">
+                                      {p.gender} · {p.age || 24} yrs · {p.marital_status || 'Never Married'}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+
+                              <td className="p-3.5">
+                                <div className="font-bold text-stone-800">{p.mobile || '-'}</div>
+                                <div className="text-[11px] text-stone-600 truncate max-w-[160px]">
+                                  {p.location || `${p.place || ''}, ${p.district || ''}`.replace(/^,\s*|,\s*$/g, '') || 'Kerala'}
+                                </div>
+                                {p.email && <div className="text-[10px] text-stone-400 truncate max-w-[160px]">{p.email}</div>}
+                              </td>
+
+                              <td className="p-3.5">
+                                <div className="font-bold text-emerald-800">{p.guardian_mobile || '-'}</div>
+                                <div className="text-[11px] text-stone-500">
+                                  {p.guardian_name || 'Guardian'} {p.guardian_relation ? `(${p.guardian_relation})` : ''}
+                                </div>
+                              </td>
+
+                              <td className="p-3.5">
+                                {p.is_premium ? (
+                                  <div className="inline-flex flex-col items-start gap-0.5">
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 shadow-2xs">
+                                      <Sparkles className="w-3 h-3 text-amber-600 fill-amber-500" />
+                                      <span>★ Premium Plan</span>
+                                    </span>
+                                    {p.premium_plan && (
+                                      <span className="text-[10px] text-amber-800 font-medium pl-1 truncate max-w-[120px]">
+                                        {p.premium_plan}
+                                      </span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-600 border border-stone-200">
+                                    Free Plan
+                                  </span>
+                                )}
+                              </td>
+
+                              <td className="p-3.5">
+                                {p.biodata_uploaded || p.biodata_document_name ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    <span>Uploaded</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-stone-400 text-[11px] italic">
+                                    No File
+                                  </span>
+                                )}
+                              </td>
+
+                              <td className="p-3.5">
+                                <span
+                                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                    p.profile_status === 'APPROVED'
+                                      ? 'bg-emerald-100 text-emerald-800'
+                                      : p.profile_status === 'PENDING'
+                                      ? 'bg-amber-100 text-amber-800'
+                                      : 'bg-rose-100 text-rose-800'
+                                  }`}
+                                >
+                                  {p.profile_status}
+                                </span>
+                              </td>
+
+                              <td className="p-3.5 whitespace-nowrap">
+                                <div className="flex items-center gap-1.5 font-bold text-stone-800">
+                                  <Calendar className="w-3.5 h-3.5 text-[#c9973e]" />
+                                  <span>{formatDate(p.created_at)}</span>
+                                </div>
+                                <div className="text-[10px] text-stone-400 mt-0.5">
+                                  {formatTime(p.created_at)}
+                                </div>
+                              </td>
+
+                              <td className="p-3.5 text-right">
+                                <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                  {p.profile_status === 'PENDING' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => onApproveProfile(p.id)}
+                                      className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold cursor-pointer transition-colors shadow-2xs"
+                                      title="Approve User Profile"
+                                    >
+                                      Approve
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => setViewingProfile(p)}
+                                    className="px-2.5 py-1 rounded-lg border border-[#4b001f]/20 bg-[#4b001f]/5 text-[#4b001f] hover:bg-[#4b001f] hover:text-white text-[11px] font-bold cursor-pointer transition-colors flex items-center gap-1"
+                                    title="View Full Profile Details"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                    <span>Details</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setProfileToDelete(p)}
+                                    className="p-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 cursor-pointer transition-colors"
+                                    title="Delete & Remove Profile"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* TAB: PREMIUM & PAYMENT REQUESTS */}
         {activeTab === 'premium_requests' && (
@@ -1930,99 +2204,356 @@ export const AdminPortal: React.FC<Props> = ({
         )}
       </main>
 
-      {/* View Full Biodata Modal */}
-      {viewingProfile && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="max-w-xl w-full bg-white rounded-3xl p-6 shadow-2xl border border-stone-200 max-h-[85vh] overflow-y-auto space-y-4 text-left">
-            <div className="flex items-center justify-between pb-3 border-b border-stone-200">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl overflow-hidden bg-stone-100 border border-stone-200 flex items-center justify-center font-bold text-[#4b001f] text-base">
-                  {viewingProfile.profile_photo ? (
-                    <img src={viewingProfile.profile_photo} alt={viewingProfile.full_name} className="w-full h-full object-cover" />
-                  ) : (
-                    <span>{(viewingProfile.full_name || 'U').charAt(0)}</span>
+      {/* View Full Biodata & Member Details Modal */}
+      {viewingProfile && (() => {
+        const displayMemberId = viewingProfile.member_id || (viewingProfile.id?.startsWith('NCSM') ? viewingProfile.id : 'NCSM1001');
+        const guardianPhoneClean = (viewingProfile.guardian_mobile || viewingProfile.mobile || '').replace(/\D/g, '');
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+            <div className="max-w-2xl w-full bg-white rounded-3xl p-6 shadow-2xl border border-stone-200 max-h-[90vh] overflow-y-auto space-y-5 text-left">
+              {/* Modal Header */}
+              <div className="flex items-start justify-between pb-4 border-b border-stone-200">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden bg-stone-100 border border-stone-200 shrink-0 shadow-xs flex items-center justify-center font-bold text-[#4b001f] text-xl">
+                    {viewingProfile.profile_photo ? (
+                      <img src={viewingProfile.profile_photo} alt={viewingProfile.full_name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#fff0f5] to-[#fce7f3] text-[#4b001f]">
+                        {(viewingProfile.full_name || 'U').charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono text-xs font-bold bg-[#4b001f] text-white px-2.5 py-0.5 rounded-md shadow-2xs tracking-wide">
+                        {displayMemberId}
+                      </span>
+                      <h4 className="font-serif font-bold text-xl text-[#4b001f]">
+                        {viewingProfile.full_name}
+                      </h4>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs text-stone-500 mt-1 flex-wrap">
+                      <span>{viewingProfile.gender}</span>
+                      <span>·</span>
+                      <span>{viewingProfile.age || 24} yrs</span>
+                      <span>·</span>
+                      <span>{viewingProfile.marital_status || 'Never Married'}</span>
+                      <span>·</span>
+                      <span className="flex items-center gap-1 text-[#c9973e] font-semibold">
+                        <Calendar className="w-3 h-3 text-[#c9973e]" />
+                        Joined {formatDate(viewingProfile.created_at)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                        viewingProfile.profile_status === 'APPROVED'
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                          : 'bg-amber-100 text-amber-800 border border-amber-200'
+                      }`}>
+                        {viewingProfile.profile_status === 'APPROVED' ? '✓ Admin Verified' : '⏳ Pending Approval'}
+                      </span>
+
+                      {viewingProfile.is_premium ? (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 shadow-2xs">
+                          <Sparkles className="w-3 h-3 text-amber-600 fill-amber-500" />
+                          <span>★ Premium Plan ({viewingProfile.premium_plan || 'Active'})</span>
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-700 border border-stone-200">
+                          Free Plan Account
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setViewingProfile(null)}
+                  className="p-1.5 rounded-full hover:bg-stone-100 text-stone-400 hover:text-stone-600 cursor-pointer transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Subscription & Account Status Banner */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="bg-gradient-to-br from-[#fff9fa] to-[#fff2f7] p-3.5 rounded-2xl border border-[#eadfe4] space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#4b001f] block">Subscription Status</span>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-stone-800 text-sm">
+                      {viewingProfile.is_premium ? (viewingProfile.premium_plan || 'Premium Member') : 'Free Standard Plan'}
+                    </span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${viewingProfile.is_premium ? 'bg-amber-200 text-amber-900' : 'bg-stone-200 text-stone-700'}`}>
+                      {viewingProfile.is_premium ? 'ACTIVE' : 'FREE'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-stone-500">
+                    {viewingProfile.is_premium
+                      ? `Valid: ${viewingProfile.premium_start ? formatDate(viewingProfile.premium_start) : 'Active'} to ${viewingProfile.premium_end ? formatDate(viewingProfile.premium_end) : 'Unlimited'}`
+                      : 'Standard free access to browse active profiles.'}
+                  </p>
+                </div>
+
+                <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200 space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500 block">Biodata Document Status</span>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-stone-800 text-sm flex items-center gap-1.5">
+                      {viewingProfile.biodata_uploaded || viewingProfile.biodata_document_name ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                          <span className="text-emerald-700">Document Uploaded</span>
+                        </>
+                      ) : (
+                        <>
+                          <Clock className="w-4 h-4 text-amber-600" />
+                          <span className="text-stone-600">No Document Attached</span>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-stone-500 truncate">
+                    {viewingProfile.biodata_document_name || 'Full profile biodata provided via registration form.'}
+                  </p>
+                  {viewingProfile.biodata_document_url && (
+                    <a
+                      href={viewingProfile.biodata_document_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] text-[#4b001f] hover:underline font-bold inline-flex items-center gap-1 pt-0.5"
+                    >
+                      <FileText className="w-3 h-3" />
+                      <span>View Uploaded Document</span>
+                    </a>
                   )}
                 </div>
-                <div>
-                  <h4 className="font-serif font-bold text-lg text-[#4b001f]">{viewingProfile.full_name}</h4>
-                  <div className="flex items-center gap-2 text-xs text-stone-500">
-                    <span>{viewingProfile.gender} · {viewingProfile.age || 25} yrs</span>
-                    <span>·</span>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3 text-[#c9973e]" />
-                      Joined {formatDate(viewingProfile.created_at)}
+              </div>
+
+              {/* Contact & Family Guardian Details */}
+              <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-3">
+                <h5 className="font-serif font-bold text-sm text-[#4b001f] flex items-center gap-2">
+                  <UserCheck className="w-4 h-4 text-emerald-600" />
+                  <span>Contact Information & Guardian Verification</span>
+                </h5>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <span className="text-stone-400 block text-[10px]">Candidate Mobile:</span>
+                    {viewingProfile.mobile ? (
+                      <a
+                        href={`tel:${viewingProfile.mobile}`}
+                        className="font-bold text-stone-800 hover:text-[#4b001f] transition-colors flex items-center gap-1.5 mt-0.5"
+                      >
+                        <Phone className="w-3.5 h-3.5 text-[#c9973e]" />
+                        <span>{viewingProfile.mobile}</span>
+                      </a>
+                    ) : (
+                      <span className="text-stone-400 italic">Not Provided</span>
+                    )}
+                  </div>
+
+                  <div>
+                    <span className="text-stone-400 block text-[10px]">Email Address:</span>
+                    {viewingProfile.email ? (
+                      <a
+                        href={`mailto:${viewingProfile.email}`}
+                        className="font-bold text-stone-800 hover:text-[#4b001f] transition-colors flex items-center gap-1.5 mt-0.5 truncate"
+                      >
+                        <Mail className="w-3.5 h-3.5 text-[#c9973e]" />
+                        <span>{viewingProfile.email}</span>
+                      </a>
+                    ) : (
+                      <span className="text-stone-400 italic">Not Provided</span>
+                    )}
+                  </div>
+
+                  <div>
+                    <span className="text-stone-400 block text-[10px]">Place & Location:</span>
+                    <div className="font-bold text-stone-800 flex items-center gap-1.5 mt-0.5">
+                      <MapPin className="w-3.5 h-3.5 text-[#c9973e]" />
+                      <span>{viewingProfile.location || `${viewingProfile.place || ''}, ${viewingProfile.district || ''}`.replace(/^,\s*|,\s*$/g, '') || 'Kerala'}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="text-stone-400 block text-[10px]">Family Guardian:</span>
+                    <span className="font-bold text-stone-800 block mt-0.5">
+                      {viewingProfile.guardian_name || 'Family Guardian'} {viewingProfile.guardian_relation ? `(${viewingProfile.guardian_relation})` : ''}
                     </span>
+                  </div>
+
+                  <div className="sm:col-span-2 pt-2 border-t border-stone-200/60 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <span className="text-stone-400 block text-[10px]">Guardian Contact Number:</span>
+                      <a
+                        href={`tel:${viewingProfile.guardian_mobile || viewingProfile.mobile}`}
+                        className="font-bold text-emerald-800 hover:text-emerald-900 transition-colors flex items-center gap-1.5 text-sm"
+                      >
+                        <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>{viewingProfile.guardian_mobile || viewingProfile.mobile || '-'}</span>
+                      </a>
+                    </div>
+
+                    {guardianPhoneClean && (
+                      <a
+                        href={`https://wa.me/${guardianPhoneClean}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-2xs cursor-pointer"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        <span>Chat on WhatsApp</span>
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setViewingProfile(null)}
-                className="p-1.5 rounded-full hover:bg-stone-100 text-stone-500 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <div className="grid grid-cols-2 gap-3 text-xs bg-stone-50 p-4 rounded-2xl border border-stone-100">
-              <div>
-                <span className="text-stone-400 block text-[10px]">Mobile / Phone:</span>
-                <span className="font-bold text-stone-800">{viewingProfile.mobile || '-'}</span>
-              </div>
-              <div>
-                <span className="text-stone-400 block text-[10px]">Email:</span>
-                <span className="font-bold text-stone-800">{viewingProfile.email || '-'}</span>
-              </div>
-              <div>
-                <span className="text-stone-400 block text-[10px]">Place / Location:</span>
-                <span className="font-bold text-stone-800">{viewingProfile.location || `${viewingProfile.place || ''}, ${viewingProfile.district || ''}`}</span>
-              </div>
-              <div>
-                <span className="text-stone-400 block text-[10px]">Profession:</span>
-                <span className="font-bold text-stone-800">{viewingProfile.profession || 'Professional'}</span>
-              </div>
-              <div>
-                <span className="text-stone-400 block text-[10px]">Guardian Name & Relation:</span>
-                <span className="font-bold text-stone-800">{viewingProfile.guardian_name || 'Guardian'} ({viewingProfile.guardian_relation || 'Parent'})</span>
-              </div>
-              <div>
-                <span className="text-stone-400 block text-[10px]">Guardian Contact:</span>
-                <span className="font-bold text-emerald-800">{viewingProfile.guardian_mobile || viewingProfile.mobile || '-'}</span>
-              </div>
-            </div>
+              {/* Personal, Educational & Matrimonial Details */}
+              <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-3">
+                <h5 className="font-serif font-bold text-sm text-[#4b001f] flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-[#c9973e]" />
+                  <span>Personal & Matrimonial Details</span>
+                </h5>
 
-            {viewingProfile.about && (
-              <div className="text-xs text-stone-600 bg-[#fff9fa] p-3 rounded-xl border border-[#eadfe4]">
-                <span className="font-bold text-[#4b001f] block mb-1">About / Bio:</span>
-                <p>{viewingProfile.about}</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                  <div>
+                    <span className="text-stone-400 block text-[10px]">Education:</span>
+                    <span className="font-bold text-stone-800">{viewingProfile.education || 'Graduate'}</span>
+                  </div>
+                  <div>
+                    <span className="text-stone-400 block text-[10px]">Profession:</span>
+                    <span className="font-bold text-stone-800">{viewingProfile.profession || 'Professional'}</span>
+                  </div>
+                  <div>
+                    <span className="text-stone-400 block text-[10px]">Marital Status:</span>
+                    <span className="font-bold text-stone-800">{viewingProfile.marital_status || 'Never Married'}</span>
+                  </div>
+                  <div>
+                    <span className="text-stone-400 block text-[10px]">Religion & Sect:</span>
+                    <span className="font-bold text-stone-800">{viewingProfile.religion || 'Islam'} ({viewingProfile.sect || 'Sunni'})</span>
+                  </div>
+                  <div>
+                    <span className="text-stone-400 block text-[10px]">Height:</span>
+                    <span className="font-bold text-stone-800">{viewingProfile.height || '5 ft 6 in'}</span>
+                  </div>
+                  <div>
+                    <span className="text-stone-400 block text-[10px]">Date of Birth:</span>
+                    <span className="font-bold text-stone-800">{viewingProfile.date_of_birth ? formatDate(viewingProfile.date_of_birth) : '-'}</span>
+                  </div>
+                </div>
               </div>
-            )}
 
-            <div className="flex items-center justify-between pt-3 border-t border-stone-200">
-              <button
-                type="button"
-                onClick={() => {
-                  const target = viewingProfile;
-                  setViewingProfile(null);
-                  setProfileToDelete(target);
-                }}
-                className="px-4 py-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Delete Profile</span>
-              </button>
+              {/* Hobbies & Interests */}
+              {((Array.isArray(viewingProfile.hobbies) && viewingProfile.hobbies.length > 0) ||
+                (Array.isArray(viewingProfile.interests) && viewingProfile.interests.length > 0) ||
+                (typeof viewingProfile.hobbies === 'string' && viewingProfile.hobbies.trim())) && (
+                <div className="bg-[#fffdf7] p-3.5 rounded-2xl border border-amber-200/60 space-y-2 text-xs">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#946b17] block">Hobbies & Interests</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {Array.isArray(viewingProfile.hobbies) ? (
+                      viewingProfile.hobbies.map((h, i) => (
+                        <span key={i} className="px-2.5 py-0.5 rounded-lg bg-amber-100 text-amber-900 text-[11px] font-semibold border border-amber-200">
+                          {h}
+                        </span>
+                      ))
+                    ) : viewingProfile.hobbies ? (
+                      <span className="px-2.5 py-0.5 rounded-lg bg-amber-100 text-amber-900 text-[11px] font-semibold border border-amber-200">
+                        {viewingProfile.hobbies}
+                      </span>
+                    ) : null}
 
-              <button
-                type="button"
-                onClick={() => setViewingProfile(null)}
-                className="px-5 py-2 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold cursor-pointer"
-              >
-                Close
-              </button>
+                    {Array.isArray(viewingProfile.interests) ? (
+                      viewingProfile.interests.map((it, i) => (
+                        <span key={i} className="px-2.5 py-0.5 rounded-lg bg-stone-100 text-stone-700 text-[11px] font-semibold border border-stone-200">
+                          {it}
+                        </span>
+                      ))
+                    ) : viewingProfile.interests ? (
+                      <span className="px-2.5 py-0.5 rounded-lg bg-stone-100 text-stone-700 text-[11px] font-semibold border border-stone-200">
+                        {viewingProfile.interests}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              )}
+
+              {/* About / Bio */}
+              {viewingProfile.about && (
+                <div className="text-xs text-stone-700 bg-[#fff9fa] p-4 rounded-2xl border border-[#eadfe4] space-y-1">
+                  <span className="font-bold text-[#4b001f] block text-[11px]">About Candidate:</span>
+                  <p className="leading-relaxed whitespace-pre-line">{viewingProfile.about}</p>
+                </div>
+              )}
+
+              {/* Partner Preferences */}
+              {viewingProfile.partner_preferences && (
+                <div className="text-xs text-stone-700 bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-1">
+                  <span className="font-bold text-[#4b001f] block text-[11px]">Partner Expectations & Preferences:</span>
+                  <p className="leading-relaxed whitespace-pre-line">{viewingProfile.partner_preferences}</p>
+                </div>
+              )}
+
+              {/* Footer Actions */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-stone-200">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const target = viewingProfile;
+                      setViewingProfile(null);
+                      setProfileToDelete(target);
+                    }}
+                    className="px-4 py-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Profile</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const target = viewingProfile;
+                      setViewingProfile(null);
+                      handleEditClick(target);
+                    }}
+                    className="px-4 py-2 rounded-xl border border-stone-200 hover:bg-stone-50 text-stone-700 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                    <span>Edit Profile</span>
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {viewingProfile.profile_status === 'PENDING' && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await onApproveProfile(viewingProfile.id);
+                        setViewingProfile({ ...viewingProfile, profile_status: 'APPROVED' });
+                      }}
+                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer transition-colors shadow-2xs"
+                    >
+                      Approve Profile
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setViewingProfile(null)}
+                    className="px-6 py-2 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold cursor-pointer transition-colors shadow-2xs"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Screenshot / Proof Full Image Modal */}
       {previewScreenshotUrl && (
