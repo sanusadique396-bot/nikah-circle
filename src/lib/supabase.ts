@@ -232,17 +232,6 @@ export function getHighestExistingMemberNumber(
     }
   } catch {}
 
-  // 4. Check sequence counter storage
-  try {
-    const rawSeq =
-      localStorage.getItem(MEMBER_ID_SEQ_KEY) ||
-      localStorage.getItem('nikah_circle_member_id_seq_v4');
-    if (rawSeq) {
-      const seqNum = parseInt(rawSeq, 10);
-      if (!isNaN(seqNum) && seqNum > highest) highest = seqNum;
-    }
-  } catch {}
-
   return highest;
 }
 
@@ -252,7 +241,9 @@ export function getNextMemberId(
   try {
     const highest = getHighestExistingMemberNumber(existingProfiles);
     const next = Math.max(1003, highest + 1);
-    localStorage.setItem(MEMBER_ID_SEQ_KEY, next.toString());
+    try {
+      localStorage.setItem(MEMBER_ID_SEQ_KEY, next.toString());
+    } catch {}
     return `NCSM${next}`;
   } catch {
     return 'NCSM1003';
@@ -377,8 +368,21 @@ export function parseSupabaseProfile(p: any, defaultIndex?: number): Profile {
     extractMemberIdNumber(meta?.member_id) ||
     extractMemberIdNumber(p.member_id) ||
     extractMemberIdNumber(p.id);
-  const fallbackMemberId = typeof defaultIndex === 'number' ? `NCSM${1003 + defaultIndex}` : 'NCSM1003';
-  const memberId = parsedNum ? `NCSM${parsedNum}` : fallbackMemberId;
+
+  // Permanent canonical binding for established accounts
+  const emailNorm = (p.email || '').toLowerCase().trim();
+  const phoneNorm = p.mobile ? p.mobile.replace(/\D/g, '').slice(-8) : '';
+  let memberId = 'NCSM1003';
+
+  if (emailNorm === 'nikahcircle01@gmail.com' || phoneNorm.endsWith('44905093')) {
+    memberId = 'NCSM1002';
+  } else if (emailNorm === 'sanusadique396@gmail.com' || phoneNorm.endsWith('43549396')) {
+    memberId = 'NCSM1001';
+  } else if (parsedNum) {
+    memberId = `NCSM${parsedNum}`;
+  } else if (typeof defaultIndex === 'number') {
+    memberId = `NCSM${1003 + defaultIndex}`;
+  }
 
   return autoCorrectMistakenGenders({
     ...p,
@@ -419,19 +423,19 @@ export function parseSupabaseProfile(p: any, defaultIndex?: number): Profile {
 }
 
 // Full Fresh Database and User Reset System
-const CLEAN_RESET_KEY = 'nikah_circle_clean_reset_v6001';
+const CLEAN_RESET_KEY = 'nikah_circle_clean_reset_v6003';
 
 export function performInitialResetIfRequired() {
   try {
     if (localStorage.getItem(CLEAN_RESET_KEY) !== 'true') {
-      // Clear legacy deleted records so Sadiq and Noushida are never blacklisted
+      // Clear legacy deleted records and cached profiles
       localStorage.removeItem('nikah_circle_deleted_records_v2');
+      localStorage.removeItem('nikah_circle_profiles_v2');
+      localStorage.removeItem('nikah_circle_member_id_seq_v4');
+      localStorage.removeItem('nikah_circle_member_id_seq_v5');
 
-      // Ensure sequence counter is primed to at least 1002 so next new registration starts at NCSM1003
-      const currentSeq = parseInt(localStorage.getItem(MEMBER_ID_SEQ_KEY) || '0', 10);
-      if (isNaN(currentSeq) || currentSeq < 1002) {
-        localStorage.setItem(MEMBER_ID_SEQ_KEY, '1002');
-      }
+      // Set baseline sequence counter to 1002 so next new registration starts at NCSM1003
+      localStorage.setItem(MEMBER_ID_SEQ_KEY, '1002');
       localStorage.setItem(CLEAN_RESET_KEY, 'true');
     }
   } catch (e) {

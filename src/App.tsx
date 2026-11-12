@@ -142,8 +142,22 @@ export function isProfileDeleted(
   profile: Partial<Profile>,
   deleted = getDeletedRecords()
 ): boolean {
-  if (profile.id && deleted.ids.includes(profile.id)) return true;
+  // NEVER delete established permanent accounts!
+  const email = (profile.email || '').toLowerCase().trim();
   const phone = profile.mobile ? profile.mobile.replace(/\D/g, '').slice(-8) : '';
+  const memberId = (profile.member_id || '').toUpperCase();
+  if (
+    email === 'nikahcircle01@gmail.com' ||
+    email === 'sanusadique396@gmail.com' ||
+    memberId === 'NCSM1001' ||
+    memberId === 'NCSM1002' ||
+    phone.endsWith('44905093') ||
+    phone.endsWith('43549396')
+  ) {
+    return false;
+  }
+
+  if (profile.id && deleted.ids.includes(profile.id)) return true;
   const gPhone = profile.guardian_mobile ? profile.guardian_mobile.replace(/\D/g, '').slice(-8) : '';
   const name = (profile.full_name || '').toLowerCase().trim();
   if (phone && deleted.phones.some((dp) => dp && dp.length >= 6 && (phone.includes(dp) || dp.includes(phone)))) return true;
@@ -152,15 +166,87 @@ export function isProfileDeleted(
   return false;
 }
 
+// Strict deduplication function to prevent duplicate user cards, tables, or ghost profiles
+export function deduplicateProfiles(inputProfiles: Profile[]): Profile[] {
+  const result: Profile[] = [];
+
+  for (const prof of inputProfiles) {
+    if (!prof) continue;
+
+    const pEmail = (prof.email || '').toLowerCase().trim();
+    const pMobile = prof.mobile ? prof.mobile.replace(/\D/g, '').slice(-8) : '';
+    const pMemberId = prof.member_id ? prof.member_id.trim().toUpperCase() : '';
+    const pId = prof.id || '';
+
+    const existingIdx = result.findIndex((existing) => {
+      if (pId && existing.id && pId === existing.id) return true;
+      if (pMemberId && existing.member_id && pMemberId === existing.member_id.trim().toUpperCase()) return true;
+      if (pEmail && existing.email && pEmail === existing.email.toLowerCase().trim()) return true;
+      const exMobile = existing.mobile ? existing.mobile.replace(/\D/g, '').slice(-8) : '';
+      if (pMobile && exMobile && pMobile.length >= 7 && pMobile === exMobile) return true;
+      return false;
+    });
+
+    if (existingIdx === -1) {
+      result.push(prof);
+    } else {
+      const existing = result[existingIdx];
+
+      let bestMemberId = existing.member_id || prof.member_id;
+      if (pEmail === 'nikahcircle01@gmail.com' || (pMobile && pMobile.endsWith('44905093'))) {
+        bestMemberId = 'NCSM1002';
+      } else if (pEmail === 'sanusadique396@gmail.com' || (pMobile && pMobile.endsWith('43549396'))) {
+        bestMemberId = 'NCSM1001';
+      }
+
+      const isPrem = Boolean(existing.is_premium || prof.is_premium);
+      const isApproved = existing.profile_status === 'APPROVED' || prof.profile_status === 'APPROVED';
+      const hasBiodata = Boolean(
+        existing.biodata_uploaded || prof.biodata_uploaded ||
+        existing.biodata_document_url || prof.biodata_document_url ||
+        existing.height || prof.height
+      );
+
+      result[existingIdx] = {
+        ...prof,
+        ...existing,
+        id: existing.id || prof.id,
+        member_id: bestMemberId,
+        full_name: (existing.full_name && existing.full_name !== 'Candidate' && existing.full_name !== 'Member') ? existing.full_name : prof.full_name,
+        email: existing.email || prof.email,
+        mobile: existing.mobile || prof.mobile,
+        gender: normalizeGender(existing.gender || prof.gender),
+        is_premium: isPrem,
+        premium_plan: existing.premium_plan || prof.premium_plan || (isPrem ? 'Premium Plan' : null),
+        profile_status: isApproved ? 'APPROVED' : (existing.profile_status || prof.profile_status || 'PENDING'),
+        is_verified: Boolean(existing.is_verified || prof.is_verified),
+        biodata_uploaded: hasBiodata,
+        biodata_document_name: existing.biodata_document_name || prof.biodata_document_name || null,
+        biodata_document_url: existing.biodata_document_url || prof.biodata_document_url || null,
+        place: existing.place || prof.place,
+        district: existing.district || prof.district,
+        location: existing.location || prof.location,
+        education: existing.education || prof.education,
+        profession: existing.profession || prof.profession,
+        guardian_name: existing.guardian_name || prof.guardian_name,
+        guardian_mobile: existing.guardian_mobile || prof.guardian_mobile,
+      };
+    }
+  }
+
+  return result;
+}
+
 export default function App() {
   // Navigation: 'home' | 'profiles' | 'shortlist' | 'interests' | 'admin'
   const [activeView, setActiveView] = useState<'home' | 'profiles' | 'shortlist' | 'interests' | 'admin'>('home');
 
-  // Data Store (strictly filtered so deleted profiles are immediately and permanently hidden)
+  // Data Store (strictly filtered and deduplicated)
   const [profiles, setProfiles] = useState<Profile[]>(() => {
     const loaded = getStoredProfiles();
     const deleted = getDeletedRecords();
-    return loaded.filter((p) => !isProfileDeleted(p, deleted));
+    const filtered = loaded.filter((p) => !isProfileDeleted(p, deleted));
+    return deduplicateProfiles(filtered);
   });
   const [payments, setPayments] = useState<Payment[]>(() => getStoredPayments());
   const [premiumRequests, setPremiumRequests] = useState<PremiumRequest[]>(() => getStoredPremiumRequests());
@@ -477,8 +563,9 @@ export default function App() {
     });
 
     if (hasChanges) {
-      setProfiles(nextProfiles);
-      saveStoredProfiles(nextProfiles);
+      const deduped = deduplicateProfiles(nextProfiles);
+      setProfiles(deduped);
+      saveStoredProfiles(deduped);
     }
   }, [premiumRequests]);
 
@@ -626,18 +713,21 @@ export default function App() {
         merged = localProfiles.filter((p) => !isProfileDeleted(p, deleted));
       }
 
+      // First deduplication pass on raw merged profiles
+      merged = deduplicateProfiles(merged);
+
       // 3. Ensure currentUserProfile is also unified into merged so freshly registered / updated candidates are never missing
       try {
         const storedCup = localStorage.getItem('nikah_circle_user_profile');
         if (storedCup) {
           const cup: UserProfileData = JSON.parse(storedCup);
           const cupPhone = cup.mobile ? cup.mobile.replace(/\D/g, '').slice(-8) : '';
-          const cupEmail = cup.email ? cup.email.toLowerCase() : '';
+          const cupEmail = cup.email ? cup.email.toLowerCase().trim() : '';
           const foundIdx = merged.findIndex(
             (p) =>
               (p.id && cup.id && p.id === cup.id) ||
               (cupPhone && p.mobile && p.mobile.replace(/\D/g, '').includes(cupPhone)) ||
-              (cupEmail && p.email && p.email.toLowerCase() === cupEmail)
+              (cupEmail && p.email && p.email.toLowerCase().trim() === cupEmail)
           );
           if (foundIdx >= 0) {
             if (isProfileDeleted(cup, deleted)) {
@@ -689,27 +779,42 @@ export default function App() {
         }
       } catch {}
 
+      // Second deduplication pass
+      merged = deduplicateProfiles(merged);
+
       // 4. Ensure every profile has a unique sequential member_id (NCSM1001, NCSM1002...)
-      // NCSM1001 (Noushida) and NCSM1002 (Sadiq / Admin) are established accounts.
-      // All new user registrations must start strictly from NCSM1003 onwards.
+      // - NCSM1001 (Noushida) and NCSM1002 (Sadiq / Admin) are permanently established.
+      // - Existing profiles with an assigned NCSM number retain their number permanently!
+      // - New registrations receive the next sequential ID starting strictly from NCSM1003 onwards.
       let maxNum = 1002;
       const assignedIds = new Set<string>();
 
-      // First pass: collect all established member_id numbers
-      merged.forEach((p) => {
-        const num = extractMemberIdNumber(p.member_id) || extractMemberIdNumber(p.id);
-        if (num) {
-          if (num > maxNum) maxNum = num;
-          assignedIds.add(`NCSM${num}`);
-        }
-      });
-
-      // Second pass: assign sequential numbers to any profile missing one (starting from 1003)
-      let currentAssign = 1003;
+      // First pass: lock established accounts and collect existing assigned numbers
       merged = merged.map((p) => {
+        const pEmail = (p.email || '').toLowerCase().trim();
+        const pMobile = p.mobile ? p.mobile.replace(/\D/g, '').slice(-8) : '';
+        if (pEmail === 'nikahcircle01@gmail.com' || (pMobile && pMobile.endsWith('44905093'))) {
+          assignedIds.add('NCSM1002');
+          return { ...p, member_id: 'NCSM1002' };
+        }
+        if (pEmail === 'sanusadique396@gmail.com' || (pMobile && pMobile.endsWith('43549396'))) {
+          assignedIds.add('NCSM1001');
+          return { ...p, member_id: 'NCSM1001' };
+        }
         const existingNum = extractMemberIdNumber(p.member_id) || extractMemberIdNumber(p.id);
         if (existingNum) {
+          if (existingNum > maxNum) maxNum = existingNum;
+          assignedIds.add(`NCSM${existingNum}`);
           return { ...p, member_id: `NCSM${existingNum}` };
+        }
+        return p;
+      });
+
+      // Second pass: assign sequential numbers ONLY to profiles that truly lack a member_id
+      let currentAssign = 1003;
+      merged = merged.map((p) => {
+        if (p.member_id && extractMemberIdNumber(p.member_id)) {
+          return p;
         }
         while (assignedIds.has(`NCSM${currentAssign}`)) {
           currentAssign++;
@@ -758,11 +863,12 @@ export default function App() {
         };
       });
 
-      // Sort profiles newest-first for listings display
-      finalized.sort((a, b) => (new Date(b.created_at || '').getTime() || 0) - (new Date(a.created_at || '').getTime() || 0));
+      // Deduplicate finalized list and sort profiles newest-first
+      const finalDeduplicated = deduplicateProfiles(finalized);
+      finalDeduplicated.sort((a, b) => (new Date(b.created_at || '').getTime() || 0) - (new Date(a.created_at || '').getTime() || 0));
 
-      setProfiles(finalized);
-      saveStoredProfiles(finalized);
+      setProfiles(finalDeduplicated);
+      saveStoredProfiles(finalDeduplicated);
     } catch (err) {
       console.warn('Data sync offline fallback', err);
     }
@@ -1081,13 +1187,22 @@ export default function App() {
       (p) => (p.mobile && p.mobile === data.mobile) || (p.email && p.email === data.email)
     );
 
-    // Auto-generate sequential Member ID (NCSM1001, NCSM1002...) if not already present
-    const existingMemberId =
-      (extractMemberIdNumber(data.member_id) ? `NCSM${extractMemberIdNumber(data.member_id)}` : null) ||
-      (extractMemberIdNumber(currentUserProfile?.member_id) ? `NCSM${extractMemberIdNumber(currentUserProfile?.member_id)}` : null) ||
-      (existingIndex >= 0 && extractMemberIdNumber(profiles[existingIndex].member_id) ? `NCSM${extractMemberIdNumber(profiles[existingIndex].member_id)}` : null);
+    // Canonical binding for established accounts & auto-generate sequential Member ID
+    const emailNorm = (data.email || '').toLowerCase().trim();
+    const phoneNorm = data.mobile ? data.mobile.replace(/\D/g, '').slice(-8) : '';
+    let memberId: string;
+    if (emailNorm === 'nikahcircle01@gmail.com' || phoneNorm.endsWith('44905093')) {
+      memberId = 'NCSM1002';
+    } else if (emailNorm === 'sanusadique396@gmail.com' || phoneNorm.endsWith('43549396')) {
+      memberId = 'NCSM1001';
+    } else {
+      const existingMemberId =
+        (extractMemberIdNumber(data.member_id) ? `NCSM${extractMemberIdNumber(data.member_id)}` : null) ||
+        (extractMemberIdNumber(currentUserProfile?.member_id) ? `NCSM${extractMemberIdNumber(currentUserProfile?.member_id)}` : null) ||
+        (existingIndex >= 0 && extractMemberIdNumber(profiles[existingIndex].member_id) ? `NCSM${extractMemberIdNumber(profiles[existingIndex].member_id)}` : null);
 
-    const memberId = existingMemberId || getNextMemberId(profiles);
+      memberId = existingMemberId || getNextMemberId(profiles);
+    }
 
     const normalizedGender = normalizeGender(data.gender);
 
@@ -1169,6 +1284,7 @@ export default function App() {
       updatedProfiles = [profilePayload, ...profiles];
     }
 
+    updatedProfiles = deduplicateProfiles(updatedProfiles);
     setProfiles(updatedProfiles);
     saveStoredProfiles(updatedProfiles);
 
@@ -1184,11 +1300,11 @@ export default function App() {
           .from('profiles')
           .select('id')
           .or(`email.eq.${profilePayload.email},mobile.eq.${profilePayload.mobile}`)
-          .maybeSingle();
+          .limit(1);
 
-        if (existingDb?.id) {
-          await supabase.from('profiles').update(payload).eq('id', existingDb.id);
-          profilePayload.id = existingDb.id;
+        if (existingDb && existingDb.length > 0) {
+          await supabase.from('profiles').update(payload).eq('id', existingDb[0].id);
+          profilePayload.id = existingDb[0].id;
         } else {
           delete payload.id;
           const { data: dbCreated } = await supabase.from('profiles').insert(payload).select().single();
@@ -1769,7 +1885,7 @@ export default function App() {
         ...profileData,
       } as Profile;
 
-      const updated = [targetProfile, ...profiles];
+      const updated = deduplicateProfiles([targetProfile, ...profiles]);
       setProfiles(updated);
       saveStoredProfiles(updated);
 
@@ -1882,59 +1998,98 @@ export default function App() {
   };
 
   const handleResetAllData = async () => {
-    // 1. Clear in-memory state
-    setProfiles([]);
+    // 1. Established canonical accounts (NCSM1001: Noushida, NCSM1002: Sadiq / Admin)
+    const baseSadiq: Profile = {
+      id: '177a3731-5de2-4bbf-82d4-e4ea33cb25ed',
+      member_id: 'NCSM1002',
+      full_name: 'Sadiq',
+      email: 'nikahcircle01@gmail.com',
+      mobile: '9744905093',
+      gender: 'Female',
+      date_of_birth: '2002-03-13',
+      location: 'majeri, Malappuram',
+      district: 'Malappuram',
+      place: 'majeri',
+      education: 'Graduate',
+      profession: 'dm',
+      guardian_name: 'Guardian',
+      guardian_mobile: '9744905093',
+      guardian_relation: 'Parent (Guardian)',
+      marital_status: 'Never Married',
+      biodata_uploaded: true,
+      registration_type: 'ONLINE',
+      profile_status: 'APPROVED',
+      is_verified: true,
+      is_premium: true,
+      premium_plan: 'Premium Free (Girls & Other)',
+      premium_start: '2026-11-12',
+      premium_end: '2027-02-10',
+      created_at: '2026-11-12T13:37:23.773Z',
+      about: '<!--NC_META:{"member_id":"NCSM1002","place":"majeri","state":"Kerala","biodata_uploaded":true,"biodata_document_name":null,"biodata_document_url":null,"hobbies":[],"interests":[]}-->',
+    };
+
+    const baseNoushida: Profile = {
+      id: 'e2b7b16b-9545-4eda-bef7-17069eeffdaa',
+      member_id: 'NCSM1001',
+      full_name: 'NOUSHIDA',
+      email: 'sanusadique396@gmail.com',
+      mobile: '8943549396',
+      gender: 'Female',
+      date_of_birth: '1998-05-15',
+      location: 'Malappuram, Malappuram',
+      district: 'Malappuram',
+      place: 'Malappuram',
+      education: 'Graduate',
+      profession: 'Professional',
+      guardian_name: 'Family Guardian',
+      guardian_mobile: '8943549396',
+      guardian_relation: 'Parent (Guardian)',
+      marital_status: 'Never Married',
+      biodata_uploaded: false,
+      registration_type: 'ONLINE',
+      profile_status: 'APPROVED',
+      is_verified: true,
+      is_premium: false,
+      premium_plan: null,
+      created_at: '2026-11-12T13:37:37.211Z',
+      about: '<!--NC_META:{"member_id":"NCSM1001","place":"Malappuram","state":"Kerala","biodata_uploaded":false,"biodata_document_name":null,"biodata_document_url":null,"hobbies":[],"interests":[]}-->',
+    };
+
+    const cleanProfiles = [baseSadiq, baseNoushida];
+
+    // 2. Set clean state
+    setProfiles(cleanProfiles);
+    saveStoredProfiles(cleanProfiles);
     setPayments([]);
     setPremiumRequests([]);
     setBookmarks([]);
     setInterestsMap({});
-    setCurrentUserProfile(null);
-    setCurrentUser(null);
 
-    // 2. Wipe all local storage keys
-    localStorage.removeItem('nikah_circle_profiles_v2');
+    // 3. Clear storage keys
     localStorage.removeItem('nikah_circle_payments_v2');
     localStorage.removeItem('nikah_circle_bookmarks_v2');
     localStorage.removeItem('nikah_circle_premium_requests_v1');
-    localStorage.removeItem('nikah_circle_member_id_seq_v5');
-    localStorage.removeItem('nikah_circle_member_id_seq_v4');
-    localStorage.removeItem('nikah_circle_user_profile');
-    localStorage.removeItem('nikah_circle_user');
-    localStorage.removeItem('nikah_circle_user_is_premium');
-    localStorage.removeItem('nikah_circle_user_plan');
     localStorage.removeItem('nikah_circle_incoming_interests_v2');
     localStorage.removeItem('nikah_circle_incoming_interests');
     localStorage.removeItem('nikah_circle_interests_map_v3');
     localStorage.removeItem('nikah_circle_interests_map_v2');
     localStorage.removeItem('nikah_circle_proposals_registry_v2');
     localStorage.removeItem('nikah_circle_proposals_registry_v3');
-
-    // 3. Mark previous test records as deleted permanently
-    const deleted = {
-      ids: [
-        'f1cf6dd0-e3bd-4388-acc7-46061d742166',
-        '69777f27-a60f-4ae4-826e-9b556775d8a0',
-        '74127f36-19d7-49b0-a3d9-59327a64011d',
-        'e2b7b16b-9545-4eda-bef7-17069eeffdaa'
-      ],
-      phones: ['9744905093', '8943549396', '09744905093', '8943579396'],
-      names: ['sadiq', 'noushida', 'hida', 'hida fathima', 'ajmal']
-    };
-    saveDeletedRecords(deleted);
+    localStorage.removeItem('nikah_circle_deleted_records_v2');
 
     // 4. Reset sequence counter to 1002 so the next newly registered user starts strictly from NCSM1003
     localStorage.setItem(MEMBER_ID_SEQ_KEY, '1002');
 
-    // 5. Delete from Supabase
+    // 5. Delete test candidate records from Supabase (preserving Sadiq and Noushida)
     try {
-      await supabase.from('profiles').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('profiles').delete().not('email', 'in', '("nikahcircle01@gmail.com","sanusadique396@gmail.com")');
       await supabase.from('payments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       await supabase.from('premium_requests').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     } catch (e) {
       console.warn('Supabase wipe error', e);
     }
 
-    showToast('Database reset! New user registrations will start strictly from NCSM1003 onwards.');
+    showToast('Reset completed! Preserved NCSM1001 & NCSM1002. Next registration starts at NCSM1003.');
   };
 
   const handleApproveProfile = async (id: string) => {
@@ -3352,7 +3507,7 @@ export default function App() {
           setIsLoginOpen(false);
 
           // If a new regular user logs in and does not have a profile, register base account
-          if (!isAdminUser && user.email) {
+          if (!isAdminUser && user.email && user.email.toLowerCase() !== 'nikahcircle01@gmail.com') {
             const hasExisting = profiles.some(
               (p) => p.email && p.email.toLowerCase() === user.email.toLowerCase()
             );
@@ -3376,7 +3531,7 @@ export default function App() {
                 is_premium: false,
                 created_at: new Date().toISOString(),
               };
-              const updated = [autoProfile, ...profiles];
+              const updated = deduplicateProfiles([autoProfile, ...profiles]);
               setProfiles(updated);
               saveStoredProfiles(updated);
 
