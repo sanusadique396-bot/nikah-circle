@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Profile, normalizeGender } from '../types';
-import { MapPin, Heart, ShieldCheck, Sparkles, Eye, EyeOff, UserCheck, Lock, Clock } from 'lucide-react';
+import { MapPin, Heart, ShieldCheck, Eye, EyeOff, UserCheck, Lock, Clock, FileText } from 'lucide-react';
 
 interface Props {
   profile: Profile;
@@ -16,6 +16,8 @@ interface Props {
   currentUserId?: string | null;
   currentUserMobile?: string | null;
   onOppositeGenderRequired?: (genderNeeded: string) => void;
+  hasUserBiodata?: boolean;
+  onOpenBiodataWizard?: () => void;
 }
 
 export const ProfileCard: React.FC<Props> = ({
@@ -32,10 +34,12 @@ export const ProfileCard: React.FC<Props> = ({
   currentUserId,
   currentUserMobile,
   onOppositeGenderRequired,
+  hasUserBiodata = false,
+  onOpenBiodataWizard,
 }) => {
-  // Respect user privacy: default to modest blur unless interest is accepted and user unblurs
+  // Strict Privacy Rule: Guardian contact is revealed ONLY when interest is accepted
   const isUnlocked = interestStatus === 'accepted';
-  const [photoBlurred, setPhotoBlurred] = useState(!isUnlocked);
+  const [photoBlurred, setPhotoBlurred] = useState(false);
 
   const age = profile.age || (profile.date_of_birth ? new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear() : 26);
 
@@ -63,6 +67,12 @@ export const ProfileCard: React.FC<Props> = ({
       onOppositeGenderRequired?.(needed);
       return;
     }
+    if (!hasUserBiodata) {
+      if (onOpenBiodataWizard) {
+        onOpenBiodataWizard();
+      }
+      return;
+    }
     onSendInterest(profile.id);
   };
 
@@ -88,11 +98,11 @@ export const ProfileCard: React.FC<Props> = ({
           </div>
         )}
 
-        {/* Top-Left: Sequential Member ID Badge (NCSM1001, NCSM1002...) */}
-        <div className="absolute top-3 left-3 z-10 pointer-events-none">
-          <span className="font-mono text-[10px] sm:text-[11px] font-bold bg-[#4b001f] text-white px-2.5 py-1 rounded-lg tracking-wider shadow-sm border border-[#c9973e]/50 flex items-center gap-1.5 backdrop-blur-xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#c9973e] animate-pulse" />
-            <span>{profile.member_id || (profile.id?.startsWith('NCSM') ? profile.id : 'NCSM1001')}</span>
+        {/* Top-Left: Unique Member ID Badge */}
+        <div className="absolute top-3 left-3 z-10">
+          <span className="font-mono text-[11px] font-bold bg-[#4b001f]/95 backdrop-blur-xs text-amber-200 border border-amber-400/40 px-2.5 py-1 rounded-lg shadow-xs tracking-wider flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <span>{profile.member_id || (profile.id?.startsWith('NCSM') ? profile.id : `NCSM${profile.id?.replace(/\D/g, '').slice(-4) || '1001'}`)}</span>
           </span>
         </div>
 
@@ -137,12 +147,12 @@ export const ProfileCard: React.FC<Props> = ({
           <span>{normProfileGender}</span>
           {isUnlocked ? (
             <span className="px-1.5 py-0.5 rounded bg-emerald-500/80 text-[10px] text-white font-bold ml-1">
-              Biodata Unlocked
+              Contact Unlocked
             </span>
           ) : (
             <span className="px-1.5 py-0.5 rounded bg-black/50 text-[10px] text-stone-200 flex items-center gap-1 ml-1">
               <Lock className="w-2.5 h-2.5" />
-              <span>Hidden</span>
+              <span>Contact Hidden</span>
             </span>
           )}
         </div>
@@ -172,12 +182,12 @@ export const ProfileCard: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Status Note on Biodata Privacy */}
+          {/* Status Note on Guardian Contact Privacy */}
           <div className="mt-2.5 pt-2 border-t border-stone-100 text-[11px]">
             {isUnlocked ? (
               <span className="text-emerald-700 font-semibold flex items-center gap-1">
                 <UserCheck className="w-3.5 h-3.5" />
-                <span>Interest Accepted · Complete Biodata Visible</span>
+                <span>Interest Accepted · Guardian Contact Unlocked</span>
               </span>
             ) : interestStatus === 'pending' ? (
               <span className="text-amber-700 font-semibold flex items-center gap-1">
@@ -187,7 +197,7 @@ export const ProfileCard: React.FC<Props> = ({
             ) : (
               <span className="text-stone-500 flex items-center gap-1">
                 <Lock className="w-3.5 h-3.5 text-stone-400" />
-                <span>Biodata hidden until interest accepted</span>
+                <span>Guardian contact hidden until interest accepted</span>
               </span>
             )}
           </div>
@@ -199,7 +209,7 @@ export const ProfileCard: React.FC<Props> = ({
             onClick={() => onView(profile)}
             className="flex-1 py-2 px-2.5 rounded-xl border border-[#4b001f] text-[#4b001f] hover:bg-[#fff6fa] text-xs font-bold transition-colors cursor-pointer text-center"
           >
-            {isUnlocked ? 'View Biodata' : 'View Profile'}
+            View Profile & Bio
           </button>
 
           {isUnlocked ? (
@@ -240,6 +250,21 @@ export const ProfileCard: React.FC<Props> = ({
                 Cancel
               </button>
             </div>
+          ) : !hasUserBiodata ? (
+            <button
+              onClick={() => {
+                if (onOpenBiodataWizard) {
+                  onOpenBiodataWizard();
+                } else {
+                  handleInterestClick();
+                }
+              }}
+              className="flex-1 py-2 px-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+              title="Fill your candidate biodata before sending interest"
+            >
+              <FileText className="w-3.5 h-3.5 text-white" />
+              <span>Fill Your Biodata</span>
+            </button>
           ) : (
             <button
               onClick={handleInterestClick}

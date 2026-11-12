@@ -5,13 +5,11 @@ import {
   MapPin,
   Heart,
   ShieldCheck,
-  Sparkles,
   Lock,
   Phone,
   UserCheck,
   Clock,
-  CheckCircle2,
-  AlertCircle
+  FileText
 } from 'lucide-react';
 
 interface Props {
@@ -24,9 +22,11 @@ interface Props {
   onToggleBookmark: (profileId: string) => void;
   onOpenPremium: () => void;
   isUserPremium: boolean;
-  isAdminApproved?: boolean;
   currentUserGender?: 'Male' | 'Female' | null;
   currentUserMobile?: string | null;
+  currentUserId?: string | null;
+  hasUserBiodata?: boolean;
+  onOpenBiodataWizard?: () => void;
 }
 
 export const ProfileModal: React.FC<Props> = ({
@@ -39,27 +39,36 @@ export const ProfileModal: React.FC<Props> = ({
   onToggleBookmark,
   onOpenPremium,
   isUserPremium,
-  isAdminApproved = true,
   currentUserGender,
   currentUserMobile,
+  currentUserId,
+  hasUserBiodata = false,
+  onOpenBiodataWizard,
 }) => {
   if (!profile) return null;
 
+  // Strict Contact Privacy Rule: Contact details are UNLOCKED ONLY if interest was sent and ACCEPTED
   const isUnlocked = interestStatus === 'accepted';
   const normUserGender = currentUserGender ? normalizeGender(currentUserGender) : null;
   const normProfileGender = normalizeGender(profile.gender);
+  const isSameGender = Boolean(normUserGender && normProfileGender === normUserGender);
+  const isOwnProfile = Boolean(
+    (currentUserId && profile.id === currentUserId) ||
+    (currentUserMobile && profile.mobile && profile.mobile.replace(/\D/g, '').slice(-8) === currentUserMobile.replace(/\D/g, '').slice(-8))
+  );
+
   const age =
     profile.age ||
     (profile.date_of_birth
       ? new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear()
       : 26);
 
-  // Phone display rule: If guardian_mobile is provided, show ONLY guardian's number!
+  // Phone display rule: Guardian contact is prioritized
   const hasGuardianNumber = !!profile.guardian_mobile && profile.guardian_mobile.trim().length > 0;
   const contactPhoneToDisplay = hasGuardianNumber ? profile.guardian_mobile : profile.mobile;
   const contactLabel = hasGuardianNumber
-    ? `Guardian (${profile.guardian_relation || 'Father / Guardian'})`
-    : 'Candidate Direct Mobile';
+    ? `Guardian (${profile.guardian_relation || 'Parent / Guardian'})`
+    : 'Guardian / Direct Contact';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-xs p-4 sm:p-6 overflow-y-auto">
@@ -80,9 +89,7 @@ export const ProfileModal: React.FC<Props> = ({
                   src={profile.profile_photo}
                   alt={profile.full_name}
                   referrerPolicy="no-referrer"
-                  className={`w-full h-full object-cover ${
-                    !isUnlocked ? 'blur-md scale-105' : 'blur-none'
-                  }`}
+                  className="w-full h-full object-cover"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-3xl font-serif text-[#4b001f]">
@@ -123,28 +130,159 @@ export const ProfileModal: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Modal Body */}
+        {/* Modal Body: Complete Biodata Details are ALWAYS visible to members */}
         <div className="p-6 overflow-y-auto space-y-6 text-stone-800 text-xs sm:text-sm">
-          {/* PRIVACY LOCK NOTICE: If interest not accepted, hide full biodata! */}
-          {!isUnlocked ? (
-            <div className="p-6 rounded-2xl bg-[#fff6fa] border border-[#eadfe4] text-center space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-[#4b001f] text-[#c9973e] flex items-center justify-center mx-auto shadow-xs">
-                <Lock className="w-6 h-6" />
+          {/* About & Religious Outlook */}
+          <div>
+            <h4 className="font-serif font-bold text-base text-[#4b001f] mb-2">
+              About & Religious Outlook
+            </h4>
+            <div className="p-4 rounded-2xl bg-[#fff6fa] border border-[#eadfe4] space-y-2">
+              <p className="leading-relaxed text-stone-700">
+                {profile.about || 'Practicing Muslim individual with strong faith and dedication to family harmony.'}
+              </p>
+              <div className="pt-2 flex flex-wrap gap-4 text-xs text-stone-600 font-medium border-t border-[#eadfe4]/60">
+                <span>Religion: <strong className="text-stone-900">{profile.religion || 'Islam'}</strong></span>
+                <span>Maslak: <strong className="text-stone-900">{profile.religious_ideation || profile.sect || 'Sunni'}</strong></span>
+                <span>Height: <strong className="text-stone-900">{profile.height || "5'5\""}</strong></span>
+                {profile.complexion && <span>Color: <strong className="text-stone-900">{profile.complexion}</strong></span>}
+                {profile.physical_build && <span>Build: <strong className="text-stone-900">{profile.physical_build}</strong></span>}
+              </div>
+            </div>
+          </div>
+
+          {/* Detailed Attributes: Education & Career */}
+          <div>
+            <h4 className="font-serif font-bold text-base text-[#4b001f] mb-2">
+              Education & Career
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
+                <span className="block text-[11px] text-stone-500 font-semibold uppercase">Education</span>
+                <span className="font-bold text-stone-900">{profile.education || 'Graduate'}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
+                <span className="block text-[11px] text-stone-500 font-semibold uppercase">Profession</span>
+                <span className="font-bold text-stone-900">{profile.profession || 'Professional'}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
+                <span className="block text-[11px] text-stone-500 font-semibold uppercase">Marital Status</span>
+                <span className="font-bold text-stone-900">{profile.marital_status}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
+                <span className="block text-[11px] text-stone-500 font-semibold uppercase">District / City</span>
+                <span className="font-bold text-stone-900">{profile.district || profile.location || 'Kerala'}</span>
+              </div>
+              {profile.job_location && (
+                <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
+                  <span className="block text-[11px] text-stone-500 font-semibold uppercase">Job Location</span>
+                  <span className="font-bold text-stone-900">{profile.job_location}</span>
+                </div>
+              )}
+              {profile.religious_education && (
+                <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
+                  <span className="block text-[11px] text-stone-500 font-semibold uppercase">Religious Edu</span>
+                  <span className="font-bold text-stone-900">{profile.religious_education}</span>
+                </div>
+              )}
+              {profile.financial_status && (
+                <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
+                  <span className="block text-[11px] text-stone-500 font-semibold uppercase">Financial Status</span>
+                  <span className="font-bold text-stone-900">{profile.financial_status}</span>
+                </div>
+              )}
+              {profile.preferred_districts && (
+                <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
+                  <span className="block text-[11px] text-stone-500 font-semibold uppercase">Preferred Places</span>
+                  <span className="font-bold text-stone-900">{profile.preferred_districts}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Family & Guardian Background */}
+          <div>
+            <h4 className="font-serif font-bold text-base text-[#4b001f] mb-2">
+              Family & Guardian Background
+            </h4>
+            <div className="p-4 rounded-2xl bg-white border border-[#eadfe4] space-y-2">
+              <p className="leading-relaxed text-stone-700">
+                {profile.family_background || profile.family_details || 'Respectable family rooted in traditional Islamic values.'}
+              </p>
+              {profile.family_members_details && (
+                <div className="pt-2 border-t border-stone-100 text-xs text-stone-600">
+                  <span className="font-semibold text-stone-700">Family Members: </span>
+                  <span>{profile.family_members_details}</span>
+                </div>
+              )}
+              {profile.marriage_expectations && (
+                <div className="pt-2 border-t border-stone-100 text-xs text-stone-600">
+                  <span className="font-semibold text-stone-700">Partner Expectations: </span>
+                  <span>{profile.marriage_expectations}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* GUARDIAN CONTACT DETAILS & PRIVACY LOCK SECTION */}
+          {isUnlocked ? (
+            /* UNLOCKED: Mutual Interest Accepted -> Guardian Contact details revealed */
+            <div className="p-5 rounded-2xl border border-emerald-300 bg-emerald-50/70 space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2.5 rounded-xl bg-emerald-600 text-white shadow-xs">
+                    <Phone className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 block">
+                      {contactLabel} (Unlocked)
+                    </span>
+                    <h5 className="font-serif font-bold text-xl text-emerald-950">
+                      {contactPhoneToDisplay || 'Available on request'}
+                    </h5>
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold px-3 py-1 rounded-full bg-emerald-600 text-white shadow-2xs flex items-center gap-1">
+                  <UserCheck className="w-3.5 h-3.5" />
+                  <span>Interest Accepted · Contact Unlocked</span>
+                </span>
+              </div>
+              <p className="text-[11px] text-emerald-800 font-medium border-t border-emerald-200/70 pt-2 leading-relaxed">
+                ✓ Proposal accepted by candidate. Guardian details ({profile.guardian_name || 'Family Guardian'} - {profile.guardian_relation || 'Parent (Guardian)'}) are unlocked for direct marriage discussion.
+              </p>
+            </div>
+          ) : (
+            /* STRICTLY HIDDEN BY DEFAULT: Contact is locked until interest is accepted */
+            <div className="p-5 rounded-2xl border border-stone-200 bg-stone-50 space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2.5 rounded-xl bg-stone-200 text-stone-600">
+                    <Lock className="w-5 h-5 text-[#4b001f]" />
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500 block">
+                      Guardian Contact Number
+                    </span>
+                    <h5 className="font-mono font-bold text-lg text-stone-700 tracking-wider">
+                      +91 ••••• •••••
+                    </h5>
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold px-3 py-1 rounded-full bg-stone-200 text-stone-700 flex items-center gap-1 shadow-2xs">
+                  <Lock className="w-3 h-3 text-stone-500" />
+                  <span>Hidden by Default</span>
+                </span>
               </div>
 
-              <div className="space-y-1.5 max-w-md mx-auto">
-                <h3 className="font-serif font-bold text-lg text-[#4b001f]">
-                  Biodata Hidden
-                </h3>
-                <p className="text-xs text-stone-600 leading-relaxed">
-                  To view the complete biodata and guardian phone number of this profile, you must first send an <strong>Interest</strong>. Full contact details will be unlocked once they accept your interest.
-                </p>
-              </div>
+              <p className="text-xs text-stone-600 leading-relaxed border-t border-stone-200/70 pt-2">
+                Guardian phone numbers are strictly protected for modesty. Guardian contact details will be automatically unlocked once your sent Interest is accepted by this candidate.
+              </p>
 
-              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+              {/* Action Buttons to send interest or fill biodata */}
+              <div className="pt-2 flex flex-wrap items-center gap-2.5">
                 {interestStatus === 'pending' ? (
-                  <div className="flex flex-wrap items-center justify-center gap-2">
-                    <div className="px-5 py-2.5 rounded-xl bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="px-4 py-2 rounded-xl bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold flex items-center gap-2">
                       <Clock className="w-4 h-4 text-amber-700" />
                       <span>Interest Sent (Awaiting Acceptance)</span>
                     </div>
@@ -152,26 +290,33 @@ export const ProfileModal: React.FC<Props> = ({
                       <button
                         type="button"
                         onClick={() => onCancelInterest(profile.id)}
-                        className="px-4 py-2.5 rounded-xl border border-red-300 bg-red-50 hover:bg-red-100 text-red-800 text-xs font-bold transition-colors cursor-pointer"
+                        className="px-3.5 py-2 rounded-xl border border-red-300 bg-red-50 hover:bg-red-100 text-red-800 text-xs font-bold transition-colors cursor-pointer"
                       >
                         Cancel Interest
                       </button>
                     )}
                   </div>
-                ) : (currentUserMobile && profile.mobile && profile.mobile.replace(/\D/g, '').slice(-8) === currentUserMobile.replace(/\D/g, '').slice(-8)) ? (
-                  <div className="px-5 py-2.5 rounded-xl bg-stone-100 text-stone-600 border border-stone-200 text-xs font-semibold">
+                ) : isOwnProfile ? (
+                  <div className="px-4 py-2 rounded-xl bg-stone-100 text-stone-600 border border-stone-200 text-xs font-semibold">
                     This is your own profile
                   </div>
-                ) : (normUserGender && normProfileGender === normUserGender) ? (
-                  <div className="px-5 py-2.5 rounded-xl bg-stone-100 text-stone-600 border border-stone-200 text-xs font-semibold text-center">
+                ) : isSameGender ? (
+                  <div className="px-4 py-2 rounded-xl bg-stone-100 text-stone-600 border border-stone-200 text-xs font-semibold text-center">
                     Proposals can only be exchanged between Groom and Bride profiles
                   </div>
-                ) : !isAdminApproved ? (
-                  <div className="px-5 py-2.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200 text-xs font-semibold text-center flex items-center justify-center gap-2">
-                    <span>⏳ Waiting for Admin Approval to Send Proposals</span>
-                  </div>
+                ) : !hasUserBiodata ? (
+                  <button
+                    type="button"
+                    onClick={onOpenBiodataWizard}
+                    className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
+                    title="Complete your matrimonial biodata first"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-white" />
+                    <span>Fill Your Biodata</span>
+                  </button>
                 ) : (
                   <button
+                    type="button"
                     onClick={() => {
                       const hasPrem = isUserPremium || localStorage.getItem('nikah_circle_user_is_premium') === 'true';
                       if (!hasPrem) {
@@ -180,135 +325,14 @@ export const ProfileModal: React.FC<Props> = ({
                         onSendInterest(profile.id);
                       }
                     }}
-                    className="px-6 py-2.5 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold transition-colors cursor-pointer shadow-sm flex items-center gap-2"
+                    className="px-4 py-2.5 rounded-xl bg-[#4b001f] text-white text-xs font-bold flex items-center gap-2 shadow-xs hover:bg-[#350016] transition-colors cursor-pointer"
                   >
-                    <Heart className="w-4 h-4 text-[#c9973e]" />
-                    <span>Send Interest to Unlock Biodata</span>
+                    <Heart className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                    <span>Send Interest to Request Contact</span>
                   </button>
                 )}
               </div>
             </div>
-          ) : (
-            /* UNLOCKED BIODATA SECTION */
-            <>
-              <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>
-                  Mutual interest accepted! Full biodata and guardian contact details are now unlocked.
-                </span>
-              </div>
-
-              {/* About & Religious Outlook */}
-              <div>
-                <h4 className="font-serif font-bold text-base text-[#4b001f] mb-2">
-                  About & Religious Outlook
-                </h4>
-                <div className="p-4 rounded-2xl bg-[#fff6fa] border border-[#eadfe4] space-y-2">
-                  <p className="leading-relaxed text-stone-700">
-                    {profile.about || 'Practicing Muslim individual with strong faith and dedication to family harmony.'}
-                  </p>
-                  <div className="pt-2 flex flex-wrap gap-4 text-xs text-stone-600 font-medium border-t border-[#eadfe4]/60">
-                    <span>Religion: <strong className="text-stone-900">{profile.religion || 'Islam'}</strong></span>
-                    <span>Maslak: <strong className="text-stone-900">{profile.religious_ideation || profile.sect || 'Sunni'}</strong></span>
-                    <span>Height: <strong className="text-stone-900">{profile.height || "5'5\""}</strong></span>
-                    {profile.complexion && <span>Color: <strong className="text-stone-900">{profile.complexion}</strong></span>}
-                    {profile.physical_build && <span>Build: <strong className="text-stone-900">{profile.physical_build}</strong></span>}
-                  </div>
-                </div>
-              </div>
-
-              {/* Detailed Attributes */}
-              <div>
-                <h4 className="font-serif font-bold text-base text-[#4b001f] mb-2">
-                  Education & Career
-                </h4>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
-                    <span className="block text-[11px] text-stone-500 font-semibold uppercase">Education</span>
-                    <span className="font-bold text-stone-900">{profile.education || 'Graduate'}</span>
-                  </div>
-                  <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
-                    <span className="block text-[11px] text-stone-500 font-semibold uppercase">Profession</span>
-                    <span className="font-bold text-stone-900">{profile.profession || 'Professional'}</span>
-                  </div>
-                  <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
-                    <span className="block text-[11px] text-stone-500 font-semibold uppercase">Marital Status</span>
-                    <span className="font-bold text-stone-900">{profile.marital_status}</span>
-                  </div>
-                  <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
-                    <span className="block text-[11px] text-stone-500 font-semibold uppercase">District / City</span>
-                    <span className="font-bold text-stone-900">{profile.district || profile.location || 'Kerala'}</span>
-                  </div>
-                  <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
-                    <span className="block text-[11px] text-stone-500 font-semibold uppercase">Registration</span>
-                    <span className="font-bold text-stone-900">{profile.registration_type}</span>
-                  </div>
-                  {profile.religious_education && (
-                    <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
-                      <span className="block text-[11px] text-stone-500 font-semibold uppercase">Religious Edu</span>
-                      <span className="font-bold text-stone-900">{profile.religious_education}</span>
-                    </div>
-                  )}
-                  {profile.job_location && (
-                    <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
-                      <span className="block text-[11px] text-stone-500 font-semibold uppercase">Job Location</span>
-                      <span className="font-bold text-stone-900">{profile.job_location}</span>
-                    </div>
-                  )}
-                  {profile.financial_status && (
-                    <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
-                      <span className="block text-[11px] text-stone-500 font-semibold uppercase">Financial Status</span>
-                      <span className="font-bold text-stone-900">{profile.financial_status}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Family Background */}
-              <div>
-                <h4 className="font-serif font-bold text-base text-[#4b001f] mb-2">
-                  Family & Guardian Background
-                </h4>
-                <div className="p-4 rounded-2xl bg-white border border-[#eadfe4] space-y-2">
-                  <p className="leading-relaxed text-stone-700">
-                    {profile.family_background || profile.family_details || 'Respectable family rooted in traditional Islamic values.'}
-                  </p>
-                  {profile.family_members_details && (
-                    <div className="pt-2 border-t border-stone-100 text-xs text-stone-600">
-                      <span className="font-semibold text-stone-700">Family Members: </span>
-                      <span>{profile.family_members_details}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* GUARDIAN PHONE NUMBER RULE */}
-              <div className="p-4 rounded-2xl border border-emerald-300 bg-emerald-50/60 space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-xl bg-emerald-600 text-white">
-                    <Phone className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-800">
-                      {contactLabel}
-                    </span>
-                    <h5 className="font-serif font-bold text-lg text-emerald-950">
-                      {contactPhoneToDisplay || 'Available on request'}
-                    </h5>
-                  </div>
-                </div>
-
-                {hasGuardianNumber ? (
-                  <p className="text-[11px] text-emerald-800 font-medium pt-1 border-t border-emerald-200/60">
-                    ✓ Verified guardian contact number is displayed. Personal number is kept private for modesty.
-                  </p>
-                ) : (
-                  <p className="text-[11px] text-stone-600 font-medium pt-1 border-t border-stone-200">
-                    * Showing direct contact number as no separate guardian number was specified.
-                  </p>
-                )}
-              </div>
-            </>
           )}
         </div>
 

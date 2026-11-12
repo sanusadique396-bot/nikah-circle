@@ -20,13 +20,87 @@ const PAYMENTS_STORAGE_KEY = "nikah_circle_payments_v2";
 const BOOKMARKS_STORAGE_KEY = "nikah_circle_bookmarks_v2";
 const INTERESTS_MAP_KEY = "nikah_circle_interests_map_v3";
 
+// Strict deduplication function to prevent duplicate user cards, tables, or ghost profiles
+export function deduplicateProfiles(inputProfiles: Profile[]): Profile[] {
+  const result: Profile[] = [];
+
+  for (const prof of inputProfiles) {
+    if (!prof) continue;
+
+    const pEmail = (prof.email || '').toLowerCase().trim();
+    const pMobile = prof.mobile ? prof.mobile.replace(/\D/g, '').slice(-8) : '';
+    const pMemberId = prof.member_id ? prof.member_id.trim().toUpperCase() : '';
+    const pId = prof.id || '';
+    const pName = (prof.full_name || '').toLowerCase().trim();
+
+    const existingIdx = result.findIndex((existing) => {
+      if (pId && existing.id && pId === existing.id) return true;
+      if (pMemberId && existing.member_id && pMemberId === existing.member_id.trim().toUpperCase()) return true;
+      if (pEmail && existing.email && pEmail === existing.email.toLowerCase().trim()) return true;
+      const exMobile = existing.mobile ? existing.mobile.replace(/\D/g, '').slice(-8) : '';
+      if (pMobile && exMobile && pMobile.length >= 7 && pMobile === exMobile) return true;
+      if (pName && existing.full_name && pName.length >= 3 && pName === existing.full_name.toLowerCase().trim() && (pMobile === exMobile || (pEmail && pEmail === (existing.email || '').toLowerCase().trim()))) return true;
+      return false;
+    });
+
+    if (existingIdx === -1) {
+      result.push(prof);
+    } else {
+      const existing = result[existingIdx];
+
+      let bestMemberId = existing.member_id || prof.member_id;
+      if (pEmail === 'nikahcircle01@gmail.com' || (pMobile && pMobile.endsWith('44905093'))) {
+        bestMemberId = 'NCSM1002';
+      } else if (pEmail === 'sanusadique396@gmail.com' || (pMobile && pMobile.endsWith('43549396'))) {
+        bestMemberId = 'NCSM1001';
+      }
+
+      const isPrem = Boolean(existing.is_premium || prof.is_premium);
+      const isApproved = existing.profile_status === 'APPROVED' || prof.profile_status === 'APPROVED';
+      const hasBiodata = Boolean(
+        existing.biodata_uploaded || prof.biodata_uploaded ||
+        existing.biodata_document_url || prof.biodata_document_url ||
+        existing.height || prof.height ||
+        existing.bouthika_education || prof.bouthika_education
+      );
+
+      result[existingIdx] = {
+        ...prof,
+        ...existing,
+        id: existing.id || prof.id,
+        member_id: bestMemberId,
+        full_name: (existing.full_name && existing.full_name !== 'Candidate' && existing.full_name !== 'Member') ? existing.full_name : prof.full_name,
+        email: existing.email || prof.email,
+        mobile: existing.mobile || prof.mobile,
+        gender: normalizeGender(existing.gender || prof.gender),
+        is_premium: isPrem,
+        premium_plan: existing.premium_plan || prof.premium_plan || (isPrem ? 'Premium Plan' : null),
+        profile_status: isApproved ? 'APPROVED' : (existing.profile_status || prof.profile_status || 'APPROVED'),
+        is_verified: true,
+        biodata_uploaded: hasBiodata,
+        biodata_document_name: existing.biodata_document_name || prof.biodata_document_name || null,
+        biodata_document_url: existing.biodata_document_url || prof.biodata_document_url || null,
+        place: existing.place || prof.place,
+        district: existing.district || prof.district,
+        location: existing.location || prof.location,
+        education: existing.education || prof.education,
+        profession: existing.profession || prof.profession,
+        guardian_name: existing.guardian_name || prof.guardian_name,
+        guardian_mobile: existing.guardian_mobile || prof.guardian_mobile,
+      };
+    }
+  }
+
+  return result;
+}
+
 export function getStoredProfiles(): Profile[] {
   try {
     const raw = localStorage.getItem(PROFILES_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        return parsed.map((p) => autoCorrectMistakenGenders(p));
+        return deduplicateProfiles(parsed.map((p) => autoCorrectMistakenGenders(p)));
       }
     }
   } catch (e) {
@@ -37,7 +111,8 @@ export function getStoredProfiles(): Profile[] {
 
 export function saveStoredProfiles(profiles: Profile[]) {
   try {
-    localStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(profiles));
+    const deduped = deduplicateProfiles(profiles);
+    localStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(deduped));
   } catch (e) {
     console.warn("Could not persist local profiles", e);
   }

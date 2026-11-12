@@ -114,21 +114,21 @@ export const RegisterModal: React.FC<Props> = ({
     e.preventDefault();
     setLoading(true);
     try {
-      // User registrations are submitted as PENDING Admin Requests
+      // User registrations are immediately active on Free Plan (no admin approval waiting)
       await onSubmit({
         ...formData,
         gender: normalizeGender(formData.gender),
         religion: 'Islam',
         registration_type: 'ONLINE',
-        profile_status: 'PENDING',
-        is_verified: false,
+        profile_status: 'APPROVED',
+        is_verified: true,
         is_premium: false,
       });
       setSuccess(true);
       setTimeout(() => {
         setSuccess(false);
         onClose();
-      }, 2500);
+      }, 2000);
     } catch (err) {
       console.error(err);
       alert('Error registering profile. Please try again.');
@@ -157,7 +157,7 @@ export const RegisterModal: React.FC<Props> = ({
                 Register Profile
               </h2>
               <p className="text-xs text-stone-300">
-                Submit profile request for Admin verification
+                Join Nikah Circle & connect with verified Muslim families
               </p>
             </div>
           </div>
@@ -169,10 +169,10 @@ export const RegisterModal: React.FC<Props> = ({
             <div className="py-10 text-center space-y-4">
               <CheckCircle2 className="w-16 h-16 text-emerald-600 mx-auto" />
               <h3 className="font-serif text-2xl font-bold text-[#4b001f]">
-                Request Submitted Successfully!
+                Profile Created Successfully!
               </h3>
               <p className="text-sm text-stone-600 max-w-md mx-auto leading-relaxed">
-                Your profile has been submitted to the admin for verification. It will become visible on the platform once approved.
+                Your account is active immediately on the Free Plan. Welcome to Nikah Circle!
               </p>
             </div>
           ) : (

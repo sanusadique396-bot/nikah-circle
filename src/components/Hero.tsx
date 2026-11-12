@@ -6,6 +6,7 @@ interface Props {
   onExplorePremium: () => void;
   onRegisterClick: () => void;
   memberId?: string;
+  isUserPremium?: boolean;
 }
 
 export const Hero: React.FC<Props> = ({
@@ -13,6 +14,7 @@ export const Hero: React.FC<Props> = ({
   onExplorePremium,
   onRegisterClick,
   memberId,
+  isUserPremium = false,
 }) => {
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-[#fff6fa] via-white to-stone-50 pt-12 pb-20 border-b border-[#eadfe4]">
@@ -105,10 +107,19 @@ export const Hero: React.FC<Props> = ({
                 <span>{memberId || 'NCSM1001'}</span>
               </div>
 
-              {/* Top-Right: Admin Verified Badge */}
+              {/* Top-Right: Plan Badge (Strictly Free Plan or Premium Plan) */}
               <div className="absolute -top-3.5 right-3 sm:right-4 bg-white/95 backdrop-blur-xs py-1.5 px-3.5 rounded-xl border border-[#eadfe4] shadow-md text-xs font-bold text-[#4b001f] flex items-center gap-1.5 z-20 animate-fade-in">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>Admin Verified</span>
+                {isUserPremium ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                    <span>Premium Plan</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-stone-400" />
+                    <span>Free Plan</span>
+                  </>
+                )}
               </div>
 
               {/* Bottom: 100% Privacy & Halal Trust Pill */}

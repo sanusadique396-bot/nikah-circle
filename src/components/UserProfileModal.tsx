@@ -152,7 +152,7 @@ export const UserProfileModal: React.FC<Props> = ({
   planName = 'Free Plan',
   isPostPremium = false,
 }) => {
-  const approved = Boolean(isAdminApproved !== undefined ? isAdminApproved : isApproved);
+  const approved = true; // All onboarded users are immediately active
   const [formData, setFormData] = useState<UserProfileData>({
     full_name: '',
     mobile: '',
@@ -398,29 +398,27 @@ export const UserProfileModal: React.FC<Props> = ({
               </div>
             )}
 
-            {/* Admin Approval & Package Status Banner */}
-            {approved && (
-              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50 to-[#fff6fa] border border-emerald-200 text-emerald-950 flex items-center justify-between gap-3 shadow-xs">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 font-bold shadow-xs">
-                    ✓
+            {/* Active Profile & Plan Status Banner */}
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-stone-50 to-[#fff6fa] border border-stone-200 text-stone-900 flex items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-2.5">
+                <div className={`w-8 h-8 rounded-xl ${isPremium ? 'bg-[#c9973e]' : 'bg-[#4b001f]'} text-white flex items-center justify-center shrink-0 font-bold shadow-xs`}>
+                  ✓
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-stone-900">
+                      Active Member Profile
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      Active
+                    </span>
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-emerald-900">
-                        Admin Approved Profile
-                      </span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
-                        Active
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-stone-600 mt-0.5">
-                      Package: <strong className="text-[#4b001f] font-bold">{planName}</strong> · Verified by Admin
-                    </p>
-                  </div>
+                  <p className="text-[11px] text-stone-600 mt-0.5">
+                    Plan: <strong className="text-[#4b001f] font-bold">{isPremium ? (planName || 'Premium Plan') : 'Free Plan'}</strong>
+                  </p>
                 </div>
               </div>
-            )}
+            </div>
 
           {errorMsg && (
             <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs font-semibold flex items-center gap-2">

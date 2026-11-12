@@ -9,8 +9,7 @@ import {
   Heart,
   Inbox,
   Menu,
-  X,
-  FileText
+  X
 } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
@@ -149,7 +148,7 @@ export const Navbar: React.FC<Props> = ({
               )}
             </button>
 
-            {/* Static Non-Clickable Plan Display Badge */}
+            {/* Static Non-Clickable Plan Display Badge: Strictly Premium Plan for premium users, Free Plan for free users */}
             <div
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold select-none pointer-events-none shadow-2xs ${
                 isUserPremium
@@ -157,31 +156,17 @@ export const Navbar: React.FC<Props> = ({
                   : 'bg-stone-100 text-stone-700 border border-stone-200'
               }`}
             >
-              <Sparkles className={`w-3.5 h-3.5 ${isUserPremium ? 'text-white' : 'text-[#c9973e]'}`} />
-              <span>{isUserPremium ? 'Premium Plan' : 'Free Plan'}</span>
-              {isUserApproved && (
-                <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold ml-1 shadow-2xs">
-                  Admin Approved ✓
-                </span>
+              {isUserPremium ? (
+                <Sparkles className="w-3.5 h-3.5 text-white" />
+              ) : (
+                <span className="w-2 h-2 rounded-full bg-stone-400" />
               )}
+              <span>{isUserPremium ? 'Premium Plan' : 'Free Plan'}</span>
             </div>
           </nav>
 
           {/* Zone 3: Profile Avatar & Quick Actions */}
           <div className="flex items-center gap-2 relative shrink-0">
-            {/* Upload Biodata Prompt Button for Premium Users who skipped */}
-            {isUserPremium && !hasBiodataUploaded && onOpenBiodataWizard && (
-              <button
-                type="button"
-                onClick={onOpenBiodataWizard}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-[#4b001f] hover:bg-[#350016] text-white transition-all shadow-xs cursor-pointer animate-pulse"
-                title="Complete your matrimonial biodata wizard"
-              >
-                <FileText className="w-3.5 h-3.5 text-amber-300" />
-                <span>Upload Biodata</span>
-              </button>
-            )}
-
             {/* Top Right Profile Avatar / Icon for Quick Edit */}
             {userProfile ? (
               <div className="flex items-center gap-1.5">
@@ -189,7 +174,7 @@ export const Navbar: React.FC<Props> = ({
                   type="button"
                   onClick={onEditProfile}
                   className="flex items-center gap-2 p-1 pl-1.5 pr-2.5 rounded-full border border-[#eadfe4] bg-white hover:bg-[#fff6fa] transition-all cursor-pointer shadow-2xs group"
-                  title={isUserApproved ? "Click to view & edit your profile" : "Profile verification pending admin approval"}
+                  title="Click to view & edit your profile"
                 >
                   <div className="w-8 h-8 rounded-full overflow-hidden bg-[#4b001f] text-white flex items-center justify-center font-bold text-xs shrink-0 border border-[#c9973e]/40 shadow-xs">
                     {userProfile.profile_photo ? (
@@ -206,15 +191,9 @@ export const Navbar: React.FC<Props> = ({
                     <span className="block text-xs font-bold text-stone-800 leading-none group-hover:text-[#4b001f] truncate max-w-[100px]">
                       {userProfile.full_name?.split(' ')[0] || 'User'}
                     </span>
-                    {isUserApproved ? (
-                      <span className="text-[10px] text-emerald-700 font-bold block leading-tight mt-0.5">
-                        Admin Approved ✓
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-amber-700 font-bold block leading-tight mt-0.5">
-                        Waiting for Approval ⏳
-                      </span>
-                    )}
+                    <span className={`text-[10px] font-bold block leading-tight mt-0.5 ${isUserPremium ? 'text-amber-700' : 'text-stone-500'}`}>
+                      {isUserPremium ? 'Premium Member' : 'Free Plan'}
+                    </span>
                   </div>
                 </button>
 
@@ -327,19 +306,6 @@ export const Navbar: React.FC<Props> = ({
               </span>
             )}
           </button>
-          {isUserPremium && !hasBiodataUploaded && onOpenBiodataWizard && (
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onOpenBiodataWizard();
-              }}
-              className="w-full px-4 py-2.5 text-xs font-bold rounded-xl bg-[#4b001f] text-white flex items-center justify-center gap-2 shadow-sm animate-pulse cursor-pointer"
-            >
-              <FileText className="w-4 h-4 text-amber-300" />
-              <span>Complete Biodata Wizard</span>
-            </button>
-          )}
-
           <div
             className={`w-full px-3 py-2 text-sm font-bold rounded-lg flex items-center justify-between select-none ${
               isUserPremium
@@ -348,14 +314,13 @@ export const Navbar: React.FC<Props> = ({
             }`}
           >
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#c9973e]" />
+              {isUserPremium ? (
+                <Sparkles className="w-4 h-4 text-[#c9973e]" />
+              ) : (
+                <span className="w-2 h-2 rounded-full bg-stone-400" />
+              )}
               <span>Plan: {isUserPremium ? 'Premium Plan' : 'Free Plan'}</span>
             </div>
-            {isUserApproved && (
-              <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-emerald-600 text-white shadow-2xs">
-                Admin Approved ✓
-              </span>
-            )}
           </div>
         </div>
       )}

@@ -33,6 +33,7 @@ import {
   parseSupabaseProfile,
   normalizeGender,
   autoCorrectMistakenGenders,
+  deduplicateProfiles,
 } from './lib/supabase';
 import {
   Heart,
@@ -164,77 +165,6 @@ export function isProfileDeleted(
   if (gPhone && deleted.phones.some((dp) => dp && dp.length >= 6 && (gPhone.includes(dp) || dp.includes(gPhone)))) return true;
   if (name && deleted.names.some((dn) => dn && dn.length >= 3 && name === dn)) return true;
   return false;
-}
-
-// Strict deduplication function to prevent duplicate user cards, tables, or ghost profiles
-export function deduplicateProfiles(inputProfiles: Profile[]): Profile[] {
-  const result: Profile[] = [];
-
-  for (const prof of inputProfiles) {
-    if (!prof) continue;
-
-    const pEmail = (prof.email || '').toLowerCase().trim();
-    const pMobile = prof.mobile ? prof.mobile.replace(/\D/g, '').slice(-8) : '';
-    const pMemberId = prof.member_id ? prof.member_id.trim().toUpperCase() : '';
-    const pId = prof.id || '';
-
-    const existingIdx = result.findIndex((existing) => {
-      if (pId && existing.id && pId === existing.id) return true;
-      if (pMemberId && existing.member_id && pMemberId === existing.member_id.trim().toUpperCase()) return true;
-      if (pEmail && existing.email && pEmail === existing.email.toLowerCase().trim()) return true;
-      const exMobile = existing.mobile ? existing.mobile.replace(/\D/g, '').slice(-8) : '';
-      if (pMobile && exMobile && pMobile.length >= 7 && pMobile === exMobile) return true;
-      return false;
-    });
-
-    if (existingIdx === -1) {
-      result.push(prof);
-    } else {
-      const existing = result[existingIdx];
-
-      let bestMemberId = existing.member_id || prof.member_id;
-      if (pEmail === 'nikahcircle01@gmail.com' || (pMobile && pMobile.endsWith('44905093'))) {
-        bestMemberId = 'NCSM1002';
-      } else if (pEmail === 'sanusadique396@gmail.com' || (pMobile && pMobile.endsWith('43549396'))) {
-        bestMemberId = 'NCSM1001';
-      }
-
-      const isPrem = Boolean(existing.is_premium || prof.is_premium);
-      const isApproved = existing.profile_status === 'APPROVED' || prof.profile_status === 'APPROVED';
-      const hasBiodata = Boolean(
-        existing.biodata_uploaded || prof.biodata_uploaded ||
-        existing.biodata_document_url || prof.biodata_document_url ||
-        existing.height || prof.height
-      );
-
-      result[existingIdx] = {
-        ...prof,
-        ...existing,
-        id: existing.id || prof.id,
-        member_id: bestMemberId,
-        full_name: (existing.full_name && existing.full_name !== 'Candidate' && existing.full_name !== 'Member') ? existing.full_name : prof.full_name,
-        email: existing.email || prof.email,
-        mobile: existing.mobile || prof.mobile,
-        gender: normalizeGender(existing.gender || prof.gender),
-        is_premium: isPrem,
-        premium_plan: existing.premium_plan || prof.premium_plan || (isPrem ? 'Premium Plan' : null),
-        profile_status: isApproved ? 'APPROVED' : (existing.profile_status || prof.profile_status || 'PENDING'),
-        is_verified: Boolean(existing.is_verified || prof.is_verified),
-        biodata_uploaded: hasBiodata,
-        biodata_document_name: existing.biodata_document_name || prof.biodata_document_name || null,
-        biodata_document_url: existing.biodata_document_url || prof.biodata_document_url || null,
-        place: existing.place || prof.place,
-        district: existing.district || prof.district,
-        location: existing.location || prof.location,
-        education: existing.education || prof.education,
-        profession: existing.profession || prof.profession,
-        guardian_name: existing.guardian_name || prof.guardian_name,
-        guardian_mobile: existing.guardian_mobile || prof.guardian_mobile,
-      };
-    }
-  }
-
-  return result;
 }
 
 export default function App() {
@@ -413,23 +343,31 @@ export default function App() {
     return effectiveIsPremium ? 'Premium Plan' : 'Free Plan';
   }, [userApprovedRequest, userMatchedProfile, userPlanName, effectiveIsPremium]);
 
+  // Admin approval workflow removed: accounts are immediately active upon setup
   const isAdminApproved = useMemo(() => {
-    // 1. If matching profile exists in profiles database: its status MUST be 'APPROVED'
     if (userMatchedProfile) {
-      return userMatchedProfile.profile_status === 'APPROVED';
+      return userMatchedProfile.profile_status !== 'REJECTED';
     }
-    // 2. If approved via an approved premium request by admin:
-    if (userApprovedRequest && userApprovedRequest.status === 'APPROVED') {
-      return true;
-    }
-    // 3. Fallback to currentUserProfile if explicitly marked approved and profile status is not pending:
-    if (currentUserProfile) {
-      return currentUserProfile.is_approved === true && currentUserProfile.profile_status === 'APPROVED';
-    }
-    return false;
-  }, [userMatchedProfile, userApprovedRequest, currentUserProfile]);
+    return Boolean(currentUserProfile || currentUser);
+  }, [userMatchedProfile, currentUserProfile, currentUser]);
 
   const isUserApproved = isAdminApproved;
+
+  // Track if user has completed candidate biodata details
+  const hasUserBiodata = useMemo(() => {
+    return Boolean(
+      currentUserProfile?.biodata_uploaded ||
+      currentUserProfile?.biodata_document_name ||
+      currentUserProfile?.biodata_document_url ||
+      currentUserProfile?.bouthika_education ||
+      currentUserProfile?.height ||
+      userMatchedProfile?.biodata_uploaded ||
+      userMatchedProfile?.biodata_document_name ||
+      userMatchedProfile?.biodata_document_url ||
+      userMatchedProfile?.bouthika_education ||
+      userMatchedProfile?.height
+    );
+  }, [currentUserProfile, userMatchedProfile]);
 
   const effectiveMemberId = useMemo(() => {
     if (currentUserProfile?.member_id) return currentUserProfile.member_id;
@@ -959,18 +897,10 @@ export default function App() {
   };
 
   const handleOpenPremium = () => {
-    if (!isAdminApproved) {
-      showToast('Your profile is waiting for Admin Approval. Premium plans can be activated once approved by admin.');
-      return;
-    }
     setIsPremiumOpen(true);
   };
 
   const handleOpenBiodataWizard = () => {
-    if (!isAdminApproved) {
-      showToast('Your profile is waiting for Admin Approval before biodata can be published.');
-      return;
-    }
     const hasPremium = effectiveIsPremium || localStorage.getItem('nikah_circle_user_is_premium') === 'true';
     if (!hasPremium) {
       showToast('Matrimonial biodata writing and publishing is exclusively reserved for Premium members. Please activate a Premium plan.');
@@ -981,12 +911,6 @@ export default function App() {
   };
 
   const handleSendInterest = async (profileId: string) => {
-    // Condition 0: Must be officially approved by Admin
-    if (!isAdminApproved) {
-      showToast('Your profile is waiting for Admin Approval. You can send proposals once approved by admin.');
-      return;
-    }
-
     // Condition 1: Must have active Premium Plan
     const hasPremium = effectiveIsPremium || localStorage.getItem('nikah_circle_user_is_premium') === 'true';
     if (!hasPremium) {
@@ -996,14 +920,8 @@ export default function App() {
     }
 
     // Condition 2: Must have completed biodata (Multi-Step Wizard or document)
-    const hasBiodata = Boolean(
-      currentUserProfile?.biodata_uploaded ||
-      currentUserProfile?.biodata_document_name ||
-      currentUserProfile?.biodata_document_url ||
-      currentUserProfile?.bouthika_education
-    );
-    if (!hasBiodata) {
-      showToast('Please complete your matrimonial biodata before sending interest proposals.');
+    if (!hasUserBiodata) {
+      showToast('Please complete your candidate biodata before sending interest proposals.');
       handleOpenBiodataWizard();
       return;
     }
@@ -2076,7 +1994,23 @@ export default function App() {
 
     // 5. Delete test candidate records from Supabase (preserving Sadiq and Noushida)
     try {
-      await supabase.from('profiles').delete().not('email', 'in', '("nikahcircle01@gmail.com","sanusadique396@gmail.com")');
+      const { data: allDbProfiles } = await supabase.from('profiles').select('id, email, mobile');
+      if (allDbProfiles && allDbProfiles.length > 0) {
+        const idsToDelete = allDbProfiles
+          .filter((p: any) => {
+            const email = (p.email || '').toLowerCase().trim();
+            const mobile = (p.mobile || '').replace(/\D/g, '');
+            const isSadiq = email === 'nikahcircle01@gmail.com' || mobile.endsWith('44905093');
+            const isNoushida = email === 'sanusadique396@gmail.com' || mobile.endsWith('43549396');
+            return !isSadiq && !isNoushida;
+          })
+          .map((p: any) => p.id);
+
+        for (let i = 0; i < idsToDelete.length; i += 50) {
+          const chunk = idsToDelete.slice(i, i + 50);
+          await supabase.from('profiles').delete().in('id', chunk);
+        }
+      }
       await supabase.from('payments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       await supabase.from('premium_requests').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     } catch (e) {
@@ -2397,47 +2331,8 @@ export default function App() {
         isUserApproved={isAdminApproved}
         currentPlanName={effectivePlanName}
         onOpenBiodataWizard={handleOpenBiodataWizard}
-        hasBiodataUploaded={Boolean(currentUserProfile?.biodata_uploaded || currentUserProfile?.biodata_document_name || currentUserProfile?.biodata_document_url)}
+        hasBiodataUploaded={hasUserBiodata}
       />
-
-      {/* Waiting for Admin Approval Status Banner */}
-      {currentUserProfile && !isAdminApproved && (
-        <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-amber-500/10 border-b border-amber-200/80">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
-            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-              <div className="flex items-start sm:items-center gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-xs">
-                  ⏳
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-serif font-bold text-sm sm:text-base text-amber-950">
-                      Waiting for Admin Approval
-                    </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-900 border border-amber-300">
-                      Verification Pending
-                    </span>
-                    {effectiveMemberId && (
-                      <span className="font-mono text-[10px] font-bold bg-[#4b001f] text-white px-2 py-0.5 rounded">
-                        {effectiveMemberId}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-amber-900/90 mt-1 max-w-3xl leading-relaxed">
-                    Assalamu Alaikum <strong>{currentUserProfile.full_name}</strong>. Your profile has been submitted and is currently awaiting review by our administration. For safety and authenticity, profile editing, biodata document uploads, and sending proposal interests will be unlocked immediately once an admin approves your profile.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
-                <span className="text-[11px] font-semibold text-amber-800 bg-white/80 px-3 py-1.5 rounded-xl border border-amber-200 shadow-2xs">
-                  Review in Progress
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Re-prompt Banner for Premium Users who skipped Biodata */}
       {isAdminApproved && effectiveIsPremium && !currentUserProfile?.biodata_uploaded && (
@@ -2549,6 +2444,7 @@ export default function App() {
             onExplorePremium={handleOpenPremium}
             onRegisterClick={handleOpenRegister}
             memberId={effectiveMemberId}
+            isUserPremium={effectiveIsPremium}
           />
 
           <main id="featured-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12 flex-1">
@@ -2602,6 +2498,8 @@ export default function App() {
                       currentUserGender={currentUserProfile?.gender}
                       currentUserId={currentUserProfile?.id || currentUser?.id}
                       currentUserMobile={currentUserProfile?.mobile}
+                      hasUserBiodata={hasUserBiodata}
+                      onOpenBiodataWizard={handleOpenBiodataWizard}
                       onOppositeGenderRequired={(genderNeeded) => {
                         showToast(`Proposals can only be exchanged between opposite gender profiles (${genderNeeded}).`);
                       }}
@@ -2788,6 +2686,8 @@ export default function App() {
                   currentUserGender={currentUserProfile?.gender}
                   currentUserId={currentUserProfile?.id || currentUser?.id}
                   currentUserMobile={currentUserProfile?.mobile}
+                  hasUserBiodata={hasUserBiodata}
+                  onOpenBiodataWizard={handleOpenBiodataWizard}
                   onOppositeGenderRequired={(genderNeeded) => {
                     showToast(`Proposals can only be exchanged between opposite gender profiles (${genderNeeded}).`);
                   }}
@@ -2849,6 +2749,8 @@ export default function App() {
                   currentUserGender={currentUserProfile?.gender}
                   currentUserId={currentUserProfile?.id || currentUser?.id}
                   currentUserMobile={currentUserProfile?.mobile}
+                  hasUserBiodata={hasUserBiodata}
+                  onOpenBiodataWizard={handleOpenBiodataWizard}
                   onOppositeGenderRequired={(genderNeeded) => {
                     showToast(`Proposals can only be exchanged between opposite gender profiles (${genderNeeded}).`);
                   }}
@@ -3410,9 +3312,10 @@ export default function App() {
           handleOpenPremium();
         }}
         isUserPremium={effectiveIsPremium}
-        isAdminApproved={isAdminApproved}
         currentUserGender={currentUserProfile?.gender}
         currentUserMobile={currentUserProfile?.mobile}
+        hasUserBiodata={hasUserBiodata}
+        onOpenBiodataWizard={handleOpenBiodataWizard}
       />
 
       {/* Mandatory Profile Account Setup on First Open / Edit Anytime */}

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { Profile, Payment, PremiumRequest, normalizeGender } from '../types';
+import { deduplicateProfiles } from '../lib/supabase';
 import {
   LayoutDashboard,
   Users,
@@ -99,7 +100,7 @@ const formatTime = (dateStr?: string) => {
 };
 
 export const AdminPortal: React.FC<Props> = ({
-  profiles,
+  profiles: rawProfiles,
   payments,
   premiumRequests = [],
   onSaveProfile,
@@ -114,6 +115,7 @@ export const AdminPortal: React.FC<Props> = ({
   adminEmail,
   onRefreshData,
 }) => {
+  const profiles = useMemo(() => deduplicateProfiles(rawProfiles), [rawProfiles]);
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
