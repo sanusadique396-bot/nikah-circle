@@ -1012,7 +1012,7 @@ export const AdminPortal: React.FC<Props> = ({
                         </tr>
                       ) : (
                         biodataProfilesList.map((p) => {
-                          const displayMemberId = p.member_id || (p.id?.startsWith('NCSM') ? p.id : `NCSM${p.id?.replace(/\D/g, '').slice(-4) || '1001'}`);
+                          const displayMemberId = p.member_id || (p.id?.startsWith('NCSM') ? p.id : 'NCSM1001');
                           const hasFile = Boolean(p.biodata_uploaded || p.biodata_document_name || p.biodata_document_url);
 
                           return (

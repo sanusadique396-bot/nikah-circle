@@ -164,16 +164,92 @@ export function markReferralCodeUsed(code: string) {
 }
 
 // Sequential Auto-Increment Member ID System: NCSM1001, NCSM1002, NCSM1003...
-const MEMBER_ID_SEQ_KEY = 'nikah_circle_member_id_seq_v4';
+export const MEMBER_ID_SEQ_KEY = 'nikah_circle_member_id_seq_v5';
 
-export function getNextMemberId(): string {
-  try {
-    const raw = localStorage.getItem(MEMBER_ID_SEQ_KEY);
-    let current = raw ? parseInt(raw, 10) : 1000;
-    if (isNaN(current) || current < 1000) {
-      current = 1000;
+export function extractMemberIdNumber(idStr?: string | null): number | null {
+  if (!idStr || typeof idStr !== 'string') return null;
+  const match = idStr.match(/NCSM(\d+)/i);
+  if (match && match[1]) {
+    const num = parseInt(match[1], 10);
+    if (!isNaN(num) && num >= 1001) return num;
+  }
+  return null;
+}
+
+export function getHighestExistingMemberNumber(
+  existingProfiles?: Array<{ member_id?: string | null; id?: string | null; about?: string | null }>
+): number {
+  let highest = 1000;
+
+  // 1. Check passed profiles
+  if (Array.isArray(existingProfiles)) {
+    for (const p of existingProfiles) {
+      if (!p) continue;
+      const numFromMemberId = extractMemberIdNumber(p.member_id);
+      if (numFromMemberId && numFromMemberId > highest) highest = numFromMemberId;
+      const numFromId = extractMemberIdNumber(p.id);
+      if (numFromId && numFromId > highest) highest = numFromId;
+      if (p.about) {
+        const { meta } = decodeProfileMetadata(p.about);
+        const numFromMeta = extractMemberIdNumber(meta?.member_id);
+        if (numFromMeta && numFromMeta > highest) highest = numFromMeta;
+      }
     }
-    const next = current + 1;
+  }
+
+  // 2. Check local profiles cache
+  try {
+    const rawProfiles = localStorage.getItem('nikah_circle_profiles_v2');
+    if (rawProfiles) {
+      const parsed = JSON.parse(rawProfiles);
+      if (Array.isArray(parsed)) {
+        for (const p of parsed) {
+          if (!p) continue;
+          const n1 = extractMemberIdNumber(p.member_id);
+          if (n1 && n1 > highest) highest = n1;
+          const n2 = extractMemberIdNumber(p.id);
+          if (n2 && n2 > highest) highest = n2;
+        }
+      }
+    }
+  } catch {}
+
+  // 3. Check current user profile & user object
+  try {
+    const rawCup = localStorage.getItem('nikah_circle_user_profile');
+    if (rawCup) {
+      const cup = JSON.parse(rawCup);
+      const n = extractMemberIdNumber(cup.member_id) || extractMemberIdNumber(cup.id);
+      if (n && n > highest) highest = n;
+    }
+    const rawUser = localStorage.getItem('nikah_circle_user');
+    if (rawUser) {
+      const u = JSON.parse(rawUser);
+      const n = extractMemberIdNumber(u.member_id) || extractMemberIdNumber(u.id);
+      if (n && n > highest) highest = n;
+    }
+  } catch {}
+
+  // 4. Check sequence counter storage
+  try {
+    const rawSeq =
+      localStorage.getItem(MEMBER_ID_SEQ_KEY) ||
+      localStorage.getItem('nikah_circle_member_id_seq_v4');
+    if (rawSeq) {
+      const seqNum = parseInt(rawSeq, 10);
+      if (!isNaN(seqNum) && seqNum > highest) highest = seqNum;
+    }
+  } catch {}
+
+  return highest;
+}
+
+export function getNextMemberId(
+  existingProfiles?: Array<{ member_id?: string | null; id?: string | null; about?: string | null }>
+): string {
+  try {
+    const highest = getHighestExistingMemberNumber(existingProfiles);
+    const next = highest + 1;
     localStorage.setItem(MEMBER_ID_SEQ_KEY, next.toString());
     return `NCSM${next}`;
   } catch {
@@ -279,11 +355,12 @@ export function prepareSupabaseProfilePayload(profile: Partial<Profile>): any {
 // Parse a profile retrieved from Supabase into our full client Profile type
 export function parseSupabaseProfile(p: any, defaultIndex?: number): Profile {
   const { about, meta } = decodeProfileMetadata(p.about);
+  const parsedNum =
+    extractMemberIdNumber(meta?.member_id) ||
+    extractMemberIdNumber(p.member_id) ||
+    extractMemberIdNumber(p.id);
   const fallbackMemberId = typeof defaultIndex === 'number' ? `NCSM${1001 + defaultIndex}` : 'NCSM1001';
-  const memberId =
-    meta.member_id ||
-    p.member_id ||
-    (typeof p.id === 'string' && p.id.startsWith('NCSM') ? p.id : fallbackMemberId);
+  const memberId = parsedNum ? `NCSM${parsedNum}` : fallbackMemberId;
 
   return autoCorrectMistakenGenders({
     ...p,
@@ -308,28 +385,16 @@ export function parseSupabaseProfile(p: any, defaultIndex?: number): Profile {
 }
 
 // Full Fresh Database and User Reset System
-const CLEAN_RESET_KEY = 'nikah_circle_clean_reset_v1001';
+const CLEAN_RESET_KEY = 'nikah_circle_clean_reset_v1002';
 
 export function performInitialResetIfRequired() {
   try {
     if (localStorage.getItem(CLEAN_RESET_KEY) !== 'true') {
-      localStorage.removeItem('nikah_circle_profiles_v2');
-      localStorage.removeItem('nikah_circle_payments_v2');
-      localStorage.removeItem('nikah_circle_premium_requests_v1');
-      localStorage.removeItem('nikah_circle_bookmarks_v2');
-      localStorage.removeItem('nikah_circle_proposals_registry_v3');
-      localStorage.removeItem('nikah_circle_interests_map_v3');
-      localStorage.removeItem('nikah_circle_interests_map_v2');
       localStorage.removeItem('nikah_circle_incoming_interests_v2');
       localStorage.removeItem('nikah_circle_incoming_interests');
-      localStorage.removeItem('nikah_circle_user');
-      localStorage.removeItem('nikah_circle_user_profile');
-      localStorage.removeItem('nikah_circle_user_is_premium');
-      localStorage.removeItem('nikah_circle_user_plan_name');
-      localStorage.removeItem('nikah_circle_deleted_records_v2');
-      localStorage.removeItem('nikah_circle_used_referral_codes_v1');
-      // Starts counter at 1000 so the very first member registered is NCSM1001
-      localStorage.setItem(MEMBER_ID_SEQ_KEY, '1000');
+      localStorage.removeItem('nikah_circle_interests_map_v2');
+      localStorage.removeItem('nikah_circle_proposals_registry_v2');
+      localStorage.removeItem('nikah_circle_proposals_registry_v3');
       localStorage.setItem(CLEAN_RESET_KEY, 'true');
     }
   } catch (e) {

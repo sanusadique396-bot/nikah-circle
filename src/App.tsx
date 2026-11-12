@@ -25,6 +25,9 @@ import {
   getStoredPremiumRequests,
   saveStoredPremiumRequests,
   getNextMemberId,
+  extractMemberIdNumber,
+  getHighestExistingMemberNumber,
+  MEMBER_ID_SEQ_KEY,
   prepareSupabaseProfilePayload,
   parseSupabaseProfile,
   normalizeGender,
@@ -56,6 +59,13 @@ import confetti from 'canvas-confetti';
 
 const PROPOSALS_REGISTRY_STORAGE_KEY = 'nikah_circle_proposals_registry_v3';
 
+export const DUMMY_SENDER_NAMES = [
+  'Er. Mohammed Nihal',
+  'Dr. Rashid Ali P.',
+  'Dr. Ayesha Fathima',
+  'Shahana Mariyam',
+];
+
 // Clear legacy dummy proposal keys on startup so they never contaminate new accounts
 try {
   localStorage.removeItem('nikah_circle_incoming_interests_v2');
@@ -74,8 +84,7 @@ export function getStoredProposals(): IncomingInterest[] {
             p &&
             p.id !== 'inc-001' &&
             p.id !== 'inc-002' &&
-            p.sender_name !== 'Er. Mohammed Nihal' &&
-            p.sender_name !== 'Dr. Rashid Ali P.'
+            !DUMMY_SENDER_NAMES.includes(p.sender_name)
         );
       }
     }
@@ -201,35 +210,42 @@ export default function App() {
 
   // Incoming proposals received strictly for this user (Starts 100% BLANK [] on every new account)
   const incomingInterests = useMemo(() => {
+    // If not logged in, or user has no registered profile yet, received tab is strictly blank []
     if (!currentUserProfile && !currentUser) return [];
 
+    const userMemberId = currentUserProfile?.member_id || currentUser?.member_id;
+    const userId = currentUserProfile?.id || currentUser?.id;
     const userPhoneNorm = currentUserProfile?.mobile ? currentUserProfile.mobile.replace(/\D/g, '').slice(-8) : '';
     const userNameNorm = (currentUserProfile?.full_name || '').toLowerCase().trim();
-    const userId = currentUserProfile?.id || currentUser?.id;
 
     return allProposals.filter((p) => {
       if (!p) return false;
       // Filter out any obsolete dummy records
       if (p.id === 'inc-001' || p.id === 'inc-002') return false;
+      if (DUMMY_SENDER_NAMES.includes(p.sender_name)) return false;
 
-      // 0. Member ID match (e.g. NCSM1001, NCSM1003)
-      if (currentUserProfile?.member_id && p.recipient_member_id && p.recipient_member_id === currentUserProfile.member_id) {
+      // Do not deliver self-sent proposals to own received inbox
+      if (userId && p.sender_profile_id && p.sender_profile_id === userId) return false;
+      if (userMemberId && p.sender_member_id && p.sender_member_id.toUpperCase() === userMemberId.toUpperCase()) return false;
+
+      // 0. Member ID match (e.g. NCSM1001, NCSM1003) - primary exact link
+      if (userMemberId && p.recipient_member_id && p.recipient_member_id.toUpperCase() === userMemberId.toUpperCase()) {
         return true;
       }
 
       // 1. Direct recipient profile ID match
       if (userId && p.recipient_profile_id && p.recipient_profile_id === userId) return true;
 
-      // 2. Mobile number match
-      if (userPhoneNorm && p.recipient_mobile) {
+      // 2. Mobile number match (at least 8 clean digits)
+      if (userPhoneNorm && userPhoneNorm.length >= 8 && p.recipient_mobile) {
         const pPhoneNorm = p.recipient_mobile.replace(/\D/g, '').slice(-8);
-        if (pPhoneNorm && (pPhoneNorm === userPhoneNorm || userPhoneNorm.includes(pPhoneNorm) || pPhoneNorm.includes(userPhoneNorm))) {
+        if (pPhoneNorm && pPhoneNorm.length >= 8 && pPhoneNorm === userPhoneNorm) {
           return true;
         }
       }
 
-      // 3. Name match if name is non-empty
-      if (userNameNorm && p.recipient_name) {
+      // 3. Name match if name is non-empty and specific (at least 3 characters)
+      if (userNameNorm && userNameNorm.length >= 3 && p.recipient_name) {
         const pNameNorm = p.recipient_name.toLowerCase().trim();
         if (pNameNorm && pNameNorm === userNameNorm) return true;
       }
@@ -350,16 +366,15 @@ export default function App() {
     } catch {}
 
     try {
-      const seqRaw = localStorage.getItem('nikah_circle_member_id_seq_v4');
+      const seqRaw =
+        localStorage.getItem(MEMBER_ID_SEQ_KEY) ||
+        localStorage.getItem('nikah_circle_member_id_seq_v4');
       if (seqRaw) {
         const num = parseInt(seqRaw, 10);
         if (!isNaN(num) && num >= 1000) return `NCSM${num}`;
       }
     } catch {}
 
-    if (profiles.length > 0 && profiles[0].member_id) {
-      return profiles[0].member_id;
-    }
     return 'NCSM1001';
   }, [currentUserProfile, currentUser, userMatchedProfile, profiles]);
 
@@ -556,11 +571,11 @@ export default function App() {
       const activeRequests = (dbRequests && dbRequests.length > 0 ? dbRequests : premiumRequests) || [];
       const activePayments = (dbPayments && dbPayments.length > 0 ? dbPayments : payments) || [];
 
-      // 2. Fetch all profiles from Supabase profiles table
+      // 2. Fetch all profiles from Supabase profiles table in ascending order (chronological, oldest first for sequential NCSM numbering)
       const { data: dbProfiles, error: profileErr } = await supabase
         .from('profiles')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
       const localProfiles = getStoredProfiles();
       const deleted = getDeletedRecords();
@@ -584,6 +599,7 @@ export default function App() {
           if (localMatch) {
             return {
               ...dp,
+              member_id: localMatch.member_id || dp.member_id,
               biodata_uploaded: localMatch.biodata_uploaded || dp.biodata_uploaded,
               biodata_document_name: localMatch.biodata_document_name || dp.biodata_document_name,
               biodata_document_url: localMatch.biodata_document_url || dp.biodata_document_url,
@@ -642,6 +658,7 @@ export default function App() {
           if (foundIdx >= 0) {
             merged[foundIdx] = {
               ...merged[foundIdx],
+              member_id: cup.member_id || merged[foundIdx].member_id,
               biodata_uploaded: cup.biodata_uploaded || merged[foundIdx].biodata_uploaded,
               biodata_document_name: cup.biodata_document_name || merged[foundIdx].biodata_document_name,
               biodata_document_url: cup.biodata_document_url || merged[foundIdx].biodata_document_url,
@@ -654,7 +671,7 @@ export default function App() {
           } else if (cup.full_name) {
             const cupProfile: Profile = {
               id: cup.id || `usr-${Date.now()}`,
-              member_id: cup.member_id || getNextMemberId(),
+              member_id: cup.member_id || getNextMemberId(merged),
               full_name: cup.full_name,
               mobile: cup.mobile,
               email: cup.email,
@@ -684,8 +701,43 @@ export default function App() {
         }
       } catch {}
 
-      // 4. Link & automatically synchronize subscription statuses from approved requests and paid payments
-      const finalized = merged.map((p, idx) => {
+      // 4. Ensure every profile has a unique sequential member_id (NCSM1001, NCSM1002...)
+      let maxNum = 1000;
+      const assignedIds = new Set<string>();
+
+      // First pass: collect all established member_id numbers
+      merged.forEach((p) => {
+        const num = extractMemberIdNumber(p.member_id) || extractMemberIdNumber(p.id);
+        if (num) {
+          if (num > maxNum) maxNum = num;
+          assignedIds.add(`NCSM${num}`);
+        }
+      });
+
+      // Second pass: assign sequential numbers to any profile missing one
+      let currentAssign = 1001;
+      merged = merged.map((p) => {
+        const existingNum = extractMemberIdNumber(p.member_id) || extractMemberIdNumber(p.id);
+        if (existingNum) {
+          return { ...p, member_id: `NCSM${existingNum}` };
+        }
+        while (assignedIds.has(`NCSM${currentAssign}`)) {
+          currentAssign++;
+        }
+        const assignedId = `NCSM${currentAssign}`;
+        assignedIds.add(assignedId);
+        if (currentAssign > maxNum) maxNum = currentAssign;
+        currentAssign++;
+        return { ...p, member_id: assignedId };
+      });
+
+      // Sync highest member ID counter into localStorage
+      try {
+        localStorage.setItem(MEMBER_ID_SEQ_KEY, maxNum.toString());
+      } catch {}
+
+      // 5. Link & automatically synchronize subscription statuses from approved requests and paid payments
+      const finalized = merged.map((p) => {
         const phone = p.mobile ? p.mobile.replace(/\D/g, '').slice(-8) : '';
         const name = (p.full_name || '').toLowerCase().trim();
         const email = (p.email || '').toLowerCase().trim();
@@ -710,12 +762,14 @@ export default function App() {
 
         return {
           ...p,
-          member_id: p.member_id || `NCSM${1001 + idx}`,
           gender: normalizeGender(p.gender),
           is_premium: isPrem,
           premium_plan: isPrem ? (premPlan || 'Premium Plan') : null,
         };
       });
+
+      // Sort profiles newest-first for listings display
+      finalized.sort((a, b) => (new Date(b.created_at || '').getTime() || 0) - (new Date(a.created_at || '').getTime() || 0));
 
       setProfiles(finalized);
       saveStoredProfiles(finalized);
@@ -1026,11 +1080,12 @@ export default function App() {
     );
 
     // Auto-generate sequential Member ID (NCSM1001, NCSM1002...) if not already present
-    const memberId =
-      data.member_id ||
-      currentUserProfile?.member_id ||
-      (existingIndex >= 0 && profiles[existingIndex].member_id) ||
-      getNextMemberId();
+    const existingMemberId =
+      (extractMemberIdNumber(data.member_id) ? `NCSM${extractMemberIdNumber(data.member_id)}` : null) ||
+      (extractMemberIdNumber(currentUserProfile?.member_id) ? `NCSM${extractMemberIdNumber(currentUserProfile?.member_id)}` : null) ||
+      (existingIndex >= 0 && extractMemberIdNumber(profiles[existingIndex].member_id) ? `NCSM${extractMemberIdNumber(profiles[existingIndex].member_id)}` : null);
+
+    const memberId = existingMemberId || getNextMemberId(profiles);
 
     const normalizedGender = normalizeGender(data.gender);
 
@@ -1649,7 +1704,7 @@ export default function App() {
     } else {
       const isUUID = (str?: string) => !!str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
       const newId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `nc-${Date.now().toString().slice(-4)}`;
-      const memberId = profileData.member_id || getNextMemberId();
+      const memberId = profileData.member_id || getNextMemberId(profiles);
       targetProfile = {
         id: newId,
         member_id: memberId,
@@ -1897,6 +1952,17 @@ export default function App() {
   // Filtered Approved Profiles with Advanced Multi-field filtering
   const filteredProfiles = useMemo(() => {
     return approvedProfiles.filter((profile) => {
+      // Exclude current user's own profile from browse/search matches
+      if (
+        (currentUserProfile?.id && profile.id === currentUserProfile.id) ||
+        (currentUser?.id && profile.id === currentUser.id) ||
+        (currentUserProfile?.member_id && profile.member_id && currentUserProfile.member_id === profile.member_id) ||
+        (currentUserProfile?.mobile && profile.mobile && profile.mobile.replace(/\D/g, '').slice(-8) === currentUserProfile.mobile.replace(/\D/g, '').slice(-8)) ||
+        (currentUser?.email && profile.email && profile.email.toLowerCase() === currentUser.email.toLowerCase())
+      ) {
+        return false;
+      }
+
       if (searchQuery) {
         const match = [
           profile.full_name,
@@ -2858,7 +2924,7 @@ export default function App() {
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className="font-mono text-[10px] font-bold bg-[#4b001f] text-white px-2 py-0.5 rounded-md tracking-wider">
-                                  {p.member_id || (p.id?.startsWith('NCSM') ? p.id : `NCSM${p.id?.replace(/\D/g, '').slice(-4) || '1001'}`)}
+                                  {p.member_id || (p.id?.startsWith('NCSM') ? p.id : 'NCSM1001')}
                                 </span>
                                 <h3 className="font-serif font-bold text-lg text-[#4b001f]">
                                   {p.full_name}
@@ -3104,7 +3170,10 @@ export default function App() {
               (p) => p.email && p.email.toLowerCase() === user.email.toLowerCase()
             );
             if (!hasExisting) {
-              const newMemberId = getNextMemberId();
+              const newMemberId = getNextMemberId(profiles);
+              const updatedUser = { ...user, member_id: newMemberId };
+              setCurrentUser(updatedUser);
+              localStorage.setItem('nikah_circle_user', JSON.stringify(updatedUser));
               const autoProfile: Profile = {
                 id: `usr-${Date.now().toString().slice(-6)}`,
                 member_id: newMemberId,

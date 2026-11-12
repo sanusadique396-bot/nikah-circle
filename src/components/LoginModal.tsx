@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (user: { email: string; id: string }, isAdmin: boolean) => void;
+  onSuccess: (user: { email: string; id: string; member_id?: string }, isAdmin: boolean) => void;
   initialMode?: 'member' | 'admin';
 }
 
