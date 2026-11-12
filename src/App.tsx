@@ -1320,6 +1320,11 @@ export default function App() {
             setActiveView(view);
             if (tab) {
               setInterestsActiveTab(tab);
+            } else if (view === 'interests') {
+              const pendingCount = incomingInterests.filter((i) => i.status === 'pending').length;
+              if (pendingCount > 0) {
+                setInterestsActiveTab('received');
+              }
             }
           }
         }}
@@ -1700,7 +1705,7 @@ export default function App() {
           {/* Segmented Toggle Control: Send vs Receive */}
           <div className="flex justify-center sm:justify-start">
             <div className="inline-flex p-1.5 rounded-2xl bg-stone-200/80 border border-stone-300 shadow-inner w-full sm:w-auto min-w-[320px]">
-              {/* Send Button */}
+              {/* Send / Sent Button */}
               <button
                 type="button"
                 onClick={() => setInterestsActiveTab('sent')}
@@ -1711,7 +1716,7 @@ export default function App() {
                 }`}
               >
                 <Send className="w-4 h-4 text-emerald-400" />
-                <span>Send</span>
+                <span>Sent</span>
                 <span
                   className={`text-[11px] px-2 py-0.5 rounded-full font-bold transition-colors ${
                     interestsActiveTab === 'sent'
@@ -1723,7 +1728,7 @@ export default function App() {
                 </span>
               </button>
 
-              {/* Receive Button */}
+              {/* Receive / Received Button */}
               <button
                 type="button"
                 onClick={() => setInterestsActiveTab('received')}
@@ -1734,7 +1739,7 @@ export default function App() {
                 }`}
               >
                 <Inbox className="w-4 h-4 text-[#c9973e]" />
-                <span>Receive</span>
+                <span>Received</span>
                 <span
                   className={`text-[11px] px-2 py-0.5 rounded-full font-bold transition-colors ${
                     interestsActiveTab === 'received'
