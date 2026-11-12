@@ -62,16 +62,16 @@ export const ProfileCard: React.FC<Props> = ({
         )}
 
         {/* Top Left Badges */}
-        <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5 z-10">
-          {(profile.is_verified || profile.profile_status === 'APPROVED') && (
-            <span className="flex items-center gap-1 bg-emerald-600/95 backdrop-blur-xs text-white text-[10px] font-bold px-2.5 py-1 rounded-md shadow-xs">
-              <ShieldCheck className="w-3.5 h-3.5 text-white" />
+        <div className="absolute top-3 left-3 flex flex-col items-start gap-1 z-10">
+          {(profile.profile_status === 'APPROVED' || profile.is_verified) && (
+            <span className="flex items-center gap-1 bg-emerald-600/95 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-xs">
+              <ShieldCheck className="w-3 h-3 text-white" />
               <span>Admin Approved</span>
             </span>
           )}
 
           {profile.is_premium && (
-            <span className="flex items-center gap-1 bg-gradient-to-r from-amber-500 to-[#c9973e] text-white text-[10px] font-bold px-2.5 py-1 rounded-md shadow-xs">
+            <span className="flex items-center gap-1 bg-gradient-to-r from-amber-500 to-[#c9973e] text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-xs">
               <Sparkles className="w-3 h-3 text-white" />
               <span>{profile.premium_plan || 'Premium'}</span>
             </span>

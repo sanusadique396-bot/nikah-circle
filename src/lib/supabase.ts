@@ -361,7 +361,7 @@ export const DEFAULT_PAYMENTS: Payment[] = [
 const PROFILES_STORAGE_KEY = "nikah_circle_profiles_v2";
 const PAYMENTS_STORAGE_KEY = "nikah_circle_payments_v2";
 const BOOKMARKS_STORAGE_KEY = "nikah_circle_bookmarks_v2";
-const INTERESTS_MAP_KEY = "nikah_circle_interests_map_v2";
+const INTERESTS_MAP_KEY = "nikah_circle_interests_map_v3";
 
 export function getStoredProfiles(): Profile[] {
   try {
@@ -424,14 +424,11 @@ export function saveStoredBookmarks(ids: string[]) {
 // Map of Profile ID -> Interest Status: 'pending' | 'accepted' | 'declined'
 export function getStoredInterestsMap(): Record<string, 'pending' | 'accepted' | 'declined'> {
   try {
+    localStorage.removeItem("nikah_circle_interests_map_v2");
     const raw = localStorage.getItem(INTERESTS_MAP_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      // Remove any leftover default sample interest nc-002
-      if (parsed && parsed['nc-002'] && Object.keys(parsed).length === 1) {
-        localStorage.removeItem(INTERESTS_MAP_KEY);
-        return {};
-      }
+      delete parsed["nc-002"];
       return parsed;
     }
   } catch {

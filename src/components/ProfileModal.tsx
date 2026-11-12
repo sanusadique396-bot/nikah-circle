@@ -90,14 +90,14 @@ export const ProfileModal: React.FC<Props> = ({
                 <h2 className="font-serif text-2xl font-bold tracking-tight text-white">
                   {profile.full_name}
                 </h2>
-                {(profile.is_verified || profile.profile_status === 'APPROVED') && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 px-2.5 py-0.5 rounded-md">
-                    <ShieldCheck className="w-3.5 h-3.5" />
+                {(profile.profile_status === 'APPROVED' || profile.is_verified) && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 px-2 py-0.5 rounded-md">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
                     Admin Approved
                   </span>
                 )}
                 {profile.is_premium && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-[#c9973e]/30 text-[#dfb25d] border border-[#c9973e]/50 px-2.5 py-0.5 rounded-md">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-gradient-to-r from-amber-500/30 to-[#c9973e]/40 text-[#dfb25d] border border-[#c9973e]/50 px-2 py-0.5 rounded-md">
                     <Sparkles className="w-3 h-3 text-[#dfb25d]" />
                     {profile.premium_plan || 'Premium Member'}
                   </span>

@@ -46,9 +46,13 @@ export default function App() {
   const [payments, setPayments] = useState<Payment[]>(() => getStoredPayments());
   const [premiumRequests, setPremiumRequests] = useState<PremiumRequest[]>(() => getStoredPremiumRequests());
   const [bookmarks, setBookmarks] = useState<string[]>(() => getStoredBookmarks());
-  const [interestsMap, setInterestsMap] = useState<Record<string, 'pending' | 'accepted' | 'declined'>>(() =>
-    getStoredInterestsMap()
-  );
+  const [interestsMap, setInterestsMap] = useState<Record<string, 'pending' | 'accepted' | 'declined'>>(() => {
+    const map = getStoredInterestsMap();
+    if (map['nc-002']) {
+      delete map['nc-002'];
+    }
+    return map;
+  });
 
   // Authentication & User Profile State
   const [currentUser, setCurrentUser] = useState<{ email?: string; id?: string } | null>(() => {
@@ -84,122 +88,133 @@ export default function App() {
     return false;
   });
 
-  useEffect(() => {
-    localStorage.setItem('nikah_circle_user_is_premium', String(isUserPremium));
-  }, [isUserPremium]);
+  const [userPlanName, setUserPlanName] = useState<string>(() => {
+    try {
+      return localStorage.getItem('nikah_circle_user_plan_name') || 'Free Plan';
+    } catch {}
+    return 'Free Plan';
+  });
 
-  // Purge any default hardcoded interest (e.g. Er. Mohammed Nihal nc-002) so interests start empty
-  useEffect(() => {
-    if (interestsMap && interestsMap['nc-002'] && Object.keys(interestsMap).length === 1) {
-      setInterestsMap({});
-      saveStoredInterestsMap({});
-    }
-  }, []);
+  // Check if current user has an approved premium request (by phone or name)
+  const userApprovedRequest = useMemo(() => {
+    const phone = currentUserProfile?.mobile ? currentUserProfile.mobile.replace(/\D/g, '').slice(-8) : '';
+    const name = (currentUserProfile?.full_name || '').toLowerCase().trim();
+    if (!phone && !name) return null;
+    return premiumRequests.find(
+      (r) =>
+        r.status === 'APPROVED' &&
+        ((phone && r.phone_number && r.phone_number.replace(/\D/g, '').includes(phone)) ||
+         (name && r.user_name.toLowerCase().trim() === name))
+    );
+  }, [currentUserProfile, premiumRequests]);
 
-  // Auto-sync newly joined users & approved requests into profiles so Full Biodata Directory has EVERY candidate with exact timestamp
+  // Check if current user's profile is in profiles and approved / premium
+  const userMatchedProfile = useMemo(() => {
+    const phone = currentUserProfile?.mobile ? currentUserProfile.mobile.replace(/\D/g, '').slice(-8) : '';
+    const name = (currentUserProfile?.full_name || '').toLowerCase().trim();
+    if (!phone && !name) return null;
+    return profiles.find(
+      (p) =>
+        (phone && p.mobile && p.mobile.replace(/\D/g, '').includes(phone)) ||
+        (name && p.full_name.toLowerCase().trim() === name)
+    );
+  }, [currentUserProfile, profiles]);
+
+  const effectiveIsPremium = useMemo(() => {
+    try {
+      const adminStatus = localStorage.getItem('nikah_circle_premium_admin_status');
+      if (adminStatus === 'ADMIN_OFF' || adminStatus === 'EXPIRED') return false;
+    } catch {}
+    return isUserPremium || !!userApprovedRequest || !!userMatchedProfile?.is_premium;
+  }, [isUserPremium, userApprovedRequest, userMatchedProfile]);
+
+  const effectivePlanName = useMemo(() => {
+    if (userApprovedRequest?.plan_name) return userApprovedRequest.plan_name;
+    if (userMatchedProfile?.premium_plan) return userMatchedProfile.premium_plan;
+    if (userPlanName && userPlanName !== 'Free Plan') return userPlanName;
+    return effectiveIsPremium ? 'Premium Plan' : 'Free Plan';
+  }, [userApprovedRequest, userMatchedProfile, userPlanName, effectiveIsPremium]);
+
+  const isUserApproved = useMemo(() => {
+    if (userApprovedRequest) return true;
+    if (userMatchedProfile?.profile_status === 'APPROVED') return true;
+    if (currentUserProfile?.is_approved) return true;
+    return false;
+  }, [userApprovedRequest, userMatchedProfile, currentUserProfile]);
+
+  useEffect(() => {
+    localStorage.setItem('nikah_circle_user_is_premium', String(effectiveIsPremium));
+  }, [effectiveIsPremium]);
+
+  // Auto-sync approved premium requests into profiles so they always appear in public listings & Premium Users
   useEffect(() => {
     let hasChanges = false;
-    let updatedProfiles = [...profiles];
+    let nextProfiles = [...profiles];
 
-    // 1. Ensure currentUserProfile is in profiles
-    if (currentUserProfile && currentUserProfile.mobile) {
-      const uPhone = currentUserProfile.mobile.replace(/\D/g, '').slice(-8);
-      const exists = updatedProfiles.some(
-        (p) => (p.mobile && p.mobile.replace(/\D/g, '').includes(uPhone)) || p.full_name === currentUserProfile.full_name
-      );
-      if (!exists) {
-        const uProf: Profile = {
-          id: `usr-${currentUserProfile.mobile.replace(/\D/g, '')}`,
-          full_name: currentUserProfile.full_name,
-          mobile: currentUserProfile.mobile,
-          email: currentUserProfile.email,
-          gender: currentUserProfile.gender,
-          date_of_birth: currentUserProfile.date_of_birth,
-          age: currentUserProfile.date_of_birth
-            ? Math.max(18, new Date().getFullYear() - new Date(currentUserProfile.date_of_birth).getFullYear())
-            : 24,
-          state: currentUserProfile.state,
-          district: currentUserProfile.district,
-          place: currentUserProfile.place,
-          location: `${currentUserProfile.place}, ${currentUserProfile.district}`,
-          education: currentUserProfile.education || 'Graduate',
-          profession: currentUserProfile.profession || 'Professional',
-          guardian_name: currentUserProfile.guardian_name || 'Guardian',
-          guardian_mobile: currentUserProfile.guardian_mobile || currentUserProfile.mobile,
-          guardian_relation: 'Parent (Guardian)',
-          marital_status: 'Never Married',
-          hobbies: currentUserProfile.hobbies,
-          interests: currentUserProfile.interests,
-          profile_photo: currentUserProfile.profile_photo || null,
-          registration_type: 'ONLINE',
-          profile_status: 'APPROVED',
-          is_verified: true,
-          is_premium: isUserPremium,
-          created_at: new Date().toISOString(),
-        };
-        updatedProfiles.unshift(uProf);
-        hasChanges = true;
-      }
-    }
-
-    // 2. Ensure all joined users from premium requests (like HIDA) are in profiles
     premiumRequests.forEach((req) => {
-      const reqNorm = req.phone_number.replace(/\D/g, '').slice(-8);
-      const matchIdx = updatedProfiles.findIndex((p) => {
-        const pNorm = (p.mobile || '').replace(/\D/g, '').slice(-8);
-        const gNorm = (p.guardian_mobile || '').replace(/\D/g, '').slice(-8);
-        return (
-          (reqNorm && (pNorm === reqNorm || gNorm === reqNorm)) ||
-          p.full_name.trim().toLowerCase() === req.user_name.trim().toLowerCase()
-        );
-      });
+      if (req.status === 'APPROVED') {
+        const phone = req.phone_number ? req.phone_number.replace(/\D/g, '').slice(-8) : '';
+        const name = req.user_name.toLowerCase().trim();
 
-      if (matchIdx >= 0) {
-        // If approved by admin, ensure profile reflects premium & admin approved status!
-        if (req.status === 'APPROVED') {
-          if (!updatedProfiles[matchIdx].is_premium || updatedProfiles[matchIdx].profile_status !== 'APPROVED') {
-            updatedProfiles[matchIdx] = {
-              ...updatedProfiles[matchIdx],
+        const existingIdx = nextProfiles.findIndex(
+          (p) =>
+            (phone && p.mobile && p.mobile.replace(/\D/g, '').includes(phone)) ||
+            (phone && p.guardian_mobile && p.guardian_mobile.replace(/\D/g, '').includes(phone)) ||
+            (name && p.full_name.toLowerCase().trim() === name)
+        );
+
+        if (existingIdx >= 0) {
+          const curr = nextProfiles[existingIdx];
+          if (!curr.is_premium || curr.profile_status !== 'APPROVED') {
+            nextProfiles[existingIdx] = {
+              ...curr,
               is_premium: true,
-              is_verified: true,
+              premium_plan: req.plan_name || curr.premium_plan || 'Premium Plan',
               profile_status: 'APPROVED',
-              premium_plan: req.plan_name,
+              is_verified: true,
             };
             hasChanges = true;
           }
+        } else {
+          // Create approved profile for this premium user so it appears on the page and in Premium Users
+          const isFemale = req.plan_name.toLowerCase().includes('girl') || (req.notes && req.notes.toLowerCase().includes('girl'));
+          const newProf: Profile = {
+            id: `nc-prem-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            full_name: req.user_name,
+            gender: isFemale ? 'Female' : 'Male',
+            age: isFemale ? 22 : 26,
+            date_of_birth: isFemale ? '2004-05-15' : '2000-01-01',
+            location: 'Kerala',
+            district: 'Malappuram',
+            place: 'Kerala',
+            education: 'Graduate',
+            profession: 'Professional',
+            guardian_name: `${req.user_name}'s Guardian`,
+            guardian_mobile: req.phone_number,
+            guardian_relation: 'Parent (Guardian)',
+            mobile: req.phone_number,
+            marital_status: 'Never Married',
+            registration_type: 'ONLINE',
+            profile_status: 'APPROVED',
+            is_verified: true,
+            is_premium: true,
+            premium_plan: req.plan_name,
+            premium_start: req.created_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+            premium_end: new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10),
+            created_at: req.created_at || new Date().toISOString(),
+            about: req.notes ? `Approved Member (${req.plan_name}). Reason/Notes: ${req.notes}` : 'Verified Muslim individual seeking life partner with family harmony.',
+          };
+          nextProfiles = [newProf, ...nextProfiles];
+          hasChanges = true;
         }
-      } else {
-        // Auto-add candidate who joined via premium request to profiles with exact joined time
-        const newProf: Profile = {
-          id: `usr-${req.id}`,
-          full_name: req.user_name,
-          mobile: req.phone_number,
-          guardian_name: `${req.user_name}'s Guardian`,
-          guardian_mobile: req.phone_number,
-          guardian_relation: 'Parent (Guardian)',
-          gender: req.plan_type === 'FREE_REQUEST' ? 'Female' : 'Female',
-          location: 'Kerala',
-          district: 'Kozhikode',
-          marital_status: 'Never Married',
-          education: 'Graduate',
-          profession: 'Member',
-          registration_type: 'ONLINE',
-          profile_status: req.status === 'APPROVED' ? 'APPROVED' : 'PENDING',
-          is_verified: req.status === 'APPROVED',
-          is_premium: req.status === 'APPROVED',
-          premium_plan: req.plan_name,
-          created_at: req.created_at || new Date().toISOString(),
-        };
-        updatedProfiles.unshift(newProf);
-        hasChanges = true;
       }
     });
 
     if (hasChanges) {
-      setProfiles(updatedProfiles);
-      saveStoredProfiles(updatedProfiles);
+      setProfiles(nextProfiles);
+      saveStoredProfiles(nextProfiles);
     }
-  }, [premiumRequests, currentUserProfile]);
+  }, [premiumRequests]);
 
   // Mandatory Account / Profile Setup: Opens on first app launch if profile is not created (No skip button!)
   const [isCreateAccountOpen, setIsCreateAccountOpen] = useState<boolean>(() => {
@@ -258,45 +273,6 @@ export default function App() {
     status: string;
     message: string;
   } | null>(null);
-
-  // Dynamic calculation for effective premium status and plan name
-  const effectivePremiumInfo = useMemo(() => {
-    // 1. Check if user has an approved premium request
-    if (currentUserProfile) {
-      const uPhone = (currentUserProfile.mobile || '').replace(/\D/g, '').slice(-8);
-      const uName = (currentUserProfile.full_name || '').trim().toLowerCase();
-
-      const matchedReq = premiumRequests.find(
-        (r) =>
-          r.status === 'APPROVED' &&
-          ((uPhone && r.phone_number.replace(/\D/g, '').includes(uPhone)) ||
-            (uName && r.user_name.trim().toLowerCase() === uName))
-      );
-      if (matchedReq) {
-        return { isPremium: true, planName: matchedReq.plan_name, isApproved: true };
-      }
-
-      const matchedProf = profiles.find(
-        (p) =>
-          (p.mobile && uPhone && p.mobile.replace(/\D/g, '').includes(uPhone)) ||
-          p.full_name.trim().toLowerCase() === uName
-      );
-      if (matchedProf && matchedProf.is_premium) {
-        return {
-          isPremium: true,
-          planName: matchedProf.premium_plan || 'Premium Plan',
-          isApproved: matchedProf.profile_status === 'APPROVED',
-        };
-      }
-    }
-
-    if (isUserPremium) {
-      const storedPlan = localStorage.getItem('nikah_circle_user_plan_name');
-      return { isPremium: true, planName: storedPlan || 'Premium Plan', isApproved: true };
-    }
-
-    return { isPremium: false, planName: 'Free Plan', isApproved: false };
-  }, [currentUserProfile, premiumRequests, profiles, isUserPremium]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -441,7 +417,8 @@ export default function App() {
       registration_type: 'ONLINE',
       profile_status: 'APPROVED',
       is_verified: true,
-      is_premium: isUserPremium,
+      is_premium: effectiveIsPremium,
+      premium_plan: effectivePlanName,
       created_at: new Date().toISOString(),
     };
 
@@ -483,50 +460,15 @@ export default function App() {
   ) => {
     const isUUID = (str?: string) => !!str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
     const newId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `req-${Date.now()}`;
-    const nowIso = new Date().toISOString();
     const newReq: PremiumRequest = {
       ...req,
       id: newId,
       status: 'PENDING',
-      created_at: nowIso,
+      created_at: new Date().toISOString(),
     };
     const updated = [newReq, ...premiumRequests];
     setPremiumRequests(updated);
     saveStoredPremiumRequests(updated);
-
-    // Auto-add candidate into profiles so they immediately appear in Full Biodata Directory with exact joined timestamp!
-    const reqNorm = req.phone_number.replace(/\D/g, '').slice(-8);
-    const exists = profiles.some((p) => {
-      const pNorm = (p.mobile || '').replace(/\D/g, '').slice(-8);
-      return (reqNorm && pNorm === reqNorm) || p.full_name.trim().toLowerCase() === req.user_name.trim().toLowerCase();
-    });
-
-    if (!exists) {
-      const newProf: Profile = {
-        id: `usr-${newId}`,
-        full_name: req.user_name,
-        mobile: req.phone_number,
-        guardian_name: `${req.user_name}'s Guardian`,
-        guardian_mobile: req.phone_number,
-        guardian_relation: 'Parent (Guardian)',
-        gender: req.plan_type === 'FREE_REQUEST' ? 'Female' : 'Female',
-        location: 'Kerala',
-        district: 'Kozhikode',
-        marital_status: 'Never Married',
-        education: 'Graduate',
-        profession: 'Member',
-        registration_type: 'ONLINE',
-        profile_status: 'PENDING',
-        is_verified: false,
-        is_premium: false,
-        premium_plan: req.plan_name,
-        created_at: nowIso,
-      };
-      const updatedProfiles = [newProf, ...profiles];
-      setProfiles(updatedProfiles);
-      saveStoredProfiles(updatedProfiles);
-    }
-
     showToast('Premium request submitted to admin!');
 
     try {
@@ -568,77 +510,58 @@ export default function App() {
 
     // Activate premium for current user session
     setIsUserPremium(true);
+    setUserPlanName(target.plan_name);
     localStorage.setItem('nikah_circle_user_is_premium', 'true');
     localStorage.setItem('nikah_circle_user_plan_name', target.plan_name);
-    localStorage.setItem('nikah_circle_premium_admin_status', 'APPROVED');
 
-    // Update currentUserProfile if matching
-    if (currentUserProfile) {
-      const uPhone = (currentUserProfile.mobile || '').replace(/\D/g, '').slice(-8);
-      const reqPhone = target.phone_number.replace(/\D/g, '').slice(-8);
-      if ((uPhone && reqPhone === uPhone) || currentUserProfile.full_name.trim().toLowerCase() === target.user_name.trim().toLowerCase()) {
-        const uProf = {
-          ...currentUserProfile,
-          is_premium: true,
-          is_admin_approved: true,
-          plan_name: target.plan_name,
-        };
-        setCurrentUserProfile(uProf);
-        localStorage.setItem('nikah_circle_user_profile', JSON.stringify(uProf));
-      }
-    }
+    // If candidate has a registered profile, mark it premium & approved; otherwise create it!
+    const phoneNorm = target.phone_number ? target.phone_number.replace(/\D/g, '').slice(-8) : '';
+    const nameNorm = target.user_name.toLowerCase().trim();
 
-    // If candidate has a registered profile, mark it premium & APPROVED
-    const reqNorm = target.phone_number.replace(/\D/g, '').slice(-8);
-    const matchedIndex = profiles.findIndex(
+    const existingIdx = profiles.findIndex(
       (p) =>
-        (p.mobile && reqNorm && p.mobile.replace(/\D/g, '').includes(reqNorm)) ||
-        (p.guardian_mobile && reqNorm && p.guardian_mobile.replace(/\D/g, '').includes(reqNorm)) ||
-        p.full_name.toLowerCase().trim() === target.user_name.toLowerCase().trim()
+        (phoneNorm && p.mobile && p.mobile.replace(/\D/g, '').includes(phoneNorm)) ||
+        (phoneNorm && p.guardian_mobile && p.guardian_mobile.replace(/\D/g, '').includes(phoneNorm)) ||
+        (nameNorm && p.full_name.toLowerCase().trim() === nameNorm)
     );
 
-    let updatedProfiles = [...profiles];
-    if (matchedIndex >= 0) {
-      const p = updatedProfiles[matchedIndex];
-      updatedProfiles[matchedIndex] = {
-        ...p,
-        is_premium: true,
-        is_verified: true,
-        profile_status: 'APPROVED',
-        premium_plan: target.plan_name,
-        premium_start: new Date().toISOString().slice(0, 10),
-        premium_end: new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10),
-      };
-      setProfiles(updatedProfiles);
-      saveStoredProfiles(updatedProfiles);
-      try {
-        await supabase
-          .from('profiles')
-          .update({
-            is_premium: true,
-            is_verified: true,
-            profile_status: 'APPROVED',
-            premium_plan: target.plan_name,
-            premium_start: new Date().toISOString().slice(0, 10),
-            premium_end: new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10),
-          })
-          .eq('id', p.id);
-      } catch {}
+    let updatedProfiles: Profile[];
+    let targetProfileId = '';
+
+    if (existingIdx >= 0) {
+      targetProfileId = profiles[existingIdx].id;
+      updatedProfiles = profiles.map((p, idx) =>
+        idx === existingIdx
+          ? {
+              ...p,
+              is_premium: true,
+              premium_plan: target.plan_name,
+              profile_status: 'APPROVED' as const,
+              is_verified: true,
+              premium_start: new Date().toISOString().slice(0, 10),
+              premium_end: new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10),
+            }
+          : p
+      );
     } else {
-      // Auto-create approved premium profile for this user so they appear in Profiles AND in Premium Users & Full Biodata Directory!
+      targetProfileId = `nc-prem-${Date.now()}`;
+      const isFemale = target.plan_name.toLowerCase().includes('girl') || (target.notes && target.notes.toLowerCase().includes('girl'));
       const newProf: Profile = {
-        id: `usr-${target.id}`,
+        id: targetProfileId,
         full_name: target.user_name,
-        mobile: target.phone_number,
+        gender: isFemale ? 'Female' : 'Male',
+        age: isFemale ? 22 : 26,
+        date_of_birth: isFemale ? '2004-05-15' : '2000-01-01',
+        location: 'Kerala',
+        district: 'Malappuram',
+        place: 'Kerala',
+        education: 'Graduate',
+        profession: 'Professional',
         guardian_name: `${target.user_name}'s Guardian`,
         guardian_mobile: target.phone_number,
         guardian_relation: 'Parent (Guardian)',
-        gender: target.plan_type === 'FREE_REQUEST' ? 'Female' : 'Female',
-        location: 'Kerala',
-        district: 'Kozhikode',
+        mobile: target.phone_number,
         marital_status: 'Never Married',
-        education: 'Graduate',
-        profession: 'Member',
         registration_type: 'ONLINE',
         profile_status: 'APPROVED',
         is_verified: true,
@@ -646,20 +569,36 @@ export default function App() {
         premium_plan: target.plan_name,
         premium_start: new Date().toISOString().slice(0, 10),
         premium_end: new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10),
-        created_at: target.created_at || new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        about: target.notes ? `Approved Member (${target.plan_name}). Reason/Notes: ${target.notes}` : 'Verified Muslim individual seeking life partner.',
       };
-      updatedProfiles.unshift(newProf);
-      setProfiles(updatedProfiles);
-      saveStoredProfiles(updatedProfiles);
+      updatedProfiles = [newProf, ...profiles];
     }
 
-    const matchedProfile = matchedIndex >= 0 ? updatedProfiles[matchedIndex] : updatedProfiles[0];
+    setProfiles(updatedProfiles);
+    saveStoredProfiles(updatedProfiles);
+
+    // Update current user profile in localStorage if matching
+    if (currentUserProfile) {
+      const uPhone = (currentUserProfile.mobile || '').replace(/\D/g, '').slice(-8);
+      const uName = (currentUserProfile.full_name || '').toLowerCase().trim();
+      if ((phoneNorm && uPhone && (phoneNorm.includes(uPhone) || uPhone.includes(phoneNorm))) || (nameNorm && nameNorm === uName)) {
+        const updatedUserProf: UserProfileData = {
+          ...currentUserProfile,
+          is_premium: true,
+          is_approved: true,
+          premium_plan: target.plan_name,
+        };
+        setCurrentUserProfile(updatedUserProf);
+        localStorage.setItem('nikah_circle_user_profile', JSON.stringify(updatedUserProf));
+      }
+    }
 
     // Insert into Payments ledger
     const payId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `pay-${Date.now()}`;
     const newPay: Payment = {
       id: payId,
-      profile_id: matchedProfile?.id || 'approved-user',
+      profile_id: targetProfileId || 'approved-user',
       profile_name: target.user_name,
       amount: target.amount,
       payment_method:
@@ -688,7 +627,7 @@ export default function App() {
         notes: newPay.notes,
       };
       if (isUUID(newPay.id)) payPayload.id = newPay.id;
-      if (matchedProfile && isUUID(matchedProfile.id)) payPayload.profile_id = matchedProfile.id;
+      if (targetProfileId && isUUID(targetProfileId)) payPayload.profile_id = targetProfileId;
       await supabase.from('payments').insert(payPayload);
     } catch {}
 
@@ -796,7 +735,7 @@ export default function App() {
 
   // Profile Registration Gating: Only Premium members can register, others are directed to Premium plans
   const handleOpenRegister = () => {
-    if (!isUserPremium && !isAdmin) {
+    if (!effectiveIsPremium && !isAdmin) {
       showToast('Profile registration requires premium membership. Please choose a plan.');
       setIsPremiumOpen(true);
     } else {
@@ -968,7 +907,7 @@ export default function App() {
   // Approved Profiles List: Featured with Premium profiles in front
   const approvedProfiles = useMemo(() => {
     return [...profiles]
-      .filter((p) => p.profile_status === 'APPROVED' || p.is_premium)
+      .filter((p) => p.profile_status === 'APPROVED')
       .sort((a, b) => {
         // Premium profiles featured prominently first
         if (a.is_premium && !b.is_premium) return -1;
@@ -1127,8 +1066,9 @@ export default function App() {
         onLogout={handleLogout}
         savedCount={bookmarks.length}
         interestsCount={Object.keys(interestsMap).length}
-        isUserPremium={effectivePremiumInfo.isPremium}
-        currentPlanName={effectivePremiumInfo.planName}
+        isUserPremium={effectiveIsPremium}
+        isUserApproved={isUserApproved}
+        currentPlanName={effectivePlanName}
       />
 
       {/* On-Screen Status Banner: Admin Approved & Premium Activated */}
@@ -1242,7 +1182,7 @@ export default function App() {
                     isBookmarked={bookmarks.includes(profile.id)}
                     onToggleBookmark={handleToggleBookmark}
                     interestStatus={interestsMap[profile.id]}
-                    isUserPremium={isUserPremium}
+                    isUserPremium={effectiveIsPremium}
                     onOpenPremium={() => setIsPremiumOpen(true)}
                   />
                 ))}
@@ -1351,7 +1291,7 @@ export default function App() {
             onReset={handleResetFilters}
             totalCount={approvedProfiles.length}
             filteredCount={filteredProfiles.length}
-            isUserPremium={isUserPremium}
+            isUserPremium={effectiveIsPremium}
             onOpenPremium={() => setIsPremiumOpen(true)}
           />
 
@@ -1381,7 +1321,7 @@ export default function App() {
                   isBookmarked={bookmarks.includes(profile.id)}
                   onToggleBookmark={handleToggleBookmark}
                   interestStatus={interestsMap[profile.id]}
-                  isUserPremium={isUserPremium}
+                  isUserPremium={effectiveIsPremium}
                   onOpenPremium={() => setIsPremiumOpen(true)}
                 />
               ))}
@@ -1436,7 +1376,7 @@ export default function App() {
                   isBookmarked={bookmarks.includes(profile.id)}
                   onToggleBookmark={handleToggleBookmark}
                   interestStatus={interestsMap[profile.id]}
-                  isUserPremium={isUserPremium}
+                  isUserPremium={effectiveIsPremium}
                   onOpenPremium={() => setIsPremiumOpen(true)}
                 />
               ))}
@@ -1577,7 +1517,7 @@ export default function App() {
           setSelectedProfile(null);
           setIsPremiumOpen(true);
         }}
-        isUserPremium={isUserPremium}
+        isUserPremium={effectiveIsPremium}
         onAcceptInterestTest={handleAcceptInterest}
       />
 
@@ -1587,8 +1527,9 @@ export default function App() {
         isMandatory={isCreateAccountOpen && !isEditingProfile}
         isEditing={isEditingProfile}
         initialData={currentUserProfile}
-        isUserPremium={effectivePremiumInfo.isPremium}
-        currentPlanName={effectivePremiumInfo.planName}
+        isApproved={isUserApproved}
+        isPremium={effectiveIsPremium}
+        planName={effectivePlanName}
         onClose={() => {
           setIsCreateAccountOpen(false);
           setIsEditingProfile(false);
@@ -1616,7 +1557,7 @@ export default function App() {
           await handleSaveProfile(newProfile);
           showToast('Profile submitted for admin approval!');
         }}
-        isUserPremium={isUserPremium || isAdmin}
+        isUserPremium={effectiveIsPremium || isAdmin}
         onOpenPremium={() => {
           setIsRegisterOpen(false);
           setIsPremiumOpen(true);
