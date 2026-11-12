@@ -1,5 +1,5 @@
 import React from 'react';
-import { Profile } from '../types';
+import { Profile, normalizeGender } from '../types';
 import {
   X,
   MapPin,
@@ -44,6 +44,8 @@ export const ProfileModal: React.FC<Props> = ({
   if (!profile) return null;
 
   const isUnlocked = interestStatus === 'accepted';
+  const normUserGender = currentUserGender ? normalizeGender(currentUserGender) : null;
+  const normProfileGender = normalizeGender(profile.gender);
   const age =
     profile.age ||
     (profile.date_of_birth
@@ -109,7 +111,7 @@ export const ProfileModal: React.FC<Props> = ({
                 <span>·</span>
                 <span>{age} Years</span>
                 <span>·</span>
-                <span>{profile.gender}</span>
+                <span>{normProfileGender}</span>
               </div>
 
               <p className="text-xs text-stone-300">
@@ -158,7 +160,7 @@ export const ProfileModal: React.FC<Props> = ({
                   <div className="px-5 py-2.5 rounded-xl bg-stone-100 text-stone-600 border border-stone-200 text-xs font-semibold">
                     This is your own profile
                   </div>
-                ) : (currentUserGender && profile.gender === currentUserGender) ? (
+                ) : (normUserGender && normProfileGender === normUserGender) ? (
                   <div className="px-5 py-2.5 rounded-xl bg-stone-100 text-stone-600 border border-stone-200 text-xs font-semibold text-center">
                     Proposals can only be exchanged between Groom and Bride profiles
                   </div>

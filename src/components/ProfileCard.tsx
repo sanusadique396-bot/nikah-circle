@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Profile } from '../types';
+import { Profile, normalizeGender } from '../types';
 import { MapPin, Heart, ShieldCheck, Sparkles, Eye, EyeOff, UserCheck, Lock, Clock } from 'lucide-react';
 
 interface Props {
@@ -45,8 +45,11 @@ export const ProfileCard: React.FC<Props> = ({
     (currentUserMobile && profile.mobile && profile.mobile.replace(/\D/g, '').slice(-8) === currentUserMobile.replace(/\D/g, '').slice(-8))
   );
 
+  const normUserGender = currentUserGender ? normalizeGender(currentUserGender) : null;
+  const normProfileGender = normalizeGender(profile.gender);
+
   const isSameGender = Boolean(
-    currentUserGender && profile.gender === currentUserGender
+    normUserGender && normProfileGender === normUserGender
   );
 
   const handleInterestClick = () => {
@@ -56,7 +59,7 @@ export const ProfileCard: React.FC<Props> = ({
       return;
     }
     if (isSameGender) {
-      const needed = currentUserGender === 'Female' ? 'Groom (Male)' : 'Bride (Female)';
+      const needed = normUserGender === 'Female' ? 'Groom (Male)' : 'Bride (Female)';
       onOppositeGenderRequired?.(needed);
       return;
     }
@@ -123,7 +126,7 @@ export const ProfileCard: React.FC<Props> = ({
         <div className="absolute bottom-2.5 left-3 text-white text-xs font-semibold drop-shadow-sm flex items-center gap-2">
           <span>{age} yrs</span>
           <span>·</span>
-          <span>{profile.gender}</span>
+          <span>{normProfileGender}</span>
           {isUnlocked ? (
             <span className="px-1.5 py-0.5 rounded bg-emerald-500/80 text-[10px] text-white font-bold ml-1">
               Biodata Unlocked
@@ -207,13 +210,13 @@ export const ProfileCard: React.FC<Props> = ({
             <button
               type="button"
               onClick={() => {
-                const needed = currentUserGender === 'Female' ? 'Groom (Male)' : 'Bride (Female)';
+                const needed = normUserGender === 'Female' ? 'Groom (Male)' : 'Bride (Female)';
                 onOppositeGenderRequired?.(needed);
               }}
               className="flex-1 py-2 px-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-600 border border-stone-200 text-xs font-semibold text-center cursor-pointer transition-colors"
-              title={`Proposals are exchanged between opposite gender only (${currentUserGender === 'Female' ? 'Male' : 'Female'})`}
+              title={`Proposals are exchanged between opposite gender only (${normUserGender === 'Female' ? 'Male' : 'Female'})`}
             >
-              {profile.gender === 'Female' ? 'Bride Profile' : 'Groom Profile'}
+              {normProfileGender === 'Female' ? 'Bride Profile' : 'Groom Profile'}
             </button>
           ) : interestStatus === 'pending' ? (
             <div className="flex-1 flex items-center gap-1.5">

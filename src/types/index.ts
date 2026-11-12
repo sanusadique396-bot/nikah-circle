@@ -58,6 +58,7 @@ export interface PremiumRequest {
   id: string;
   user_name: string;
   phone_number: string;
+  gender?: 'Male' | 'Female';
   plan_name: string;
   plan_type: 'UPI_QR' | 'CASH_OFFICE' | 'FREE_REQUEST';
   amount: number;
@@ -113,3 +114,48 @@ export interface SearchFilters {
   verifiedOnly: boolean;
   premiumOnly: boolean;
 }
+
+/**
+ * Normalizes any gender input string to strictly 'Male' or 'Female'.
+ * Handles strings like 'Male (Groom)', 'Female (Bride)', 'groom', 'bride', 'male', 'female'.
+ */
+export function normalizeGender(val?: string | null): 'Male' | 'Female' {
+  if (!val) return 'Male';
+  const s = String(val).trim().toLowerCase();
+  if (
+    s.startsWith('f') ||
+    s.includes('female') ||
+    s.includes('bride') ||
+    s.includes('girl') ||
+    s.includes('woman')
+  ) {
+    return 'Female';
+  }
+  return 'Male';
+}
+
+const KNOWN_MALE_FIRST_NAMES = new Set([
+  'irshad', 'mohammed', 'muhammed', 'rashid', 'nihal', 'sadique', 'faizal', 'faisal',
+  'niyas', 'musthafa', 'mustafa', 'shameer', 'rameez', 'shafi', 'salman', 'anas', 'bilal',
+  'hamza', 'umar', 'usman', 'farhan', 'adil', 'ameen', 'ashraf', 'hassan', 'hussain',
+  'jaseel', 'jasim', 'mansoor', 'nasir', 'nadeem', 'noufal', 'rayyan', 'rizwan', 'suhail',
+  'shahid', 'shakil', 'sameer', 'tahir', 'zayan', 'zaid', 'zubair', 'ali', 'ahmed', 'ahammed'
+]);
+
+/**
+ * Auto-corrects legacy or misassigned profiles where a male candidate was mistakenly
+ * saved as 'Female' due to free package defaults ("Girls & Other").
+ */
+export function autoCorrectMistakenGenders(p: Profile): Profile {
+  const normGender = normalizeGender(p.gender);
+  const nameParts = (p.full_name || '').toLowerCase().trim().split(/\s+/);
+  const cleanFirst = nameParts
+    .map((part) => part.replace(/[^a-z]/g, ''))
+    .find((part) => !['mr', 'dr', 'er'].includes(part));
+
+  if (cleanFirst && KNOWN_MALE_FIRST_NAMES.has(cleanFirst) && normGender === 'Female') {
+    return { ...p, gender: 'Male' };
+  }
+  return { ...p, gender: normGender };
+}
+

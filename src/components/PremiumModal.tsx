@@ -18,7 +18,7 @@ import {
   Smartphone,
   ExternalLink
 } from 'lucide-react';
-import { PremiumRequest } from '../types';
+import { PremiumRequest, normalizeGender } from '../types';
 import { isReferralCodeUsed, markReferralCodeUsed } from '../lib/supabase';
 
 interface Props {
@@ -29,6 +29,7 @@ interface Props {
   ) => void;
   defaultUserName?: string;
   defaultUserPhone?: string;
+  defaultUserGender?: 'Male' | 'Female';
 }
 
 const PREMIUM_PLANS = [
@@ -64,6 +65,7 @@ export const PremiumModal: React.FC<Props> = ({
   onSubmitPremiumRequest,
   defaultUserName = '',
   defaultUserPhone = '',
+  defaultUserGender,
 }) => {
   // Mode: 'upi_qr' | 'cash_office' | 'free_request'
   const [activeTab, setActiveTab] = useState<'upi_qr' | 'cash_office' | 'free_request'>('upi_qr');
@@ -72,6 +74,9 @@ export const PremiumModal: React.FC<Props> = ({
   // Form Fields
   const [name, setName] = useState(defaultUserName);
   const [phone, setPhone] = useState(defaultUserPhone);
+  const [gender, setGender] = useState<'Male' | 'Female'>(
+    defaultUserGender ? normalizeGender(defaultUserGender) : 'Male'
+  );
   const [utrNumber, setUtrNumber] = useState('');
   const [screenshot, setScreenshot] = useState('');
   const [notes, setNotes] = useState('');
@@ -84,6 +89,12 @@ export const PremiumModal: React.FC<Props> = ({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    if (defaultUserName) setName(defaultUserName);
+    if (defaultUserPhone) setPhone(defaultUserPhone);
+    if (defaultUserGender) setGender(normalizeGender(defaultUserGender));
+  }, [defaultUserName, defaultUserPhone, defaultUserGender, isOpen]);
 
   if (!isOpen) return null;
 
@@ -174,6 +185,7 @@ export const PremiumModal: React.FC<Props> = ({
       onSubmitPremiumRequest({
         user_name: name.trim(),
         phone_number: phone.trim(),
+        gender: normalizeGender(gender),
         plan_name: planName,
         plan_type: planType,
         amount,
@@ -375,7 +387,7 @@ export const PremiumModal: React.FC<Props> = ({
 
                   {/* FORM TO SUBMIT UTR & SCREENSHOT */}
                   <form onSubmit={handleSubmit} className="space-y-4 text-xs sm:text-sm">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                       <div>
                         <label className="block text-xs font-bold text-stone-700 mb-1">
                           Your Full Name *
@@ -402,6 +414,20 @@ export const PremiumModal: React.FC<Props> = ({
                           placeholder="+91 98470 00000"
                           className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:border-[#4b001f]"
                         />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-stone-700 mb-1">
+                          Gender *
+                        </label>
+                        <select
+                          value={gender}
+                          onChange={(e) => setGender(normalizeGender(e.target.value))}
+                          className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:border-[#4b001f] bg-white font-medium"
+                        >
+                          <option value="Male">Groom (Male)</option>
+                          <option value="Female">Bride (Female)</option>
+                        </select>
                       </div>
                     </div>
 
@@ -549,7 +575,7 @@ export const PremiumModal: React.FC<Props> = ({
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-4 text-xs sm:text-sm">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                       <div>
                         <label className="block text-xs font-bold text-stone-700 mb-1">
                           Full Name *
@@ -576,6 +602,20 @@ export const PremiumModal: React.FC<Props> = ({
                           placeholder="+91 98470 00000"
                           className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:border-[#4b001f]"
                         />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-stone-700 mb-1">
+                          Gender *
+                        </label>
+                        <select
+                          value={gender}
+                          onChange={(e) => setGender(normalizeGender(e.target.value))}
+                          className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:border-[#4b001f] bg-white font-medium"
+                        >
+                          <option value="Male">Groom (Male)</option>
+                          <option value="Female">Bride (Female)</option>
+                        </select>
                       </div>
                     </div>
 
@@ -682,7 +722,7 @@ export const PremiumModal: React.FC<Props> = ({
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-3.5 text-xs sm:text-sm pt-2">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                       <div>
                         <label className="block text-xs font-bold text-stone-700 mb-1">
                           Your Name *
@@ -709,6 +749,20 @@ export const PremiumModal: React.FC<Props> = ({
                           placeholder="+91 98470 00000"
                           className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:border-[#4b001f] bg-white"
                         />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-stone-700 mb-1">
+                          Candidate Gender *
+                        </label>
+                        <select
+                          value={gender}
+                          onChange={(e) => setGender(normalizeGender(e.target.value))}
+                          className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:border-[#4b001f] bg-white font-medium"
+                        >
+                          <option value="Male">Groom (Male)</option>
+                          <option value="Female">Bride (Female)</option>
+                        </select>
                       </div>
                     </div>
 

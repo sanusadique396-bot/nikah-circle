@@ -20,7 +20,7 @@ import {
   FileCheck,
   Upload
 } from 'lucide-react';
-import { Profile } from '../types';
+import { Profile, normalizeGender } from '../types';
 
 export interface UserProfileData {
   id?: string;
@@ -135,7 +135,7 @@ export const UserProfileModal: React.FC<Props> = ({
     state: 'Kerala',
     district: 'Kozhikode',
     place: '',
-    gender: 'Female',
+    gender: 'Male',
     date_of_birth: '1998-05-15',
     hobbies: '',
     interests: '',
@@ -161,7 +161,7 @@ export const UserProfileModal: React.FC<Props> = ({
         ...initialData,
         state: initialData.state || prev.state,
         district: initialData.district || prev.district,
-        gender: initialData.gender || prev.gender,
+        gender: initialData.gender ? normalizeGender(initialData.gender) : prev.gender,
         date_of_birth: initialData.date_of_birth || prev.date_of_birth,
         biodata_uploaded: initialData.biodata_uploaded ?? prev.biodata_uploaded,
         biodata_document_name: initialData.biodata_document_name ?? prev.biodata_document_name,
@@ -247,7 +247,10 @@ export const UserProfileModal: React.FC<Props> = ({
 
     setLoading(true);
     try {
-      await onSubmit(formData);
+      await onSubmit({
+        ...formData,
+        gender: normalizeGender(formData.gender),
+      });
       if (!isMandatory && onClose) {
         onClose();
       }
@@ -540,12 +543,12 @@ export const UserProfileModal: React.FC<Props> = ({
                   Gender <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={formData.gender}
-                  onChange={(e) => setFormData({ ...formData, gender: e.target.value as 'Male' | 'Female' })}
+                  value={normalizeGender(formData.gender)}
+                  onChange={(e) => setFormData({ ...formData, gender: normalizeGender(e.target.value) })}
                   className="w-full px-3 py-2 text-xs rounded-xl border border-stone-300 focus:border-[#4b001f] outline-none bg-white font-medium"
                 >
-                  <option value="Female">Female (Bride)</option>
                   <option value="Male">Male (Groom)</option>
+                  <option value="Female">Female (Bride)</option>
                 </select>
               </div>
 

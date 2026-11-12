@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
-import { Profile, Payment, InterestRecord, PremiumRequest } from '../types';
+import { Profile, Payment, InterestRecord, PremiumRequest, normalizeGender, autoCorrectMistakenGenders } from '../types';
+
+export { normalizeGender, autoCorrectMistakenGenders };
 
 export const SUPABASE_URL = 
   import.meta.env.VITE_SUPABASE_URL || "https://fowkuwwfmnzupzbrrxqf.supabase.co";
@@ -22,7 +24,10 @@ export function getStoredProfiles(): Profile[] {
   try {
     const raw = localStorage.getItem(PROFILES_STORAGE_KEY);
     if (raw) {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.map((p) => autoCorrectMistakenGenders(p));
+      }
     }
   } catch (e) {
     console.warn("Could not read local profiles", e);
@@ -235,7 +240,7 @@ export function prepareSupabaseProfilePayload(profile: Partial<Profile>): any {
     full_name: profile.full_name || 'Member',
     email: profile.email || null,
     mobile: profile.mobile || null,
-    gender: profile.gender || 'Female',
+    gender: normalizeGender(profile.gender),
     date_of_birth: profile.date_of_birth || null,
     age: profile.age || null,
     location:
@@ -280,12 +285,12 @@ export function parseSupabaseProfile(p: any, defaultIndex?: number): Profile {
     p.member_id ||
     (typeof p.id === 'string' && p.id.startsWith('NCSM') ? p.id : fallbackMemberId);
 
-  return {
+  return autoCorrectMistakenGenders({
     ...p,
     id: p.id,
     member_id: memberId,
     full_name: p.full_name || 'Member',
-    gender: p.gender || 'Female',
+    gender: normalizeGender(p.gender),
     marital_status: p.marital_status || 'Never Married',
     about: about,
     place: meta.place || p.place || (p.location ? p.location.split(',')[0].trim() : null),
@@ -299,7 +304,7 @@ export function parseSupabaseProfile(p: any, defaultIndex?: number): Profile {
     profile_status: p.profile_status || 'APPROVED',
     is_verified: p.is_verified ?? true,
     is_premium: p.is_premium ?? false,
-  };
+  });
 }
 
 // Full Fresh Database and User Reset System

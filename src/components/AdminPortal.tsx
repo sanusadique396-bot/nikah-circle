@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { Profile, Payment, PremiumRequest } from '../types';
+import { Profile, Payment, PremiumRequest, normalizeGender } from '../types';
 import {
   LayoutDashboard,
   Users,
@@ -285,6 +285,7 @@ export const AdminPortal: React.FC<Props> = ({
     setEditingProfile(profile);
     setFormData({
       ...profile,
+      gender: normalizeGender(profile.gender),
       amount: 0,
       pay_method: 'CASH',
       pay_status: 'PAID'
@@ -328,6 +329,7 @@ export const AdminPortal: React.FC<Props> = ({
     await onSaveProfile(
       {
         ...formData,
+        gender: normalizeGender(formData.gender),
         id: editingProfile?.id,
       },
       formData.amount,
@@ -716,7 +718,7 @@ export const AdminPortal: React.FC<Props> = ({
                                   {p.full_name}
                                 </span>
                                 <span className="block text-[11px] text-stone-400 font-normal">
-                                  {p.gender} · {p.age || 24} yrs
+                                  {normalizeGender(p.gender)} · {p.age || 24} yrs
                                 </span>
                               </div>
                             </div>
@@ -869,7 +871,7 @@ export const AdminPortal: React.FC<Props> = ({
                             </div>
                           </td>
                           <td className="p-3.5 text-stone-700">
-                            <div>{p.gender}</div>
+                            <div>{normalizeGender(p.gender)}</div>
                             <div className="text-[11px] text-stone-500">
                               {p.date_of_birth ? `${p.date_of_birth} (${p.age || Math.max(18, new Date().getFullYear() - new Date(p.date_of_birth).getFullYear())} yrs)` : (p.age ? `${p.age} yrs` : '-')}
                             </div>
@@ -1165,7 +1167,7 @@ export const AdminPortal: React.FC<Props> = ({
                                       </span>
                                     </div>
                                     <div className="text-[11px] text-stone-500 mt-0.5">
-                                      {p.gender} · {p.age || 24} yrs · {p.marital_status || 'Never Married'}
+                                      {normalizeGender(p.gender)} · {p.age || 24} yrs · {p.marital_status || 'Never Married'}
                                     </div>
                                   </div>
                                 </div>
@@ -1394,6 +1396,11 @@ export const AdminPortal: React.FC<Props> = ({
                           <h4 className="font-serif font-bold text-lg text-[#4b001f]">
                             {req.user_name}
                           </h4>
+                          {req.gender && (
+                            <span className="text-xs font-semibold text-stone-600">
+                              ({normalizeGender(req.gender)})
+                            </span>
+                          )}
                           <span
                             className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                               req.plan_type === 'UPI_QR'
@@ -1619,7 +1626,7 @@ export const AdminPortal: React.FC<Props> = ({
                           {p.full_name}
                         </h4>
                         <span className="text-xs text-stone-500">
-                          {p.gender} · {p.marital_status} · {p.location}
+                          {normalizeGender(p.gender)} · {p.marital_status} · {p.location}
                         </span>
                       </div>
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
@@ -1721,7 +1728,7 @@ export const AdminPortal: React.FC<Props> = ({
                     {filteredProfiles.map((p) => (
                       <tr key={p.id} className="hover:bg-stone-50">
                         <td className="p-3.5 font-semibold text-stone-900">
-                          {p.full_name} ({p.gender})
+                          {p.full_name} ({normalizeGender(p.gender)})
                           <span className="block text-[11px] text-stone-400 font-normal">
                             {p.education} · {p.profession}
                           </span>
@@ -1855,12 +1862,12 @@ export const AdminPortal: React.FC<Props> = ({
                     Gender
                   </label>
                   <select
-                    value={formData.gender || 'Male'}
-                    onChange={(e) => setFormData({ ...formData, gender: e.target.value as any })}
+                    value={normalizeGender(formData.gender || 'Male')}
+                    onChange={(e) => setFormData({ ...formData, gender: normalizeGender(e.target.value) })}
                     className="w-full px-3 py-2 rounded-xl border border-stone-300 bg-white"
                   >
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
+                    <option value="Male">Male (Groom)</option>
+                    <option value="Female">Female (Bride)</option>
                   </select>
                 </div>
 
@@ -2178,13 +2185,13 @@ export const AdminPortal: React.FC<Props> = ({
               <div className="p-4 rounded-2xl bg-white border border-stone-200 shadow-xs">
                 <span className="text-xs font-semibold text-stone-500">Female Brides</span>
                 <div className="font-serif text-3xl font-bold text-[#4b001f] mt-1 tabular-nums">
-                  {profiles.filter((p) => p.gender === 'Female').length}
+                  {profiles.filter((p) => normalizeGender(p.gender) === 'Female').length}
                 </div>
               </div>
               <div className="p-4 rounded-2xl bg-white border border-stone-200 shadow-xs">
                 <span className="text-xs font-semibold text-stone-500">Male Grooms</span>
                 <div className="font-serif text-3xl font-bold text-[#c9973e] mt-1 tabular-nums">
-                  {profiles.filter((p) => p.gender === 'Male').length}
+                  {profiles.filter((p) => normalizeGender(p.gender) === 'Male').length}
                 </div>
               </div>
               <div className="p-4 rounded-2xl bg-white border border-stone-200 shadow-xs">
@@ -2235,7 +2242,7 @@ export const AdminPortal: React.FC<Props> = ({
                     </div>
 
                     <div className="flex items-center gap-2 text-xs text-stone-500 mt-1 flex-wrap">
-                      <span>{viewingProfile.gender}</span>
+                      <span>{normalizeGender(viewingProfile.gender)}</span>
                       <span>·</span>
                       <span>{viewingProfile.age || 24} yrs</span>
                       <span>·</span>
@@ -2607,7 +2614,7 @@ export const AdminPortal: React.FC<Props> = ({
                 Delete Profile?
               </h3>
               <p className="text-xs text-stone-600 leading-relaxed">
-                Are you sure you want to permanently delete profile <span className="font-bold text-stone-900">{profileToDelete.full_name}</span> ({profileToDelete.gender}, {profileToDelete.district || 'Kerala'})? This action cannot be undone.
+                Are you sure you want to permanently delete profile <span className="font-bold text-stone-900">{profileToDelete.full_name}</span> ({normalizeGender(profileToDelete.gender)}, {profileToDelete.district || 'Kerala'})? This action cannot be undone.
               </p>
             </div>
             <div className="flex items-center gap-3 pt-2">

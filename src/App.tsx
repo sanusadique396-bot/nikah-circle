@@ -27,6 +27,8 @@ import {
   getNextMemberId,
   prepareSupabaseProfilePayload,
   parseSupabaseProfile,
+  normalizeGender,
+  autoCorrectMistakenGenders,
 } from './lib/supabase';
 import {
   Heart,
@@ -381,6 +383,8 @@ export default function App() {
           if (!curr.is_premium || curr.profile_status !== 'APPROVED') {
             nextProfiles[existingIdx] = {
               ...curr,
+              // Strictly preserve existing user's gender!
+              gender: normalizeGender(curr.gender),
               is_premium: true,
               premium_plan: req.plan_name || curr.premium_plan || 'Premium Plan',
               profile_status: 'APPROVED',
@@ -389,13 +393,28 @@ export default function App() {
             hasChanges = true;
           }
         } else {
-          // Create approved profile for this premium user so it appears on the page and in Premium Users
-          const isFemale = req.plan_name.toLowerCase().includes('girl') || (req.notes && req.notes.toLowerCase().includes('girl'));
+          // If candidate profile does not exist yet:
+          // NEVER assume Female just because plan includes 'girl' (as "Girls & Other" includes both).
+          let resolvedGender: 'Male' | 'Female' = 'Male';
+          if (req.gender) {
+            resolvedGender = normalizeGender(req.gender);
+          } else if (currentUserProfile && (
+            (phone && currentUserProfile.mobile?.includes(phone)) ||
+            (name && currentUserProfile.full_name?.toLowerCase().trim() === name)
+          )) {
+            resolvedGender = normalizeGender(currentUserProfile.gender);
+          } else if (req.notes) {
+            const n = req.notes.toLowerCase();
+            if (n.includes('female') || n.includes('bride') || n.includes('sister') || n.includes('daughter') || n.includes('girl')) {
+              resolvedGender = 'Female';
+            }
+          }
+          const isFemale = resolvedGender === 'Female';
           const newProf: Profile = {
             id: `nc-prem-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
             member_id: getNextMemberId(),
             full_name: req.user_name,
-            gender: isFemale ? 'Female' : 'Male',
+            gender: resolvedGender,
             age: isFemale ? 22 : 26,
             date_of_birth: isFemale ? '2004-05-15' : '2000-01-01',
             location: 'Kerala',
@@ -418,7 +437,7 @@ export default function App() {
             created_at: req.created_at || new Date().toISOString(),
             about: req.notes ? `Approved Member (${req.plan_name}). Reason/Notes: ${req.notes}` : 'Verified Muslim individual seeking life partner with family harmony.',
           };
-          nextProfiles = [newProf, ...nextProfiles];
+          nextProfiles = [autoCorrectMistakenGenders(newProf), ...nextProfiles];
           hasChanges = true;
         }
       }
@@ -654,8 +673,9 @@ export default function App() {
     }
 
     // Halal Matrimony Gender rule: Male to Female only, Female to Male only
-    const userGender = currentUserProfile?.gender;
-    if (userGender && targetProfile.gender === userGender) {
+    const userGender = currentUserProfile?.gender ? normalizeGender(currentUserProfile.gender) : null;
+    const targetGender = normalizeGender(targetProfile.gender);
+    if (userGender && targetGender === userGender) {
       const needed = userGender === 'Female' ? 'Groom (Male)' : 'Bride (Female)';
       showToast(`Halal Matrimony: You can only send proposals to ${needed} profiles.`);
       return;
@@ -674,7 +694,7 @@ export default function App() {
     // 2. Deliver proposal into persistent proposals registry targeting the recipient
     const senderName = currentUserProfile?.full_name || currentUser?.email?.split('@')[0] || 'Premium Member';
     const senderAge = currentUserProfile?.age || (currentUserProfile?.date_of_birth ? Math.max(18, new Date().getFullYear() - new Date(currentUserProfile.date_of_birth).getFullYear()) : 25);
-    const senderGender = (currentUserProfile?.gender as 'Male' | 'Female') || (targetProfile.gender === 'Female' ? 'Male' : 'Female');
+    const senderGender: 'Male' | 'Female' = userGender || (targetGender === 'Female' ? 'Male' : 'Female');
     const senderLocation = currentUserProfile?.location || (currentUserProfile?.place ? `${currentUserProfile.place}, ${currentUserProfile.district}` : 'Kerala');
     const senderEducation = currentUserProfile?.education || 'Graduate';
     const senderProfession = currentUserProfile?.profession || 'Professional';
@@ -811,8 +831,11 @@ export default function App() {
       (existingIndex >= 0 && profiles[existingIndex].member_id) ||
       getNextMemberId();
 
+    const normalizedGender = normalizeGender(data.gender);
+
     const updatedData: UserProfileData = {
       ...data,
+      gender: normalizedGender,
       member_id: memberId,
     };
     setCurrentUserProfile(updatedData);
@@ -832,7 +855,7 @@ export default function App() {
       full_name: data.full_name,
       mobile: data.mobile,
       email: data.email,
-      gender: data.gender,
+      gender: normalizedGender,
       date_of_birth: data.date_of_birth,
       age: calculatedAge,
       state: data.state,
@@ -1007,6 +1030,7 @@ export default function App() {
         idx === existingIdx
           ? {
               ...p,
+              gender: normalizeGender(p.gender),
               is_premium: true,
               premium_plan: target.plan_name,
               profile_status: 'APPROVED' as const,
@@ -1018,12 +1042,33 @@ export default function App() {
       );
     } else {
       targetProfileId = `nc-prem-${Date.now()}`;
-      const isFemale = target.plan_name.toLowerCase().includes('girl') || (target.notes && target.notes.toLowerCase().includes('girl'));
+      let resolvedGender: 'Male' | 'Female' = 'Male';
+      if (target.gender) {
+        resolvedGender = normalizeGender(target.gender);
+      } else if (
+        currentUserProfile &&
+        ((phoneNorm && currentUserProfile.mobile?.includes(phoneNorm)) ||
+          (nameNorm && currentUserProfile.full_name?.toLowerCase().trim() === nameNorm))
+      ) {
+        resolvedGender = normalizeGender(currentUserProfile.gender);
+      } else if (target.notes) {
+        const n = target.notes.toLowerCase();
+        if (
+          n.includes('female') ||
+          n.includes('bride') ||
+          n.includes('sister') ||
+          n.includes('daughter') ||
+          n.includes('girl')
+        ) {
+          resolvedGender = 'Female';
+        }
+      }
+      const isFemale = resolvedGender === 'Female';
       const newProf: Profile = {
         id: targetProfileId,
         member_id: getNextMemberId(),
         full_name: target.user_name,
-        gender: isFemale ? 'Female' : 'Male',
+        gender: resolvedGender,
         age: isFemale ? 22 : 26,
         date_of_birth: isFemale ? '2004-05-15' : '2000-01-01',
         location: 'Kerala',
@@ -1046,7 +1091,7 @@ export default function App() {
         created_at: new Date().toISOString(),
         about: target.notes ? `Approved Member (${target.plan_name}). Reason/Notes: ${target.notes}` : 'Verified Muslim individual seeking life partner.',
       };
-      updatedProfiles = [newProf, ...profiles];
+      updatedProfiles = [autoCorrectMistakenGenders(newProf), ...profiles];
     }
 
     setProfiles(updatedProfiles);
@@ -1224,11 +1269,14 @@ export default function App() {
   ) => {
     const isEdit = !!profileData.id;
     let targetProfile: Profile;
+    const existing = isEdit ? profiles.find((p) => p.id === profileData.id) : undefined;
+    const resolvedGender = normalizeGender(profileData.gender || existing?.gender || 'Male');
 
     if (isEdit) {
       targetProfile = {
-        ...profiles.find((p) => p.id === profileData.id)!,
+        ...existing!,
         ...profileData,
+        gender: resolvedGender,
         updated_at: new Date().toISOString(),
       } as Profile;
 
@@ -1250,7 +1298,7 @@ export default function App() {
         id: newId,
         member_id: memberId,
         full_name: profileData.full_name || 'Candidate',
-        gender: profileData.gender || 'Female',
+        gender: resolvedGender,
         location: profileData.location || 'Kerala',
         district: profileData.district || 'Kozhikode',
         marital_status: profileData.marital_status || 'Never Married',
@@ -1467,7 +1515,7 @@ export default function App() {
         if (!match) return false;
       }
 
-      if (filters.gender && profile.gender !== filters.gender) return false;
+      if (filters.gender && normalizeGender(profile.gender) !== filters.gender) return false;
 
       if (filters.district && !(profile.district || '').toLowerCase().includes(filters.district.toLowerCase())) {
         return false;
@@ -2142,7 +2190,7 @@ export default function App() {
                               <div className="flex items-center gap-2 text-xs text-stone-500 mt-0.5">
                                 <span>{item.sender_age} yrs</span>
                                 <span>·</span>
-                                <span>{item.sender_gender === 'Male' ? 'Groom' : 'Bride'}</span>
+                                <span>{normalizeGender(item.sender_gender) === 'Male' ? 'Groom' : 'Bride'}</span>
                                 <span>·</span>
                                 <span className="flex items-center gap-1">
                                   <MapPin className="w-3 h-3 text-[#c9973e]" />
@@ -2248,7 +2296,7 @@ export default function App() {
                                     setSelectedProfile({
                                       id: item.id,
                                       full_name: item.sender_name,
-                                      gender: item.sender_gender,
+                                      gender: normalizeGender(item.sender_gender),
                                       age: item.sender_age,
                                       location: item.sender_location,
                                       education: item.sender_education,
@@ -2390,7 +2438,7 @@ export default function App() {
                                   yrs
                                 </span>
                                 <span>·</span>
-                                <span>{p.gender === 'Male' ? 'Groom' : 'Bride'}</span>
+                                <span>{normalizeGender(p.gender) === 'Male' ? 'Groom' : 'Bride'}</span>
                                 <span>·</span>
                                 <span className="flex items-center gap-1">
                                   <MapPin className="w-3 h-3 text-[#c9973e]" />
@@ -2578,7 +2626,9 @@ export default function App() {
         isOpen={isPremiumOpen}
         onClose={() => setIsPremiumOpen(false)}
         onSubmitPremiumRequest={handleSubmitPremiumRequest}
-        defaultUserName={currentUser?.email ? currentUser.email.split('@')[0] : ''}
+        defaultUserName={currentUserProfile?.full_name || (currentUser?.email ? currentUser.email.split('@')[0] : '')}
+        defaultUserPhone={currentUserProfile?.mobile || ''}
+        defaultUserGender={currentUserProfile?.gender}
       />
 
       <RegisterModal
@@ -2618,7 +2668,7 @@ export default function App() {
                 full_name: user.email.split('@')[0],
                 email: user.email,
                 mobile: '',
-                gender: 'Female',
+                gender: normalizeGender(currentUserProfile?.gender || 'Male'),
                 marital_status: 'Never Married',
                 location: 'Kerala',
                 registration_type: 'ONLINE',

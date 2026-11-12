@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { X, UserPlus, CheckCircle2, ShieldCheck, Image as ImageIcon, Camera, Upload, Trash2, Link as LinkIcon, Lock, Sparkles } from 'lucide-react';
-import { Profile } from '../types';
+import { Profile, normalizeGender } from '../types';
 
 interface Props {
   isOpen: boolean;
@@ -115,6 +115,7 @@ export const RegisterModal: React.FC<Props> = ({
       // User registrations are submitted as PENDING Admin Requests
       await onSubmit({
         ...formData,
+        gender: normalizeGender(formData.gender),
         religion: 'Islam',
         registration_type: 'ONLINE',
         profile_status: 'PENDING',
@@ -202,11 +203,11 @@ export const RegisterModal: React.FC<Props> = ({
                   </label>
                   <select
                     value={formData.gender}
-                    onChange={(e) => setFormData({ ...formData, gender: e.target.value as 'Male' | 'Female' })}
+                    onChange={(e) => setFormData({ ...formData, gender: normalizeGender(e.target.value) })}
                     className="w-full px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:border-[#4b001f] bg-white"
                   >
-                    <option value="Female">Bride (Female)</option>
                     <option value="Male">Groom (Male)</option>
+                    <option value="Female">Bride (Female)</option>
                   </select>
                 </div>
 
