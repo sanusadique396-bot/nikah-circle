@@ -45,6 +45,7 @@ interface Props {
   premiumRequests: PremiumRequest[];
   onSaveProfile: (profile: Partial<Profile>, paymentAmount?: number, paymentMethod?: string) => Promise<void>;
   onDeleteProfile: (id: string) => Promise<void>;
+  onResetAllData?: () => Promise<void>;
   onApproveProfile: (id: string) => Promise<void>;
   onRejectProfile: (id: string) => Promise<void>;
   onApprovePremiumRequest: (id: string) => Promise<void>;
@@ -103,6 +104,7 @@ export const AdminPortal: React.FC<Props> = ({
   premiumRequests = [],
   onSaveProfile,
   onDeleteProfile,
+  onResetAllData,
   onApproveProfile,
   onRejectProfile,
   onApprovePremiumRequest,
@@ -895,6 +897,22 @@ export const AdminPortal: React.FC<Props> = ({
                     <RotateCw className={`w-3.5 h-3.5 text-[#c9973e] ${isRefreshing ? 'animate-spin' : ''}`} />
                     <span>{isRefreshing ? 'Syncing...' : 'Sync Database'}</span>
                   </button>
+
+                  {onResetAllData && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to wipe candidate test accounts? New user registrations will start strictly from NCSM1003 onwards.')) {
+                          onResetAllData();
+                        }
+                      }}
+                      className="px-3.5 py-2 rounded-xl border border-red-200 hover:bg-red-50 text-red-600 text-xs font-bold transition-colors cursor-pointer flex items-center gap-2 shadow-2xs"
+                      title="Wipe test accounts and start sequence fresh from NCSM1003"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Wipe Accounts (Start from NCSM1003)</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -1196,6 +1214,13 @@ export const AdminPortal: React.FC<Props> = ({
                                   >
                                     <Edit className="w-3.5 h-3.5" />
                                   </button>
+                                  <button
+                                    onClick={() => setProfileToDelete(p)}
+                                    title="Delete Candidate Profile"
+                                    className="p-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
                                 </div>
                               </td>
                             </tr>
@@ -1264,6 +1289,22 @@ export const AdminPortal: React.FC<Props> = ({
                     <RotateCw className={`w-3.5 h-3.5 text-[#c9973e] ${isRefreshing ? 'animate-spin' : ''}`} />
                     <span>{isRefreshing ? 'Refreshing...' : 'Refresh List'}</span>
                   </button>
+
+                  {onResetAllData && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to wipe candidate test accounts? New user registrations will start strictly from NCSM1003 onwards.')) {
+                          onResetAllData();
+                        }
+                      }}
+                      className="px-3.5 py-2 rounded-xl border border-red-200 hover:bg-red-50 text-red-600 text-xs font-bold transition-colors cursor-pointer flex items-center gap-2 shadow-2xs"
+                      title="Wipe test accounts and start sequence fresh from NCSM1003"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Wipe Accounts (Start from NCSM1003)</span>
+                    </button>
+                  )}
                 </div>
               </div>
 

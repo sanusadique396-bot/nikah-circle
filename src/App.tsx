@@ -620,27 +620,8 @@ export default function App() {
           return dp;
         });
 
-        const dbIds = new Set(parsedDb.map((p) => p.id));
-        const dbEmails = new Set(parsedDb.map((p) => p.email?.toLowerCase()).filter(Boolean));
-        const dbMobiles = new Set(parsedDb.map((p) => p.mobile ? p.mobile.replace(/\D/g, '').slice(-8) : '').filter(Boolean));
-
-        const missingFromDb = localProfiles.filter((lp) => {
-          const lPhone = lp.mobile ? lp.mobile.replace(/\D/g, '').slice(-8) : '';
-          const lEmail = lp.email ? lp.email.toLowerCase() : '';
-          return !dbIds.has(lp.id) && (!lEmail || !dbEmails.has(lEmail)) && (!lPhone || !dbMobiles.has(lPhone));
-        });
-
-        // Async sync missing local profiles to Supabase
-        missingFromDb.forEach(async (lp) => {
-          try {
-            const payload = prepareSupabaseProfilePayload(lp);
-            await supabase.from('profiles').insert(payload);
-          } catch (e) {
-            console.warn('Syncing local profile error', e);
-          }
-        });
-
-        merged = [...mergedDb, ...missingFromDb].filter((p) => !isProfileDeleted(p, deleted));
+        // Only keep profiles that exist and are not deleted
+        merged = mergedDb.filter((p) => !isProfileDeleted(p, deleted));
       } else {
         merged = localProfiles.filter((p) => !isProfileDeleted(p, deleted));
       }
@@ -659,19 +640,23 @@ export default function App() {
               (cupEmail && p.email && p.email.toLowerCase() === cupEmail)
           );
           if (foundIdx >= 0) {
-            merged[foundIdx] = {
-              ...merged[foundIdx],
-              member_id: cup.member_id || merged[foundIdx].member_id,
-              biodata_uploaded: cup.biodata_uploaded || merged[foundIdx].biodata_uploaded,
-              biodata_document_name: cup.biodata_document_name || merged[foundIdx].biodata_document_name,
-              biodata_document_url: cup.biodata_document_url || merged[foundIdx].biodata_document_url,
-              is_premium: cup.is_premium ?? merged[foundIdx].is_premium,
-              premium_plan: cup.premium_plan || merged[foundIdx].premium_plan,
-              place: cup.place || merged[foundIdx].place,
-              district: cup.district || merged[foundIdx].district,
-              gender: normalizeGender(cup.gender || merged[foundIdx].gender),
-            };
-          } else if (cup.full_name) {
+            if (isProfileDeleted(cup, deleted)) {
+              merged.splice(foundIdx, 1);
+            } else {
+              merged[foundIdx] = {
+                ...merged[foundIdx],
+                member_id: cup.member_id || merged[foundIdx].member_id,
+                biodata_uploaded: cup.biodata_uploaded || merged[foundIdx].biodata_uploaded,
+                biodata_document_name: cup.biodata_document_name || merged[foundIdx].biodata_document_name,
+                biodata_document_url: cup.biodata_document_url || merged[foundIdx].biodata_document_url,
+                is_premium: cup.is_premium ?? merged[foundIdx].is_premium,
+                premium_plan: cup.premium_plan || merged[foundIdx].premium_plan,
+                place: cup.place || merged[foundIdx].place,
+                district: cup.district || merged[foundIdx].district,
+                gender: normalizeGender(cup.gender || merged[foundIdx].gender),
+              };
+            }
+          } else if (cup.full_name && !isProfileDeleted(cup, deleted)) {
             const cupProfile: Profile = {
               id: cup.id || `usr-${Date.now()}`,
               member_id: cup.member_id || getNextMemberId(merged),
@@ -705,7 +690,9 @@ export default function App() {
       } catch {}
 
       // 4. Ensure every profile has a unique sequential member_id (NCSM1001, NCSM1002...)
-      let maxNum = 1000;
+      // NCSM1001 (Noushida) and NCSM1002 (Sadiq / Admin) are established accounts.
+      // All new user registrations must start strictly from NCSM1003 onwards.
+      let maxNum = 1002;
       const assignedIds = new Set<string>();
 
       // First pass: collect all established member_id numbers
@@ -717,8 +704,8 @@ export default function App() {
         }
       });
 
-      // Second pass: assign sequential numbers to any profile missing one
-      let currentAssign = 1001;
+      // Second pass: assign sequential numbers to any profile missing one (starting from 1003)
+      let currentAssign = 1003;
       merged = merged.map((p) => {
         const existingNum = extractMemberIdNumber(p.member_id) || extractMemberIdNumber(p.id);
         if (existingNum) {
@@ -1894,6 +1881,62 @@ export default function App() {
     showToast(`Profile "${target?.full_name || 'User'}" deleted and removed from all lists.`);
   };
 
+  const handleResetAllData = async () => {
+    // 1. Clear in-memory state
+    setProfiles([]);
+    setPayments([]);
+    setPremiumRequests([]);
+    setBookmarks([]);
+    setInterestsMap({});
+    setCurrentUserProfile(null);
+    setCurrentUser(null);
+
+    // 2. Wipe all local storage keys
+    localStorage.removeItem('nikah_circle_profiles_v2');
+    localStorage.removeItem('nikah_circle_payments_v2');
+    localStorage.removeItem('nikah_circle_bookmarks_v2');
+    localStorage.removeItem('nikah_circle_premium_requests_v1');
+    localStorage.removeItem('nikah_circle_member_id_seq_v5');
+    localStorage.removeItem('nikah_circle_member_id_seq_v4');
+    localStorage.removeItem('nikah_circle_user_profile');
+    localStorage.removeItem('nikah_circle_user');
+    localStorage.removeItem('nikah_circle_user_is_premium');
+    localStorage.removeItem('nikah_circle_user_plan');
+    localStorage.removeItem('nikah_circle_incoming_interests_v2');
+    localStorage.removeItem('nikah_circle_incoming_interests');
+    localStorage.removeItem('nikah_circle_interests_map_v3');
+    localStorage.removeItem('nikah_circle_interests_map_v2');
+    localStorage.removeItem('nikah_circle_proposals_registry_v2');
+    localStorage.removeItem('nikah_circle_proposals_registry_v3');
+
+    // 3. Mark previous test records as deleted permanently
+    const deleted = {
+      ids: [
+        'f1cf6dd0-e3bd-4388-acc7-46061d742166',
+        '69777f27-a60f-4ae4-826e-9b556775d8a0',
+        '74127f36-19d7-49b0-a3d9-59327a64011d',
+        'e2b7b16b-9545-4eda-bef7-17069eeffdaa'
+      ],
+      phones: ['9744905093', '8943549396', '09744905093', '8943579396'],
+      names: ['sadiq', 'noushida', 'hida', 'hida fathima', 'ajmal']
+    };
+    saveDeletedRecords(deleted);
+
+    // 4. Reset sequence counter to 1002 so the next newly registered user starts strictly from NCSM1003
+    localStorage.setItem(MEMBER_ID_SEQ_KEY, '1002');
+
+    // 5. Delete from Supabase
+    try {
+      await supabase.from('profiles').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('payments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('premium_requests').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    } catch (e) {
+      console.warn('Supabase wipe error', e);
+    }
+
+    showToast('Database reset! New user registrations will start strictly from NCSM1003 onwards.');
+  };
+
   const handleApproveProfile = async (id: string) => {
     const updated = profiles.map((p) =>
       p.id === id ? { ...p, profile_status: 'APPROVED' as const, is_verified: true } : p
@@ -2148,6 +2191,7 @@ export default function App() {
           premiumRequests={premiumRequests}
           onSaveProfile={handleSaveProfile}
           onDeleteProfile={handleDeleteProfile}
+          onResetAllData={handleResetAllData}
           onApproveProfile={handleApproveProfile}
           onRejectProfile={handleRejectProfile}
           onApprovePremiumRequest={handleApprovePremiumRequest}

@@ -179,7 +179,9 @@ export function extractMemberIdNumber(idStr?: string | null): number | null {
 export function getHighestExistingMemberNumber(
   existingProfiles?: Array<{ member_id?: string | null; id?: string | null; about?: string | null }>
 ): number {
-  let highest = 1000;
+  // Baseline is 1002 (NCSM1001: Noushida, NCSM1002: Sadiq / Admin).
+  // All new registrations must start strictly from NCSM1003 onwards.
+  let highest = 1002;
 
   // 1. Check passed profiles
   if (Array.isArray(existingProfiles)) {
@@ -249,11 +251,11 @@ export function getNextMemberId(
 ): string {
   try {
     const highest = getHighestExistingMemberNumber(existingProfiles);
-    const next = highest + 1;
+    const next = Math.max(1003, highest + 1);
     localStorage.setItem(MEMBER_ID_SEQ_KEY, next.toString());
     return `NCSM${next}`;
   } catch {
-    return 'NCSM1001';
+    return 'NCSM1003';
   }
 }
 
@@ -375,7 +377,7 @@ export function parseSupabaseProfile(p: any, defaultIndex?: number): Profile {
     extractMemberIdNumber(meta?.member_id) ||
     extractMemberIdNumber(p.member_id) ||
     extractMemberIdNumber(p.id);
-  const fallbackMemberId = typeof defaultIndex === 'number' ? `NCSM${1001 + defaultIndex}` : 'NCSM1001';
+  const fallbackMemberId = typeof defaultIndex === 'number' ? `NCSM${1003 + defaultIndex}` : 'NCSM1003';
   const memberId = parsedNum ? `NCSM${parsedNum}` : fallbackMemberId;
 
   return autoCorrectMistakenGenders({
@@ -417,27 +419,19 @@ export function parseSupabaseProfile(p: any, defaultIndex?: number): Profile {
 }
 
 // Full Fresh Database and User Reset System
-const CLEAN_RESET_KEY = 'nikah_circle_clean_reset_v1008';
+const CLEAN_RESET_KEY = 'nikah_circle_clean_reset_v6001';
 
 export function performInitialResetIfRequired() {
   try {
     if (localStorage.getItem(CLEAN_RESET_KEY) !== 'true') {
-      localStorage.removeItem('nikah_circle_profiles_v2');
-      localStorage.removeItem('nikah_circle_payments_v2');
-      localStorage.removeItem('nikah_circle_bookmarks_v2');
-      localStorage.removeItem('nikah_circle_premium_requests_v1');
-      localStorage.removeItem('nikah_circle_member_id_seq_v5');
-      localStorage.removeItem('nikah_circle_member_id_seq_v4');
-      localStorage.removeItem('nikah_circle_user_profile');
-      localStorage.removeItem('nikah_circle_user');
-      localStorage.removeItem('nikah_circle_user_is_premium');
-      localStorage.removeItem('nikah_circle_user_plan');
-      localStorage.removeItem('nikah_circle_incoming_interests_v2');
-      localStorage.removeItem('nikah_circle_incoming_interests');
-      localStorage.removeItem('nikah_circle_interests_map_v3');
-      localStorage.removeItem('nikah_circle_interests_map_v2');
-      localStorage.removeItem('nikah_circle_proposals_registry_v2');
-      localStorage.removeItem('nikah_circle_proposals_registry_v3');
+      // Clear legacy deleted records so Sadiq and Noushida are never blacklisted
+      localStorage.removeItem('nikah_circle_deleted_records_v2');
+
+      // Ensure sequence counter is primed to at least 1002 so next new registration starts at NCSM1003
+      const currentSeq = parseInt(localStorage.getItem(MEMBER_ID_SEQ_KEY) || '0', 10);
+      if (isNaN(currentSeq) || currentSeq < 1002) {
+        localStorage.setItem(MEMBER_ID_SEQ_KEY, '1002');
+      }
       localStorage.setItem(CLEAN_RESET_KEY, 'true');
     }
   } catch (e) {
