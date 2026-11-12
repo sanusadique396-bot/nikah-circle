@@ -153,7 +153,7 @@ export default function App() {
   const [premiumRequests, setPremiumRequests] = useState<PremiumRequest[]>(() => getStoredPremiumRequests());
   const [bookmarks, setBookmarks] = useState<string[]>(() => getStoredBookmarks());
   // Authentication & User Profile State
-  const [currentUser, setCurrentUser] = useState<{ email?: string; id?: string } | null>(() => {
+  const [currentUser, setCurrentUser] = useState<{ email?: string; id?: string; member_id?: string } | null>(() => {
     try {
       const stored = localStorage.getItem('nikah_circle_user');
       if (stored) return JSON.parse(stored);
@@ -314,6 +314,36 @@ export default function App() {
     if (currentUserProfile?.is_approved) return true;
     return false;
   }, [userApprovedRequest, userMatchedProfile, currentUserProfile]);
+
+  const effectiveMemberId = useMemo(() => {
+    if (currentUserProfile?.member_id) return currentUserProfile.member_id;
+    if (currentUser?.member_id) return currentUser.member_id;
+    if (userMatchedProfile?.member_id) return userMatchedProfile.member_id;
+    if (currentUser?.email) {
+      const match = profiles.find((p) => p.email && p.email.toLowerCase() === currentUser.email?.toLowerCase());
+      if (match?.member_id) return match.member_id;
+    }
+    try {
+      const stored = localStorage.getItem('nikah_circle_user_profile');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.member_id) return parsed.member_id;
+      }
+    } catch {}
+
+    try {
+      const seqRaw = localStorage.getItem('nikah_circle_member_id_seq_v4');
+      if (seqRaw) {
+        const num = parseInt(seqRaw, 10);
+        if (!isNaN(num) && num >= 1000) return `NCSM${num}`;
+      }
+    } catch {}
+
+    if (profiles.length > 0 && profiles[0].member_id) {
+      return profiles[0].member_id;
+    }
+    return 'NCSM1001';
+  }, [currentUserProfile, currentUser, userMatchedProfile, profiles]);
 
   useEffect(() => {
     localStorage.setItem('nikah_circle_user_is_premium', String(effectiveIsPremium));
@@ -1652,6 +1682,7 @@ export default function App() {
             }}
             onExplorePremium={() => setIsPremiumOpen(true)}
             onRegisterClick={handleOpenRegister}
+            memberId={effectiveMemberId}
           />
 
           <main id="featured-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12 flex-1">
