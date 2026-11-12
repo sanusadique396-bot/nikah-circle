@@ -129,9 +129,9 @@ export const AdminPortal: React.FC<Props> = ({
   const [userStatusFilter, setUserStatusFilter] = useState<'ALL' | 'APPROVED' | 'PENDING'>('ALL');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Full Biodata Directory Tab state
+  // Full Biodata Directory Tab state (Strictly Premium Members with Biodata)
   const [biodataSearchQuery, setBiodataSearchQuery] = useState('');
-  const [biodataPlanFilter, setBiodataPlanFilter] = useState<'ALL' | 'PREMIUM' | 'FREE'>('ALL');
+  const [biodataGenderFilter, setBiodataGenderFilter] = useState<'ALL' | 'Male' | 'Female'>('ALL');
   const [biodataUploadedFilter, setBiodataUploadedFilter] = useState<'ALL' | 'UPLOADED' | 'FORM'>('ALL');
 
   const handleRefresh = async () => {
@@ -207,14 +207,36 @@ export const AdminPortal: React.FC<Props> = ({
     return matchesSearch && matchesStatus && matchesReg;
   });
 
-  // Dedicated Full Biodata Directory Profiles
-  const biodataProfilesList = useMemo(() => {
+  // Dedicated Full Biodata Directory Profiles (Strictly Premium Members with Biodata)
+  const qualifiedBiodataProfiles = useMemo(() => {
     return profiles.filter((p) => {
-      if (biodataPlanFilter === 'PREMIUM' && !p.is_premium) return false;
-      if (biodataPlanFilter === 'FREE' && p.is_premium) return false;
-      const hasUploadedFile = Boolean(p.biodata_uploaded || p.biodata_document_name || p.biodata_document_url);
-      if (biodataUploadedFilter === 'UPLOADED' && !hasUploadedFile) return false;
-      if (biodataUploadedFilter === 'FORM' && hasUploadedFile) return false;
+      // 1. Strict Premium Plan Requirement (Exclude Free Tier completely)
+      const isPremium = Boolean(p.is_premium) || (Boolean(p.premium_plan) && p.premium_plan !== 'Free Plan');
+      if (!isPremium) return false;
+
+      // 2. Strict Biodata Submission Requirement (Must have uploaded doc or filled candidate biodata details)
+      const hasUploadedDoc = Boolean(p.biodata_uploaded || p.biodata_document_name || p.biodata_document_url);
+      const hasBiodataDetails = Boolean(
+        p.full_name &&
+        (p.education || p.profession || p.about) &&
+        (p.place || p.district || p.location) &&
+        (p.guardian_mobile || p.mobile)
+      );
+      return hasUploadedDoc || hasBiodataDetails;
+    });
+  }, [profiles]);
+
+  const biodataProfilesList = useMemo(() => {
+    return qualifiedBiodataProfiles.filter((p) => {
+      // 1. Format Filter: All formats, Attached files, or Form details
+      const hasUploadedDoc = Boolean(p.biodata_uploaded || p.biodata_document_name || p.biodata_document_url);
+      if (biodataUploadedFilter === 'UPLOADED' && !hasUploadedDoc) return false;
+      if (biodataUploadedFilter === 'FORM' && hasUploadedDoc) return false;
+
+      // 2. Gender Filter
+      if (biodataGenderFilter !== 'ALL') {
+        if (normalizeGender(p.gender) !== biodataGenderFilter) return false;
+      }
 
       if (biodataSearchQuery.trim()) {
         const q = biodataSearchQuery.trim().toLowerCase();
@@ -245,7 +267,7 @@ export const AdminPortal: React.FC<Props> = ({
       }
       return true;
     });
-  }, [profiles, biodataSearchQuery, biodataPlanFilter, biodataUploadedFilter]);
+  }, [qualifiedBiodataProfiles, biodataSearchQuery, biodataGenderFilter, biodataUploadedFilter]);
 
   const pendingRequests = profiles.filter((p) => p.profile_status === 'PENDING');
   const pendingPremiumRequests = premiumRequests.filter((r) => r.status === 'PENDING');
@@ -432,8 +454,8 @@ export const AdminPortal: React.FC<Props> = ({
                 <BookOpen className="w-4 h-4 text-[#c9973e]" />
                 <span>Full Biodata Directory</span>
               </div>
-              <span className="px-1.5 py-0.5 rounded text-[10px] bg-stone-100 text-stone-700 font-bold">
-                {profiles.length}
+              <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-bold">
+                {qualifiedBiodataProfiles.length}
               </span>
             </button>
 
@@ -836,23 +858,29 @@ export const AdminPortal: React.FC<Props> = ({
 
         {/* TAB: FULL BIODATA DIRECTORY */}
         {activeTab === 'biodata_directory' && (() => {
-          const totalCount = profiles.length;
-          const uploadedCount = profiles.filter((p) => p.biodata_uploaded || p.biodata_document_name || p.biodata_document_url).length;
-          const premiumCount = profiles.filter((p) => p.is_premium).length;
-          const freeCount = profiles.filter((p) => !p.is_premium).length;
-          const formCount = totalCount - uploadedCount;
+          const totalQualifiedCount = qualifiedBiodataProfiles.length;
+          const uploadedCount = qualifiedBiodataProfiles.filter((p) => p.biodata_uploaded || p.biodata_document_name || p.biodata_document_url).length;
+          const formCount = totalQualifiedCount - uploadedCount;
+          const groomsCount = qualifiedBiodataProfiles.filter((p) => normalizeGender(p.gender) === 'Male').length;
+          const bridesCount = qualifiedBiodataProfiles.filter((p) => normalizeGender(p.gender) === 'Female').length;
 
           return (
             <div className="space-y-4">
               {/* Header Card with Stats and Real-Time Sync */}
               <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h3 className="font-serif font-bold text-lg text-[#4b001f] flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 text-[#c9973e]" />
-                    <span>Full Biodata Directory</span>
-                  </h3>
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h3 className="font-serif font-bold text-lg text-[#4b001f] flex items-center gap-2">
+                      <BookOpen className="w-5 h-5 text-[#c9973e]" />
+                      <span>Full Biodata Directory</span>
+                    </h3>
+                    <span className="text-[10px] font-extrabold bg-gradient-to-r from-amber-500 to-amber-600 text-white px-2.5 py-0.5 rounded-full shadow-2xs flex items-center gap-1">
+                      <Sparkles className="w-2.5 h-2.5 text-amber-200 fill-amber-200" />
+                      <span>★ Premium Only ({totalQualifiedCount})</span>
+                    </span>
+                  </div>
                   <p className="text-xs text-stone-500 mt-1">
-                    Centralized directory of all registered candidate biodatas. Total: <span className="font-bold text-stone-800">{totalCount} profiles</span> ({uploadedCount} with attached document files, {premiumCount} premium).
+                    Centralized directory of candidate biodatas strictly for verified <strong>Premium Members</strong> with completed biodata. Total: <span className="font-bold text-stone-800">{totalQualifiedCount} qualified profiles</span> ({uploadedCount} attached documents, {formCount} profile forms, {groomsCount} Grooms, {bridesCount} Brides). Free plan accounts are strictly excluded.
                   </p>
                 </div>
 
@@ -894,44 +922,44 @@ export const AdminPortal: React.FC<Props> = ({
 
                 {/* Filter Pills */}
                 <div className="flex flex-wrap items-center gap-2 text-xs font-semibold pt-1">
-                  <span className="text-stone-400 text-[11px] mr-1">Plan:</span>
+                  <span className="text-stone-400 text-[11px] mr-1">Gender:</span>
                   <button
                     type="button"
-                    onClick={() => setBiodataPlanFilter('ALL')}
+                    onClick={() => setBiodataGenderFilter('ALL')}
                     className={`px-3 py-1.5 rounded-xl border transition-colors cursor-pointer ${
-                      biodataPlanFilter === 'ALL'
+                      biodataGenderFilter === 'ALL'
                         ? 'bg-[#4b001f] text-white border-[#4b001f] shadow-2xs'
                         : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
                     }`}
                   >
-                    All ({totalCount})
+                    All Candidates ({totalQualifiedCount})
                   </button>
                   <button
                     type="button"
-                    onClick={() => setBiodataPlanFilter('PREMIUM')}
+                    onClick={() => setBiodataGenderFilter('Male')}
                     className={`px-3 py-1.5 rounded-xl border transition-colors cursor-pointer ${
-                      biodataPlanFilter === 'PREMIUM'
+                      biodataGenderFilter === 'Male'
                         ? 'bg-[#4b001f] text-white border-[#4b001f] shadow-2xs'
                         : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
                     }`}
                   >
-                    ★ Premium ({premiumCount})
+                    Grooms ({groomsCount})
                   </button>
                   <button
                     type="button"
-                    onClick={() => setBiodataPlanFilter('FREE')}
+                    onClick={() => setBiodataGenderFilter('Female')}
                     className={`px-3 py-1.5 rounded-xl border transition-colors cursor-pointer ${
-                      biodataPlanFilter === 'FREE'
+                      biodataGenderFilter === 'Female'
                         ? 'bg-[#4b001f] text-white border-[#4b001f] shadow-2xs'
                         : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
                     }`}
                   >
-                    Free Plan ({freeCount})
+                    Brides ({bridesCount})
                   </button>
 
                   <div className="h-4 w-px bg-stone-200 mx-1 hidden sm:block" />
 
-                  <span className="text-stone-400 text-[11px] mr-1">Biodata File:</span>
+                  <span className="text-stone-400 text-[11px] mr-1">Biodata Format:</span>
                   <button
                     type="button"
                     onClick={() => setBiodataUploadedFilter('ALL')}
@@ -941,7 +969,7 @@ export const AdminPortal: React.FC<Props> = ({
                         : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
                     }`}
                   >
-                    All Formats ({totalCount})
+                    All Formats ({totalQualifiedCount})
                   </button>
                   <button
                     type="button"
@@ -963,7 +991,7 @@ export const AdminPortal: React.FC<Props> = ({
                         : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
                     }`}
                   >
-                    Form Profiles ({formCount})
+                    Profile Form Details ({formCount})
                   </button>
                 </div>
               </div>
@@ -989,18 +1017,18 @@ export const AdminPortal: React.FC<Props> = ({
                         <tr>
                           <td colSpan={8} className="p-12 text-center text-stone-500">
                             <BookOpen className="w-8 h-8 text-stone-300 mx-auto mb-2" />
-                            <p className="font-semibold text-stone-700">No candidate biodatas match your criteria</p>
+                            <p className="font-semibold text-stone-700">No qualified premium candidate biodatas match your criteria</p>
                             <p className="text-xs text-stone-400 mt-1">
-                              {biodataSearchQuery || biodataPlanFilter !== 'ALL' || biodataUploadedFilter !== 'ALL'
-                                ? 'Try resetting your search query or filters to view all biodatas.'
-                                : 'Candidate biodatas will automatically appear here once registered or updated.'}
+                              {biodataSearchQuery || biodataGenderFilter !== 'ALL' || biodataUploadedFilter !== 'ALL'
+                                ? 'Try resetting your search query or filters to view all qualified biodatas.'
+                                : 'Qualified candidate biodatas will automatically appear here once users upgrade to Premium and submit their biodata.'}
                             </p>
-                            {(biodataSearchQuery || biodataPlanFilter !== 'ALL' || biodataUploadedFilter !== 'ALL') && (
+                            {(biodataSearchQuery || biodataGenderFilter !== 'ALL' || biodataUploadedFilter !== 'ALL') && (
                               <button
                                 type="button"
                                 onClick={() => {
                                   setBiodataSearchQuery('');
-                                  setBiodataPlanFilter('ALL');
+                                  setBiodataGenderFilter('ALL');
                                   setBiodataUploadedFilter('ALL');
                                 }}
                                 className="mt-3 px-3 py-1.5 rounded-lg bg-stone-100 text-stone-700 hover:bg-stone-200 text-xs font-bold cursor-pointer transition-colors"
