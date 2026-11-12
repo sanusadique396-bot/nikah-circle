@@ -142,15 +142,11 @@ export const Navbar: React.FC<Props> = ({
             >
               <Inbox className="w-4 h-4 text-[#c9973e]" />
               <span>Proposals</span>
-              {receivedInterestsCount > 0 ? (
-                <span className="bg-[#4b001f] text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full shadow-2xs">
+              {receivedInterestsCount > 0 && (
+                <span className="bg-[#4b001f] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-2xs animate-pulse">
                   {receivedInterestsCount} New
                 </span>
-              ) : interestsCount > 0 ? (
-                <span className="bg-stone-200 text-stone-700 text-[10px] font-bold px-1.5 py-0.2 rounded-full">
-                  {interestsCount}
-                </span>
-              ) : null}
+              )}
             </button>
 
             {/* Static Non-Clickable Plan Display Badge */}
@@ -325,15 +321,11 @@ export const Navbar: React.FC<Props> = ({
               <Inbox className="w-4 h-4 text-[#c9973e]" />
               <span>Proposals</span>
             </div>
-            {receivedInterestsCount > 0 ? (
+            {receivedInterestsCount > 0 && (
               <span className="px-2 py-0.5 text-xs bg-[#4b001f] text-white rounded-full font-bold">
                 {receivedInterestsCount} New
               </span>
-            ) : interestsCount > 0 ? (
-              <span className="px-2 py-0.5 text-xs bg-stone-100 text-stone-700 rounded-full font-bold">
-                {interestsCount}
-              </span>
-            ) : null}
+            )}
           </button>
           {isUserPremium && !hasBiodataUploaded && onOpenBiodataWizard && (
             <button

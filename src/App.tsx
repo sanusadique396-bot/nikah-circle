@@ -324,18 +324,12 @@ export default function App() {
       // 1. Direct recipient profile ID match
       if (userId && p.recipient_profile_id && p.recipient_profile_id === userId) return true;
 
-      // 2. Mobile number match (at least 8 clean digits)
+      // 2. Mobile number match (strictly at least 8 clean digits)
       if (userPhoneNorm && userPhoneNorm.length >= 8 && p.recipient_mobile) {
         const pPhoneNorm = p.recipient_mobile.replace(/\D/g, '').slice(-8);
         if (pPhoneNorm && pPhoneNorm.length >= 8 && pPhoneNorm === userPhoneNorm) {
           return true;
         }
-      }
-
-      // 3. Name match if name is non-empty and specific (at least 3 characters)
-      if (userNameNorm && userNameNorm.length >= 3 && p.recipient_name) {
-        const pNameNorm = p.recipient_name.toLowerCase().trim();
-        if (pNameNorm && pNameNorm === userNameNorm) return true;
       }
 
       return false;
@@ -2937,9 +2931,11 @@ export default function App() {
                 <span>Received</span>
                 <span
                   className={`text-[11px] px-2 py-0.5 rounded-full font-bold transition-colors ${
-                    interestsActiveTab === 'received'
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-[#4b001f] text-white'
+                    incomingInterests.filter((i) => i.status === 'pending').length > 0
+                      ? 'bg-emerald-500 text-white animate-pulse'
+                      : incomingInterests.length > 0
+                      ? 'bg-white/20 text-white'
+                      : 'bg-stone-200/50 text-stone-400 font-normal'
                   }`}
                 >
                   {incomingInterests.filter((i) => i.status === 'pending').length > 0
