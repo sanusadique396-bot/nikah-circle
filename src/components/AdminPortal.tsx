@@ -30,7 +30,8 @@ import {
   Copy,
   BookOpen,
   FileText,
-  UserCheck
+  UserCheck,
+  Calendar,
 } from 'lucide-react';
 
 interface Props {
@@ -59,6 +60,36 @@ type TabType =
   | 'payments'
   | 'premium'
   | 'reports';
+
+const formatDate = (dateStr?: string) => {
+  if (!dateStr) return 'Recently';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return 'Recently';
+    return d.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  } catch {
+    return 'Recently';
+  }
+};
+
+const formatTime = (dateStr?: string) => {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  } catch {
+    return '';
+  }
+};
 
 export const AdminPortal: React.FC<Props> = ({
   profiles,
@@ -849,6 +880,7 @@ export const AdminPortal: React.FC<Props> = ({
                       <th className="p-3.5">User Details</th>
                       <th className="p-3.5">Contact & Place</th>
                       <th className="p-3.5">Guardian Contact</th>
+                      <th className="p-3.5 whitespace-nowrap">Joined Date</th>
                       <th className="p-3.5">Hobbies & Interests</th>
                       <th className="p-3.5">Plan Status</th>
                       <th className="p-3.5">Profile Status</th>
@@ -858,7 +890,7 @@ export const AdminPortal: React.FC<Props> = ({
                   <tbody className="divide-y divide-stone-100">
                     {profiles.filter((p) => p.registration_type === 'ONLINE').length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="p-8 text-center text-stone-500">
+                        <td colSpan={8} className="p-8 text-center text-stone-500">
                           No online user registrations yet.
                         </td>
                       </tr>
@@ -881,6 +913,10 @@ export const AdminPortal: React.FC<Props> = ({
                                 <div>
                                   <span className="font-bold text-stone-900 block">{p.full_name}</span>
                                   <span className="text-[11px] text-stone-500">{p.gender} · {p.age || 25} yrs</span>
+                                  <div className="flex items-center gap-1 text-[10px] text-[#c9973e] font-semibold mt-0.5">
+                                    <Calendar className="w-3 h-3 text-[#c9973e]" />
+                                    <span>Joined {formatDate(p.created_at)}</span>
+                                  </div>
                                 </div>
                               </div>
                             </td>
@@ -892,6 +928,15 @@ export const AdminPortal: React.FC<Props> = ({
                             <td className="p-3.5">
                               <div className="font-bold text-emerald-800">{p.guardian_mobile || '-'}</div>
                               <div className="text-[11px] text-stone-500">{p.guardian_name || 'Guardian'}</div>
+                            </td>
+                            <td className="p-3.5 whitespace-nowrap">
+                              <div className="flex items-center gap-1.5 font-bold text-stone-800">
+                                <Calendar className="w-3.5 h-3.5 text-[#c9973e]" />
+                                <span>{formatDate(p.created_at)}</span>
+                              </div>
+                              <div className="text-[10px] text-stone-400 mt-0.5">
+                                {formatTime(p.created_at)}
+                              </div>
                             </td>
                             <td className="p-3.5 max-w-[180px]">
                               <div className="text-[11px] text-stone-700 truncate font-medium">
@@ -930,11 +975,20 @@ export const AdminPortal: React.FC<Props> = ({
                                   </button>
                                 )}
                                 <button
+                                  type="button"
                                   onClick={() => setViewingProfile(p)}
                                   className="p-1.5 rounded-lg border border-stone-200 text-stone-700 hover:bg-stone-50 cursor-pointer"
                                   title="View Full Biodata"
                                 >
                                   <Eye className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setProfileToDelete(p)}
+                                  className="p-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 cursor-pointer transition-colors"
+                                  title="Delete & Remove Profile"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                               </div>
                             </td>
@@ -1865,6 +1919,100 @@ export const AdminPortal: React.FC<Props> = ({
           </div>
         )}
       </main>
+
+      {/* View Full Biodata Modal */}
+      {viewingProfile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="max-w-xl w-full bg-white rounded-3xl p-6 shadow-2xl border border-stone-200 max-h-[85vh] overflow-y-auto space-y-4 text-left">
+            <div className="flex items-center justify-between pb-3 border-b border-stone-200">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl overflow-hidden bg-stone-100 border border-stone-200 flex items-center justify-center font-bold text-[#4b001f] text-base">
+                  {viewingProfile.profile_photo ? (
+                    <img src={viewingProfile.profile_photo} alt={viewingProfile.full_name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{(viewingProfile.full_name || 'U').charAt(0)}</span>
+                  )}
+                </div>
+                <div>
+                  <h4 className="font-serif font-bold text-lg text-[#4b001f]">{viewingProfile.full_name}</h4>
+                  <div className="flex items-center gap-2 text-xs text-stone-500">
+                    <span>{viewingProfile.gender} · {viewingProfile.age || 25} yrs</span>
+                    <span>·</span>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3 text-[#c9973e]" />
+                      Joined {formatDate(viewingProfile.created_at)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewingProfile(null)}
+                className="p-1.5 rounded-full hover:bg-stone-100 text-stone-500 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-xs bg-stone-50 p-4 rounded-2xl border border-stone-100">
+              <div>
+                <span className="text-stone-400 block text-[10px]">Mobile / Phone:</span>
+                <span className="font-bold text-stone-800">{viewingProfile.mobile || '-'}</span>
+              </div>
+              <div>
+                <span className="text-stone-400 block text-[10px]">Email:</span>
+                <span className="font-bold text-stone-800">{viewingProfile.email || '-'}</span>
+              </div>
+              <div>
+                <span className="text-stone-400 block text-[10px]">Place / Location:</span>
+                <span className="font-bold text-stone-800">{viewingProfile.location || `${viewingProfile.place || ''}, ${viewingProfile.district || ''}`}</span>
+              </div>
+              <div>
+                <span className="text-stone-400 block text-[10px]">Profession:</span>
+                <span className="font-bold text-stone-800">{viewingProfile.profession || 'Professional'}</span>
+              </div>
+              <div>
+                <span className="text-stone-400 block text-[10px]">Guardian Name & Relation:</span>
+                <span className="font-bold text-stone-800">{viewingProfile.guardian_name || 'Guardian'} ({viewingProfile.guardian_relation || 'Parent'})</span>
+              </div>
+              <div>
+                <span className="text-stone-400 block text-[10px]">Guardian Contact:</span>
+                <span className="font-bold text-emerald-800">{viewingProfile.guardian_mobile || viewingProfile.mobile || '-'}</span>
+              </div>
+            </div>
+
+            {viewingProfile.about && (
+              <div className="text-xs text-stone-600 bg-[#fff9fa] p-3 rounded-xl border border-[#eadfe4]">
+                <span className="font-bold text-[#4b001f] block mb-1">About / Bio:</span>
+                <p>{viewingProfile.about}</p>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between pt-3 border-t border-stone-200">
+              <button
+                type="button"
+                onClick={() => {
+                  const target = viewingProfile;
+                  setViewingProfile(null);
+                  setProfileToDelete(target);
+                }}
+                className="px-4 py-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete Profile</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setViewingProfile(null)}
+                className="px-5 py-2 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Screenshot / Proof Full Image Modal */}
       {previewScreenshotUrl && (

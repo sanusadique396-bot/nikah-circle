@@ -120,12 +120,46 @@ function getDefaultIncomingInterests(gender?: 'Male' | 'Female'): IncomingIntere
   }
 }
 
+const DELETED_RECORDS_STORAGE_KEY = 'nikah_circle_deleted_records_v2';
+
+export function getDeletedRecords(): { ids: string[]; phones: string[]; names: string[] } {
+  try {
+    const raw = localStorage.getItem(DELETED_RECORDS_STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { ids: [], phones: [], names: [] };
+}
+
+export function saveDeletedRecords(rec: { ids: string[]; phones: string[]; names: string[] }) {
+  try {
+    localStorage.setItem(DELETED_RECORDS_STORAGE_KEY, JSON.stringify(rec));
+  } catch {}
+}
+
+export function isProfileDeleted(
+  profile: Partial<Profile>,
+  deleted = getDeletedRecords()
+): boolean {
+  if (profile.id && deleted.ids.includes(profile.id)) return true;
+  const phone = profile.mobile ? profile.mobile.replace(/\D/g, '').slice(-8) : '';
+  const gPhone = profile.guardian_mobile ? profile.guardian_mobile.replace(/\D/g, '').slice(-8) : '';
+  const name = (profile.full_name || '').toLowerCase().trim();
+  if (phone && deleted.phones.some((dp) => phone.includes(dp) || dp.includes(phone))) return true;
+  if (gPhone && deleted.phones.some((dp) => gPhone.includes(dp) || dp.includes(gPhone))) return true;
+  if (name && deleted.names.includes(name)) return true;
+  return false;
+}
+
 export default function App() {
   // Navigation: 'home' | 'profiles' | 'shortlist' | 'interests' | 'admin'
   const [activeView, setActiveView] = useState<'home' | 'profiles' | 'shortlist' | 'interests' | 'admin'>('home');
 
-  // Data Store
-  const [profiles, setProfiles] = useState<Profile[]>(() => getStoredProfiles());
+  // Data Store (strictly filtered so deleted profiles are immediately and permanently hidden)
+  const [profiles, setProfiles] = useState<Profile[]>(() => {
+    const loaded = getStoredProfiles();
+    const deleted = getDeletedRecords();
+    return loaded.filter((p) => !isProfileDeleted(p, deleted));
+  });
   const [payments, setPayments] = useState<Payment[]>(() => getStoredPayments());
   const [premiumRequests, setPremiumRequests] = useState<PremiumRequest[]>(() => getStoredPremiumRequests());
   const [bookmarks, setBookmarks] = useState<string[]>(() => getStoredBookmarks());
@@ -260,11 +294,21 @@ export default function App() {
   useEffect(() => {
     let hasChanges = false;
     let nextProfiles = [...profiles];
+    const deleted = getDeletedRecords();
 
     premiumRequests.forEach((req) => {
       if (req.status === 'APPROVED') {
         const phone = req.phone_number ? req.phone_number.replace(/\D/g, '').slice(-8) : '';
         const name = req.user_name.toLowerCase().trim();
+
+        // STRICT GUARD: If this profile was deleted by Admin, DO NOT auto-recreate!
+        if (
+          deleted.ids.includes(req.id) ||
+          (phone && deleted.phones.some((dp) => phone.includes(dp) || dp.includes(phone))) ||
+          (name && deleted.names.includes(name))
+        ) {
+          return;
+        }
 
         const existingIdx = nextProfiles.findIndex(
           (p) =>
@@ -408,8 +452,10 @@ export default function App() {
           .order('created_at', { ascending: false });
 
         if (!profileErr && dbProfiles && dbProfiles.length > 0) {
-          setProfiles(dbProfiles);
-          saveStoredProfiles(dbProfiles);
+          const deleted = getDeletedRecords();
+          const clean = dbProfiles.filter((p) => !isProfileDeleted(p, deleted));
+          setProfiles(clean);
+          saveStoredProfiles(clean);
         }
 
         const { data: dbPayments, error: paymentErr } = await supabase
@@ -1002,13 +1048,69 @@ export default function App() {
   };
 
   const handleDeleteProfile = async (id: string) => {
-    const updated = profiles.filter((p) => p.id !== id);
-    setProfiles(updated);
-    saveStoredProfiles(updated);
+    const target = profiles.find((p) => p.id === id);
+    const targetPhone = target?.mobile ? target.mobile.replace(/\D/g, '').slice(-8) : '';
+    const targetGPhone = target?.guardian_mobile ? target.guardian_mobile.replace(/\D/g, '').slice(-8) : '';
+    const targetName = (target?.full_name || '').toLowerCase().trim();
+
+    // 1. Blacklist permanently in deleted records
+    const deleted = getDeletedRecords();
+    deleted.ids = Array.from(new Set([...deleted.ids, id]));
+    if (targetPhone) deleted.phones = Array.from(new Set([...deleted.phones, targetPhone]));
+    if (targetGPhone) deleted.phones = Array.from(new Set([...deleted.phones, targetGPhone]));
+    if (targetName) deleted.names = Array.from(new Set([...deleted.names, targetName]));
+    saveDeletedRecords(deleted);
+
+    // 2. Remove from profiles state & storage
+    const updatedProfiles = profiles.filter((p) => p.id !== id && !isProfileDeleted(p, deleted));
+    setProfiles(updatedProfiles);
+    saveStoredProfiles(updatedProfiles);
+
+    // 3. Mark matching premium requests as rejected so auto-sync never regenerates them
+    const updatedRequests = premiumRequests.map((r) => {
+      const rPhone = r.phone_number ? r.phone_number.replace(/\D/g, '').slice(-8) : '';
+      const rName = r.user_name.toLowerCase().trim();
+      const matchesPhone = targetPhone && rPhone && (targetPhone.includes(rPhone) || rPhone.includes(targetPhone));
+      const matchesName = targetName && rName === targetName;
+      if (matchesPhone || matchesName) {
+        return { ...r, status: 'REJECTED' as const, notes: 'Profile deleted by Admin' };
+      }
+      return r;
+    });
+    setPremiumRequests(updatedRequests);
+    saveStoredPremiumRequests(updatedRequests);
+
+    // 4. Remove from shortlist / bookmarks and interestsMap
+    setBookmarks((prev) => prev.filter((bId) => bId !== id));
+    if (interestsMap[id]) {
+      const updatedMap = { ...interestsMap };
+      delete updatedMap[id];
+      setInterestsMap(updatedMap);
+      saveStoredInterestsMap(updatedMap);
+    }
+
+    // 5. If deleted profile matches the current logged in user profile, clear local profile
+    if (currentUserProfile) {
+      const uPhone = currentUserProfile.mobile ? currentUserProfile.mobile.replace(/\D/g, '').slice(-8) : '';
+      const uName = (currentUserProfile.full_name || '').toLowerCase().trim();
+      if (
+        id === currentUser?.id ||
+        (targetPhone && uPhone && (targetPhone.includes(uPhone) || uPhone.includes(targetPhone))) ||
+        (targetName && uName === targetName)
+      ) {
+        setCurrentUserProfile(null);
+        localStorage.removeItem('nikah_circle_user_profile');
+        localStorage.removeItem('nikah_circle_user');
+        setCurrentUser(null);
+      }
+    }
+
+    // 6. Delete from remote Supabase table
     try {
       await supabase.from('profiles').delete().eq('id', id);
     } catch {}
-    showToast('Profile deleted successfully.');
+
+    showToast(`Profile "${target?.full_name || 'User'}" deleted and removed from all lists.`);
   };
 
   const handleApproveProfile = async (id: string) => {
