@@ -20,6 +20,33 @@ const PAYMENTS_STORAGE_KEY = "nikah_circle_payments_v2";
 const BOOKMARKS_STORAGE_KEY = "nikah_circle_bookmarks_v2";
 const INTERESTS_MAP_KEY = "nikah_circle_interests_map_v3";
 
+// Strict validation: returns true ONLY if the candidate has actually filled and completed their biodata
+export function hasCompletedBiodata(p?: Partial<Profile> | null): boolean {
+  if (!p) return false;
+  // 1. Explicitly attached biodata document file
+  if (Boolean(p.biodata_document_name || p.biodata_document_url)) return true;
+  // 2. Canonical admin profile with completed biodata
+  if (p.email && p.email.toLowerCase().trim() === 'nikahcircle01@gmail.com' && p.biodata_uploaded) return true;
+  // 3. Multi-stage wizard completed: MUST have actual wizard fields filled
+  // (Step 1: height/build/religion, Step 2: bouthika/religious education, Step 3: family background, Step 4: marriage expectations)
+  if (
+    Boolean(
+      p.bouthika_education ||
+      p.religious_education ||
+      p.family_background ||
+      p.marriage_expectations ||
+      (p.height && (p.physical_build || p.religious_ideation || p.complexion))
+    )
+  ) {
+    return true;
+  }
+  // 4. If biodata_uploaded flag is explicitly true along with at least one custom wizard property
+  if (p.biodata_uploaded === true && Boolean(p.height || p.bouthika_education || p.family_background || p.marriage_expectations || p.religious_education)) {
+    return true;
+  }
+  return false;
+}
+
 // Strict deduplication function to prevent duplicate user cards, tables, or ghost profiles
 export function deduplicateProfiles(inputProfiles: Profile[]): Profile[] {
   const result: Profile[] = [];
@@ -69,12 +96,7 @@ export function deduplicateProfiles(inputProfiles: Profile[]): Profile[] {
 
       const isPrem = Boolean(existing.is_premium || prof.is_premium);
       const isApproved = existing.profile_status === 'APPROVED' || prof.profile_status === 'APPROVED';
-      const hasBiodata = Boolean(
-        existing.biodata_uploaded || prof.biodata_uploaded ||
-        existing.biodata_document_url || prof.biodata_document_url ||
-        existing.height || prof.height ||
-        existing.bouthika_education || prof.bouthika_education
-      );
+      const hasBiodata = hasCompletedBiodata(existing) || hasCompletedBiodata(prof);
 
       result[existingIdx] = {
         ...prof,

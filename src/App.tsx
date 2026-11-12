@@ -36,6 +36,7 @@ import {
   deduplicateProfiles,
   ensureUniqueSequentialMemberIds,
   decodeProfileMetadata,
+  hasCompletedBiodata,
 } from './lib/supabase';
 import {
   Heart,
@@ -357,18 +358,7 @@ export default function App() {
 
   // Track if user has completed candidate biodata details
   const hasUserBiodata = useMemo(() => {
-    return Boolean(
-      currentUserProfile?.biodata_uploaded ||
-      currentUserProfile?.biodata_document_name ||
-      currentUserProfile?.biodata_document_url ||
-      currentUserProfile?.bouthika_education ||
-      currentUserProfile?.height ||
-      userMatchedProfile?.biodata_uploaded ||
-      userMatchedProfile?.biodata_document_name ||
-      userMatchedProfile?.biodata_document_url ||
-      userMatchedProfile?.bouthika_education ||
-      userMatchedProfile?.height
-    );
+    return hasCompletedBiodata(currentUserProfile) || hasCompletedBiodata(userMatchedProfile);
   }, [currentUserProfile, userMatchedProfile]);
 
   const effectiveMemberId = useMemo(() => {
@@ -2151,17 +2141,6 @@ export default function App() {
       verifiedOnly: false,
       premiumOnly: false,
     });
-  };
-
-  // Helper to determine if a candidate profile has submitted/completed their biodata
-  const hasCompletedBiodata = (p: Profile): boolean => {
-    // 1. Uploaded document file
-    if (Boolean(p.biodata_uploaded || p.biodata_document_name || p.biodata_document_url)) return true;
-    // 2. Wizard details
-    if (Boolean(p.bouthika_education || p.religious_education || p.family_background || p.marriage_expectations)) return true;
-    // 3. Or comprehensive details filled
-    if (Boolean(p.education && p.profession && (p.guardian_name || p.guardian_mobile))) return true;
-    return false;
   };
 
   // Public Profiles List: Strict Premium + Completed Biodata Visibility

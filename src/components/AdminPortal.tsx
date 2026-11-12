@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { Profile, Payment, PremiumRequest, normalizeGender } from '../types';
-import { deduplicateProfiles, ensureUniqueSequentialMemberIds } from '../lib/supabase';
+import { deduplicateProfiles, ensureUniqueSequentialMemberIds, hasCompletedBiodata } from '../lib/supabase';
 import {
   LayoutDashboard,
   Users,
@@ -211,29 +211,22 @@ export const AdminPortal: React.FC<Props> = ({
     return matchesSearch && matchesStatus && matchesReg;
   });
 
-  // Dedicated Full Biodata Directory Profiles (Strictly Premium Members with Biodata)
+  // Dedicated Full Biodata Directory Profiles (Strictly Premium Members with Completed Biodata)
   const qualifiedBiodataProfiles = useMemo(() => {
     return profiles.filter((p) => {
       // 1. Strict Premium Plan Requirement (Exclude Free Tier completely)
       const isPremium = Boolean(p.is_premium) || (Boolean(p.premium_plan) && p.premium_plan !== 'Free Plan');
       if (!isPremium) return false;
 
-      // 2. Strict Biodata Submission Requirement (Must have uploaded doc or filled candidate biodata details)
-      const hasUploadedDoc = Boolean(p.biodata_uploaded || p.biodata_document_name || p.biodata_document_url);
-      const hasBiodataDetails = Boolean(
-        p.full_name &&
-        (p.education || p.profession || p.about) &&
-        (p.place || p.district || p.location) &&
-        (p.guardian_mobile || p.mobile)
-      );
-      return hasUploadedDoc || hasBiodataDetails;
+      // 2. Strict Biodata Submission Requirement (Must have completed biodata)
+      return hasCompletedBiodata(p);
     });
   }, [profiles]);
 
   const biodataProfilesList = useMemo(() => {
     return qualifiedBiodataProfiles.filter((p) => {
-      // 1. Format Filter: All formats, Attached files, or Form details
-      const hasUploadedDoc = Boolean(p.biodata_uploaded || p.biodata_document_name || p.biodata_document_url);
+      // 1. Format Filter: All formats, Attached files, or Profile Form details
+      const hasUploadedDoc = Boolean(p.biodata_document_name || p.biodata_document_url);
       if (biodataUploadedFilter === 'UPLOADED' && !hasUploadedDoc) return false;
       if (biodataUploadedFilter === 'FORM' && hasUploadedDoc) return false;
 
@@ -863,7 +856,7 @@ export const AdminPortal: React.FC<Props> = ({
         {/* TAB: FULL BIODATA DIRECTORY */}
         {activeTab === 'biodata_directory' && (() => {
           const totalQualifiedCount = qualifiedBiodataProfiles.length;
-          const uploadedCount = qualifiedBiodataProfiles.filter((p) => p.biodata_uploaded || p.biodata_document_name || p.biodata_document_url).length;
+          const uploadedCount = qualifiedBiodataProfiles.filter((p) => Boolean(p.biodata_document_name || p.biodata_document_url)).length;
           const formCount = totalQualifiedCount - uploadedCount;
           const groomsCount = qualifiedBiodataProfiles.filter((p) => normalizeGender(p.gender) === 'Male').length;
           const bridesCount = qualifiedBiodataProfiles.filter((p) => normalizeGender(p.gender) === 'Female').length;
