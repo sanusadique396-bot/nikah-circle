@@ -1936,7 +1936,7 @@ export default function App() {
                                     });
                                   }
                                 }}
-                                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold cursor-pointer transition-colors text-center"
+                                className="flex-1 min-w-[130px] px-4 py-2 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold cursor-pointer transition-colors text-center"
                               >
                                 View Complete Biodata
                               </button>
@@ -2016,7 +2016,7 @@ export default function App() {
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                   {interestedProfiles.map((p) => {
                     const status = interestsMap[p.id];
                     const isAccepted = status === 'accepted';
@@ -2025,100 +2025,167 @@ export default function App() {
                     return (
                       <div
                         key={p.id}
-                        className="p-5 rounded-2xl bg-white border border-[#eadfe4] shadow-xs flex flex-col justify-between space-y-3 hover:shadow-md transition-shadow"
+                        className={`p-6 rounded-2xl bg-white border shadow-xs transition-all space-y-4 ${
+                          isAccepted
+                            ? 'border-emerald-300 ring-1 ring-emerald-200'
+                            : 'border-[#eadfe4] hover:shadow-md'
+                        }`}
                       >
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-serif font-bold text-lg text-[#4b001f]">
-                                {p.full_name}
-                              </h3>
-                              {(p.profile_status === 'APPROVED' || p.is_verified) && (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md">
-                                  <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                                  Admin Approved
-                                </span>
-                              )}
+                        {/* Candidate Top Header */}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#4b001f] to-[#7a183b] text-white flex items-center justify-center font-bold text-base shadow-sm shrink-0 border border-[#c9973e]/40">
+                              {p.full_name?.charAt(0) || '♡'}
                             </div>
-                            <span className="text-xs text-stone-500">
-                              {p.gender} · {p.location} · {p.education}
-                            </span>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-serif font-bold text-lg text-[#4b001f]">
+                                  {p.full_name}
+                                </h3>
+                                {(p.profile_status === 'APPROVED' || p.is_verified) && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md">
+                                    <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                                    Admin Approved
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-stone-500 mt-0.5">
+                                <span>
+                                  {p.age ||
+                                    (p.date_of_birth
+                                      ? Math.max(18, new Date().getFullYear() - new Date(p.date_of_birth).getFullYear())
+                                      : 24)}{' '}
+                                  yrs
+                                </span>
+                                <span>·</span>
+                                <span>{p.gender === 'Male' ? 'Groom' : 'Bride'}</span>
+                                <span>·</span>
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="w-3 h-3 text-[#c9973e]" />
+                                  {p.location || p.place || 'Kerala'}
+                                </span>
+                              </div>
+                            </div>
                           </div>
 
+                          {/* Proposal Status Badge */}
                           <span
-                            className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                            className={`text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-2xs ${
                               isAccepted
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : 'bg-amber-100 text-amber-800'
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                : 'bg-amber-100 text-amber-900 border border-amber-300'
                             }`}
                           >
-                            {isAccepted ? '✓ Interest Accepted' : '⏳ Awaiting Acceptance'}
+                            {isAccepted ? '✓ Proposal Accepted' : '⏳ Awaiting Acceptance'}
                           </span>
                         </div>
 
-                        <div className="p-3.5 rounded-xl bg-stone-50 text-xs text-stone-700 border border-stone-100">
-                          {isAccepted ? (
-                            <div className="space-y-2">
-                              <p className="text-emerald-800 font-bold flex items-center gap-1.5">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                                <span>Biodata & Guardian Contact Unlocked!</span>
-                              </p>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                                <div>
-                                  <span className="text-stone-500 block text-[10px]">Guardian:</span>
-                                  <span className="font-bold text-stone-900">{p.guardian_name}</span>
-                                </div>
-                                <div>
-                                  <span className="text-stone-500 block text-[10px]">Guardian Phone:</span>
-                                  <span className="font-bold text-stone-900">{p.guardian_mobile || p.mobile}</span>
-                                </div>
+                        {/* Candidate Profession & Education Highlights (Identical to Received Cards) */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-stone-700 bg-stone-50 p-3 rounded-xl border border-stone-100">
+                          <div className="flex items-center gap-2">
+                            <Briefcase className="w-4 h-4 text-[#c9973e] shrink-0" />
+                            <span className="truncate">{p.profession || 'Professional'}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <GraduationCap className="w-4 h-4 text-[#c9973e] shrink-0" />
+                            <span className="truncate">{p.education || 'Graduate'}</span>
+                          </div>
+                        </div>
+
+                        <div className="text-[11px] text-stone-400 flex items-center justify-between">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5 text-stone-400" />
+                            <span>{isAccepted ? 'Mutual proposal established' : 'Proposal sent · Waiting for candidate response'}</span>
+                          </span>
+                        </div>
+
+                        {/* Bottom Actions: Fixed layout matching Received Cards exactly */}
+                        {isAccepted ? (
+                          <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-3">
+                            <div className="flex items-center gap-2 text-emerald-900 font-bold text-xs">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                              <span>Mutual Consent Established! Guardian Details Unlocked:</span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <span className="text-stone-500 block text-[10px]">Family Guardian:</span>
+                                <span className="font-bold text-stone-900">{p.guardian_name || 'Family Guardian'}</span>
                               </div>
-                              <div className="pt-2 flex items-center gap-2">
-                                <a
-                                  href={`tel:${p.guardian_mobile || p.mobile}`}
-                                  className="flex-1 py-1.5 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold text-center flex items-center justify-center gap-1"
-                                >
-                                  <Phone className="w-3 h-3" />
-                                  <span>Call Guardian</span>
-                                </a>
-                                {cleanPhone && (
-                                  <a
-                                    href={`https://wa.me/${cleanPhone}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex-1 py-1.5 px-2 rounded-lg bg-[#25D366] hover:bg-[#20ba5a] text-white text-[11px] font-bold text-center flex items-center justify-center gap-1"
-                                  >
-                                    <MessageCircle className="w-3 h-3" />
-                                    <span>WhatsApp</span>
-                                  </a>
-                                )}
+                              <div>
+                                <span className="text-stone-500 block text-[10px]">Guardian Contact:</span>
+                                <span className="font-bold text-stone-900">{p.guardian_mobile || p.mobile}</span>
                               </div>
                             </div>
-                          ) : (
-                            <div className="flex items-center gap-2 text-stone-600">
+
+                            <div className="pt-2 flex flex-wrap items-center gap-2">
+                              <a
+                                href={`tel:${p.guardian_mobile || p.mobile}`}
+                                className="flex-1 min-w-[120px] py-2 px-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 shadow-2xs"
+                              >
+                                <Phone className="w-3.5 h-3.5" />
+                                <span>Call Guardian</span>
+                              </a>
+
+                              {cleanPhone && (
+                                <a
+                                  href={`https://wa.me/${cleanPhone}?text=${encodeURIComponent(
+                                    `Assalamu Alaikum. This is regarding the matrimonial proposal on Nikah Circle for ${p.full_name}. We would like to connect families.`
+                                  )}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex-1 min-w-[120px] py-2 px-3 rounded-xl bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 shadow-2xs"
+                                >
+                                  <MessageCircle className="w-3.5 h-3.5" />
+                                  <span>Chat on WhatsApp</span>
+                                </a>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => setSelectedProfile(p)}
+                                className="flex-1 min-w-[130px] px-4 py-2 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold cursor-pointer transition-colors text-center"
+                              >
+                                View Complete Biodata
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleCancelInterest(p.id)}
+                                className="px-3.5 py-2 rounded-xl border border-red-200 bg-white hover:bg-red-50 text-red-600 text-xs font-semibold cursor-pointer transition-colors"
+                                title="Cancel and remove this sent proposal"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-100 text-xs text-stone-600 flex items-center gap-2">
                               <Clock className="w-4 h-4 text-amber-600 shrink-0" />
                               <span>Proposal sent. Biodata is locked until candidate accepts.</span>
                             </div>
-                          )}
-                        </div>
 
-                        {/* Actions for Sent Profile: ONLY Cancel Interest and View Details! NO Accept button here! */}
-                        <div className="pt-2 border-t border-stone-100 flex items-center justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleCancelInterest(p.id)}
-                            className="px-3.5 py-2 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold cursor-pointer transition-colors"
-                          >
-                            Cancel Interest
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedProfile(p)}
-                            className="px-4 py-2 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold cursor-pointer transition-colors"
-                          >
-                            {isAccepted ? 'View Complete Biodata' : 'View Profile Details'}
-                          </button>
-                        </div>
+                            <div className="pt-2 border-t border-stone-100 flex items-center justify-end gap-2.5">
+                              <button
+                                type="button"
+                                onClick={() => handleCancelInterest(p.id)}
+                                className="px-3.5 py-2.5 rounded-xl border border-stone-200 text-stone-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200 text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1"
+                              >
+                                <XIcon className="w-3.5 h-3.5" />
+                                <span>Cancel Interest</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => setSelectedProfile(p)}
+                                className="px-5 py-2.5 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold cursor-pointer transition-all shadow-xs flex items-center gap-1.5"
+                              >
+                                <span>View Profile Details</span>
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
