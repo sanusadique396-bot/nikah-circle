@@ -1176,7 +1176,7 @@ export default function App() {
       religious_ideation: data.religious_ideation || (existingIndex >= 0 ? profiles[existingIndex].religious_ideation : undefined),
       children_count: data.children_count || (existingIndex >= 0 ? profiles[existingIndex].children_count : undefined),
       religious_education: data.religious_education || (existingIndex >= 0 ? profiles[existingIndex].religious_education : undefined),
-      bouthika_education: data.bouthika_education || data.education || (existingIndex >= 0 ? profiles[existingIndex].bouthika_education : undefined),
+      bouthika_education: data.bouthika_education || (existingIndex >= 0 ? profiles[existingIndex].bouthika_education : undefined),
       job_location: data.job_location || (existingIndex >= 0 ? profiles[existingIndex].job_location : undefined),
       financial_status: data.financial_status || (existingIndex >= 0 ? profiles[existingIndex].financial_status : undefined),
       preferred_districts: data.preferred_districts || (existingIndex >= 0 ? profiles[existingIndex].preferred_districts : undefined),
@@ -2149,6 +2149,17 @@ export default function App() {
   const approvedProfiles = useMemo(() => {
     return [...profiles]
       .filter((p) => {
+        // Exclude current user from public candidate listings & featured matches
+        if (
+          (currentUserProfile?.id && p.id === currentUserProfile.id) ||
+          (currentUser?.id && p.id === currentUser.id) ||
+          (currentUserProfile?.member_id && p.member_id && currentUserProfile.member_id === p.member_id) ||
+          (currentUserProfile?.mobile && p.mobile && p.mobile.replace(/\D/g, '').slice(-8) === currentUserProfile.mobile.replace(/\D/g, '').slice(-8)) ||
+          (currentUser?.email && p.email && p.email.toLowerCase() === currentUser.email.toLowerCase())
+        ) {
+          return false;
+        }
+
         if (p.profile_status !== 'APPROVED') return false;
         if (!p.is_premium) return false;
         return hasCompletedBiodata(p);
@@ -2156,7 +2167,7 @@ export default function App() {
       .sort((a, b) => {
         return (new Date(b.created_at || '').getTime() || 0) - (new Date(a.created_at || '').getTime() || 0);
       });
-  }, [profiles]);
+  }, [profiles, currentUserProfile, currentUser]);
 
   // Filtered Approved Profiles with Advanced Multi-field filtering
   const filteredProfiles = useMemo(() => {

@@ -1522,10 +1522,10 @@ export const AdminPortal: React.FC<Props> = ({
                               </td>
 
                               <td className="p-3.5">
-                                {p.biodata_uploaded || p.biodata_document_name ? (
+                                {hasCompletedBiodata(p) ? (
                                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                                     <CheckCircle2 className="w-3 h-3" />
-                                    <span>Uploaded</span>
+                                    <span>{p.biodata_document_name ? 'Attached' : 'Completed'}</span>
                                   </span>
                                 ) : (
                                   <span className="text-stone-400 text-[11px] italic">
@@ -2622,21 +2622,23 @@ export const AdminPortal: React.FC<Props> = ({
                   <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500 block">Biodata Document Status</span>
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-stone-800 text-sm flex items-center gap-1.5">
-                      {viewingProfile.biodata_uploaded || viewingProfile.biodata_document_name ? (
+                      {hasCompletedBiodata(viewingProfile) ? (
                         <>
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          <span className="text-emerald-700">Document Uploaded</span>
+                          <span className="text-emerald-700">
+                            {viewingProfile.biodata_document_name ? 'Document Uploaded' : 'Biodata Completed'}
+                          </span>
                         </>
                       ) : (
                         <>
                           <Clock className="w-4 h-4 text-amber-600" />
-                          <span className="text-stone-600">No Document Attached</span>
+                          <span className="text-stone-600">Incomplete / No Biodata</span>
                         </>
                       )}
                     </span>
                   </div>
                   <p className="text-[11px] text-stone-500 truncate">
-                    {viewingProfile.biodata_document_name || 'Full profile biodata provided via registration form.'}
+                    {viewingProfile.biodata_document_name || (hasCompletedBiodata(viewingProfile) ? 'Full candidate biodata completed via wizard.' : 'Candidate has not completed biodata wizard yet.')}
                   </p>
                   {viewingProfile.biodata_document_url && (
                     <a

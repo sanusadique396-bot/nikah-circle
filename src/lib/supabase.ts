@@ -20,30 +20,30 @@ const PAYMENTS_STORAGE_KEY = "nikah_circle_payments_v2";
 const BOOKMARKS_STORAGE_KEY = "nikah_circle_bookmarks_v2";
 const INTERESTS_MAP_KEY = "nikah_circle_interests_map_v3";
 
-// Strict validation: returns true ONLY if the candidate has actually filled and completed their biodata
+// Strict validation: returns true ONLY if the candidate has actually completed and submitted their full biodata
 export function hasCompletedBiodata(p?: Partial<Profile> | null): boolean {
   if (!p) return false;
   // 1. Explicitly attached biodata document file
   if (Boolean(p.biodata_document_name || p.biodata_document_url)) return true;
   // 2. Canonical admin profile with completed biodata
   if (p.email && p.email.toLowerCase().trim() === 'nikahcircle01@gmail.com' && p.biodata_uploaded) return true;
-  // 3. Multi-stage wizard completed: MUST have actual wizard fields filled
-  // (Step 1: height/build/religion, Step 2: bouthika/religious education, Step 3: family background, Step 4: marriage expectations)
-  if (
-    Boolean(
-      p.bouthika_education ||
-      p.religious_education ||
-      p.family_background ||
-      p.marriage_expectations ||
-      (p.height && (p.physical_build || p.religious_ideation || p.complexion))
-    )
-  ) {
+
+  // 3. Multi-stage wizard completed:
+  // Must have biodata_uploaded === true AND must have filled actual wizard details
+  // Wizard-only fields: family background, family members, marriage expectations, or religious education with physical details
+  const hasWizardFlag = p.biodata_uploaded === true;
+  const hasFamilyOrExpectations = Boolean(p.family_background || p.family_members_details || p.marriage_expectations);
+  const hasPhysicalOrEdu = Boolean(p.religious_education || p.complexion || p.physical_build || p.religious_ideation || p.height);
+
+  if (hasWizardFlag && (hasFamilyOrExpectations || hasPhysicalOrEdu)) {
     return true;
   }
-  // 4. If biodata_uploaded flag is explicitly true along with at least one custom wizard property
-  if (p.biodata_uploaded === true && Boolean(p.height || p.bouthika_education || p.family_background || p.marriage_expectations || p.religious_education)) {
+
+  // Also qualify if both family background and marriage expectations (Steps 3 & 4) are explicitly present
+  if (Boolean(p.family_background) && Boolean(p.marriage_expectations)) {
     return true;
   }
+
   return false;
 }
 
@@ -613,7 +613,7 @@ export function parseSupabaseProfile(p: any, defaultIndex?: number): Profile {
 }
 
 // Full Fresh Database and User Reset System
-const CLEAN_RESET_KEY = 'nikah_circle_clean_reset_v6003';
+const CLEAN_RESET_KEY = 'nikah_circle_clean_reset_v6004';
 
 export function performInitialResetIfRequired() {
   try {
