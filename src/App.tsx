@@ -9,6 +9,7 @@ import { RegisterModal } from './components/RegisterModal';
 import { LoginModal } from './components/LoginModal';
 import { AdminPortal } from './components/AdminPortal';
 import { UserProfileModal, UserProfileData } from './components/UserProfileModal';
+import { BiodataWizardModal } from './components/BiodataWizardModal';
 import { Footer } from './components/Footer';
 import { OfflineBanner } from './components/OfflineBanner';
 import { Profile, Payment, SearchFilters, PremiumRequest, IncomingInterest } from './types';
@@ -54,6 +55,7 @@ import {
   X as XIcon,
   Send,
   HeartHandshake,
+  FileText,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -492,6 +494,7 @@ export default function App() {
   });
   const [isEditingProfile, setIsEditingProfile] = useState<boolean>(false);
   const [isPostPremiumBiodataUpload, setIsPostPremiumBiodataUpload] = useState<boolean>(false);
+  const [isBiodataWizardOpen, setIsBiodataWizardOpen] = useState<boolean>(false);
 
   // Login Modal (for returning members or admin login)
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false);
@@ -891,18 +894,15 @@ export default function App() {
       return;
     }
 
-    // Condition 2: Must have successfully uploaded biodata
+    // Condition 2: Must have completed biodata (Multi-Step Wizard or document)
     const hasBiodata = Boolean(
       currentUserProfile?.biodata_uploaded ||
       currentUserProfile?.biodata_document_name ||
       currentUserProfile?.biodata_document_url
     );
     if (!hasBiodata) {
-      showToast('Please upload your biodata document before sending interest proposals.');
-      if (isAdminApproved) {
-        setIsPostPremiumBiodataUpload(true);
-        setIsEditingProfile(true);
-      }
+      showToast('Please complete your matrimonial biodata before sending interest proposals.');
+      setIsBiodataWizardOpen(true);
       return;
     }
 
@@ -1128,14 +1128,30 @@ export default function App() {
       profession: data.profession || 'Professional',
       guardian_name: data.guardian_name || 'Family Guardian',
       guardian_mobile: data.guardian_mobile || data.mobile,
-      guardian_relation: 'Parent (Guardian)',
-      marital_status: 'Never Married',
+      marital_status: data.marital_status || 'Never Married',
       hobbies: data.hobbies,
       interests: data.interests,
       profile_photo: data.profile_photo || null,
       biodata_uploaded: data.biodata_uploaded ?? false,
       biodata_document_name: data.biodata_document_name ?? null,
       biodata_document_url: data.biodata_document_url ?? null,
+      height: data.height || (existingIndex >= 0 ? profiles[existingIndex].height : undefined),
+      complexion: data.complexion || (existingIndex >= 0 ? profiles[existingIndex].complexion : undefined),
+      physical_build: data.physical_build || (existingIndex >= 0 ? profiles[existingIndex].physical_build : undefined),
+      religious_ideation: data.religious_ideation || (existingIndex >= 0 ? profiles[existingIndex].religious_ideation : undefined),
+      children_count: data.children_count || (existingIndex >= 0 ? profiles[existingIndex].children_count : undefined),
+      religious_education: data.religious_education || (existingIndex >= 0 ? profiles[existingIndex].religious_education : undefined),
+      bouthika_education: data.bouthika_education || data.education || (existingIndex >= 0 ? profiles[existingIndex].bouthika_education : undefined),
+      job_location: data.job_location || (existingIndex >= 0 ? profiles[existingIndex].job_location : undefined),
+      financial_status: data.financial_status || (existingIndex >= 0 ? profiles[existingIndex].financial_status : undefined),
+      preferred_districts: data.preferred_districts || (existingIndex >= 0 ? profiles[existingIndex].preferred_districts : undefined),
+      family_members_details: data.family_members_details || (existingIndex >= 0 ? profiles[existingIndex].family_members_details : undefined),
+      family_background: data.family_background || (existingIndex >= 0 ? profiles[existingIndex].family_background : undefined),
+      marriage_expectations: data.marriage_expectations || (existingIndex >= 0 ? profiles[existingIndex].marriage_expectations : undefined),
+      blood_group: data.blood_group || (existingIndex >= 0 ? profiles[existingIndex].blood_group : undefined),
+      passport_visa_status: data.passport_visa_status || (existingIndex >= 0 ? profiles[existingIndex].passport_visa_status : undefined),
+      other_interests: data.other_interests || (existingIndex >= 0 ? profiles[existingIndex].other_interests : undefined),
+      guardian_relation: data.guardian_relation || (existingIndex >= 0 ? profiles[existingIndex].guardian_relation : 'Parent (Guardian)'),
       registration_type: 'ONLINE',
       profile_status: profileStatus,
       is_verified: isVerifiedStatus,
@@ -1191,6 +1207,33 @@ export default function App() {
       spread: 60,
       origin: { y: 0.6 },
     });
+  };
+
+  const handleSaveBiodataWizard = async (wizardData: Partial<UserProfileData>) => {
+    const baseData: UserProfileData = currentUserProfile || {
+      full_name: currentUser?.email?.split('@')[0] || 'Member',
+      email: currentUser?.email || '',
+      mobile: '',
+      gender: 'Male',
+      state: 'Kerala',
+      district: 'Kozhikode',
+      place: 'Kerala',
+      date_of_birth: '2000-01-01',
+      hobbies: '',
+      interests: '',
+      biodata_uploaded: true,
+    };
+
+    const combined: UserProfileData = {
+      ...baseData,
+      ...wizardData,
+      biodata_uploaded: true,
+      education: wizardData.bouthika_education || wizardData.education || baseData.education,
+      location: `${wizardData.place || baseData.place}, ${wizardData.district || baseData.district}`,
+    };
+
+    await handleSaveUserProfile(combined);
+    showToast('Alhamdulillah! Your matrimonial biodata has been saved. You can now send interest proposals.');
   };
 
   const handleAcceptInterest = (profileId: string) => {
@@ -1329,12 +1372,11 @@ export default function App() {
       origin: { y: 0.6 },
     });
 
-    // Requirement: Post-Premium Biodata Upload trigger ONLY IF profile is already admin approved
+    // Requirement: Multi-Step Biodata Upload Wizard trigger (user can complete or skip anytime)
     if (isAdminApproved) {
       setTimeout(() => {
         setIsPremiumOpen(false);
-        setIsPostPremiumBiodataUpload(true);
-        setIsEditingProfile(true);
+        setIsBiodataWizardOpen(true);
       }, 400);
     } else {
       setTimeout(() => {
@@ -2124,6 +2166,8 @@ export default function App() {
         isUserPremium={effectiveIsPremium}
         isUserApproved={isAdminApproved}
         currentPlanName={effectivePlanName}
+        onOpenBiodataWizard={() => setIsBiodataWizardOpen(true)}
+        hasBiodataUploaded={Boolean(currentUserProfile?.biodata_uploaded || currentUserProfile?.biodata_document_name || currentUserProfile?.biodata_document_url)}
       />
 
       {/* Waiting for Admin Approval Status Banner */}
@@ -2160,6 +2204,43 @@ export default function App() {
                   Review in Progress
                 </span>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Re-prompt Banner for Premium Users who skipped Biodata */}
+      {isAdminApproved && effectiveIsPremium && !currentUserProfile?.biodata_uploaded && (
+        <div className="bg-gradient-to-r from-amber-500/15 via-[#c9973e]/10 to-amber-500/15 border-b border-amber-300/80">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div className="p-3.5 rounded-2xl bg-white/95 border border-amber-300/80 text-amber-950 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#4b001f] to-[#7a183b] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs border border-[#c9973e]/50">
+                  <FileText className="w-4 h-4 text-amber-300" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-serif font-bold text-xs sm:text-sm text-[#4b001f]">
+                      Complete Your Matrimonial Biodata
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
+                      Required for Proposals
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-stone-600 mt-0.5">
+                    Your Premium plan is active! Complete your 4-step verified biodata to immediately unlock sending proposal interests to profiles.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsBiodataWizardOpen(true)}
+                className="px-4 py-2 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0 self-end sm:self-center animate-pulse"
+              >
+                <span>Upload Biodata</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#c9973e]" />
+              </button>
             </div>
           </div>
         </div>
@@ -3129,6 +3210,16 @@ export default function App() {
           setLoginMode('member');
           setIsLoginOpen(true);
         }}
+      />
+
+      {/* Step-by-Step Multi-Stage Biodata Wizard Modal */}
+      <BiodataWizardModal
+        isOpen={isBiodataWizardOpen}
+        onClose={() => setIsBiodataWizardOpen(false)}
+        onSubmit={handleSaveBiodataWizard}
+        initialData={currentUserProfile}
+        userMemberId={effectiveMemberId}
+        isApproved={isAdminApproved}
       />
 
       <PremiumModal

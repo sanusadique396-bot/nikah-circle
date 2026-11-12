@@ -209,8 +209,10 @@ export const ProfileModal: React.FC<Props> = ({
                   </p>
                   <div className="pt-2 flex flex-wrap gap-4 text-xs text-stone-600 font-medium border-t border-[#eadfe4]/60">
                     <span>Religion: <strong className="text-stone-900">{profile.religion || 'Islam'}</strong></span>
-                    <span>Sect: <strong className="text-stone-900">{profile.sect || 'Sunni'}</strong></span>
+                    <span>Maslak: <strong className="text-stone-900">{profile.religious_ideation || profile.sect || 'Sunni'}</strong></span>
                     <span>Height: <strong className="text-stone-900">{profile.height || "5'5\""}</strong></span>
+                    {profile.complexion && <span>Color: <strong className="text-stone-900">{profile.complexion}</strong></span>}
+                    {profile.physical_build && <span>Build: <strong className="text-stone-900">{profile.physical_build}</strong></span>}
                   </div>
                 </div>
               </div>
@@ -241,6 +243,24 @@ export const ProfileModal: React.FC<Props> = ({
                     <span className="block text-[11px] text-stone-500 font-semibold uppercase">Registration</span>
                     <span className="font-bold text-stone-900">{profile.registration_type}</span>
                   </div>
+                  {profile.religious_education && (
+                    <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
+                      <span className="block text-[11px] text-stone-500 font-semibold uppercase">Religious Edu</span>
+                      <span className="font-bold text-stone-900">{profile.religious_education}</span>
+                    </div>
+                  )}
+                  {profile.job_location && (
+                    <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
+                      <span className="block text-[11px] text-stone-500 font-semibold uppercase">Job Location</span>
+                      <span className="font-bold text-stone-900">{profile.job_location}</span>
+                    </div>
+                  )}
+                  {profile.financial_status && (
+                    <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
+                      <span className="block text-[11px] text-stone-500 font-semibold uppercase">Financial Status</span>
+                      <span className="font-bold text-stone-900">{profile.financial_status}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -249,10 +269,16 @@ export const ProfileModal: React.FC<Props> = ({
                 <h4 className="font-serif font-bold text-base text-[#4b001f] mb-2">
                   Family & Guardian Background
                 </h4>
-                <div className="p-4 rounded-2xl bg-white border border-[#eadfe4]">
+                <div className="p-4 rounded-2xl bg-white border border-[#eadfe4] space-y-2">
                   <p className="leading-relaxed text-stone-700">
-                    {profile.family_details || 'Respectable family rooted in traditional Islamic values.'}
+                    {profile.family_background || profile.family_details || 'Respectable family rooted in traditional Islamic values.'}
                   </p>
+                  {profile.family_members_details && (
+                    <div className="pt-2 border-t border-stone-100 text-xs text-stone-600">
+                      <span className="font-semibold text-stone-700">Family Members: </span>
+                      <span>{profile.family_members_details}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 

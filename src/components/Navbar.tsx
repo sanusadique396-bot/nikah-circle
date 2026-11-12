@@ -9,7 +9,8 @@ import {
   Heart,
   Inbox,
   Menu,
-  X
+  X,
+  FileText
 } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
@@ -31,6 +32,8 @@ interface Props {
   isUserPremium?: boolean;
   isUserApproved?: boolean;
   currentPlanName?: string | null;
+  onOpenBiodataWizard?: () => void;
+  hasBiodataUploaded?: boolean;
 }
 
 export const Navbar: React.FC<Props> = ({
@@ -51,6 +54,8 @@ export const Navbar: React.FC<Props> = ({
   isUserPremium = false,
   isUserApproved = false,
   currentPlanName,
+  onOpenBiodataWizard,
+  hasBiodataUploaded = false,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isInstallable, isIOS, install } = usePWAInstall();
@@ -168,6 +173,18 @@ export const Navbar: React.FC<Props> = ({
 
           {/* Zone 3: Profile Avatar & Quick Actions */}
           <div className="flex items-center gap-2 relative shrink-0">
+            {/* Upload Biodata Prompt Button for Premium Users who skipped */}
+            {isUserPremium && !hasBiodataUploaded && onOpenBiodataWizard && (
+              <button
+                type="button"
+                onClick={onOpenBiodataWizard}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-[#4b001f] hover:bg-[#350016] text-white transition-all shadow-xs cursor-pointer animate-pulse"
+                title="Complete your matrimonial biodata wizard"
+              >
+                <FileText className="w-3.5 h-3.5 text-amber-300" />
+                <span>Upload Biodata</span>
+              </button>
+            )}
 
             {/* Top Right Profile Avatar / Icon for Quick Edit */}
             {userProfile ? (
@@ -318,6 +335,19 @@ export const Navbar: React.FC<Props> = ({
               </span>
             ) : null}
           </button>
+          {isUserPremium && !hasBiodataUploaded && onOpenBiodataWizard && (
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onOpenBiodataWizard();
+              }}
+              className="w-full px-4 py-2.5 text-xs font-bold rounded-xl bg-[#4b001f] text-white flex items-center justify-center gap-2 shadow-sm animate-pulse cursor-pointer"
+            >
+              <FileText className="w-4 h-4 text-amber-300" />
+              <span>Complete Biodata Wizard</span>
+            </button>
+          )}
+
           <div
             className={`w-full px-3 py-2 text-sm font-bold rounded-lg flex items-center justify-between select-none ${
               isUserPremium

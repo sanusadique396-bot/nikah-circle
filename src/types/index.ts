@@ -37,6 +37,21 @@ export interface Profile {
   biodata_uploaded?: boolean;
   biodata_document_name?: string | null;
   biodata_document_url?: string | null;
+  complexion?: string | null;
+  physical_build?: string | null;
+  religious_ideation?: string | null;
+  children_count?: string | null;
+  religious_education?: string | null;
+  bouthika_education?: string | null;
+  job_location?: string | null;
+  financial_status?: string | null;
+  preferred_districts?: string | null;
+  family_members_details?: string | null;
+  family_background?: string | null;
+  marriage_expectations?: string | null;
+  blood_group?: string | null;
+  passport_visa_status?: string | null;
+  other_interests?: string | null;
   created_at?: string;
   updated_at?: string;
 }
