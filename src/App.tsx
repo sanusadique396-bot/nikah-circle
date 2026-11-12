@@ -1414,26 +1414,16 @@ export default function App() {
           <main id="featured-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12 flex-1">
             {/* FEATURED PROFILES SECTION: Limited strictly to 6 */}
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-[11px] uppercase tracking-wider font-bold text-[#c9973e]">
-                    Selected Matches
-                  </span>
-                  <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#4b001f]">
-                    Featured Profiles
-                  </h2>
-                  <p className="text-xs text-stone-500 mt-0.5">
-                    Verified profiles from Nikah Circle. Full biodata requires mutual interest.
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => setActiveView('profiles')}
-                  className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-[#4b001f] hover:text-[#350016] border border-[#eadfe4] bg-white px-3.5 py-2 rounded-xl shadow-2xs hover:bg-[#fff6fa] transition-colors cursor-pointer"
-                >
-                  <span>View All Profiles ({approvedProfiles.length})</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+              <div>
+                <span className="text-[11px] uppercase tracking-wider font-bold text-[#c9973e]">
+                  Selected Matches
+                </span>
+                <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#4b001f]">
+                  Featured Profiles
+                </h2>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  Verified profiles from Nikah Circle. Full biodata requires mutual interest.
+                </p>
               </div>
 
               {/* Grid with ONLY 6 Profiles */}
