@@ -129,6 +129,11 @@ export const AdminPortal: React.FC<Props> = ({
   const [userStatusFilter, setUserStatusFilter] = useState<'ALL' | 'APPROVED' | 'PENDING'>('ALL');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Full Biodata Directory Tab state
+  const [biodataSearchQuery, setBiodataSearchQuery] = useState('');
+  const [biodataPlanFilter, setBiodataPlanFilter] = useState<'ALL' | 'PREMIUM' | 'FREE'>('ALL');
+  const [biodataUploadedFilter, setBiodataUploadedFilter] = useState<'ALL' | 'UPLOADED' | 'FORM'>('ALL');
+
   const handleRefresh = async () => {
     if (onRefreshData) {
       setIsRefreshing(true);
@@ -201,6 +206,46 @@ export const AdminPortal: React.FC<Props> = ({
     const matchesReg = !regFilter || p.registration_type === regFilter;
     return matchesSearch && matchesStatus && matchesReg;
   });
+
+  // Dedicated Full Biodata Directory Profiles
+  const biodataProfilesList = useMemo(() => {
+    return profiles.filter((p) => {
+      if (biodataPlanFilter === 'PREMIUM' && !p.is_premium) return false;
+      if (biodataPlanFilter === 'FREE' && p.is_premium) return false;
+      const hasUploadedFile = Boolean(p.biodata_uploaded || p.biodata_document_name || p.biodata_document_url);
+      if (biodataUploadedFilter === 'UPLOADED' && !hasUploadedFile) return false;
+      if (biodataUploadedFilter === 'FORM' && hasUploadedFile) return false;
+
+      if (biodataSearchQuery.trim()) {
+        const q = biodataSearchQuery.trim().toLowerCase();
+        const qDigits = q.replace(/\D/g, '');
+        const fields = [
+          p.full_name,
+          p.member_id,
+          p.id,
+          p.place,
+          p.district,
+          p.state,
+          p.location,
+          p.education,
+          p.profession,
+          p.guardian_name,
+          p.guardian_relation,
+          p.email,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+
+        const matchText = fields.includes(q);
+        const mobile = (p.mobile || '').replace(/\D/g, '');
+        const gMobile = (p.guardian_mobile || '').replace(/\D/g, '');
+        const matchPhone = qDigits.length > 0 && (mobile.includes(qDigits) || gMobile.includes(qDigits));
+        return matchText || matchPhone;
+      }
+      return true;
+    });
+  }, [profiles, biodataSearchQuery, biodataPlanFilter, biodataUploadedFilter]);
 
   const pendingRequests = profiles.filter((p) => p.profile_status === 'PENDING');
   const pendingPremiumRequests = premiumRequests.filter((r) => r.status === 'PENDING');
@@ -790,152 +835,352 @@ export const AdminPortal: React.FC<Props> = ({
         )}
 
         {/* TAB: FULL BIODATA DIRECTORY */}
-        {activeTab === 'biodata_directory' && (
-          <div className="space-y-4">
-            <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h3 className="font-serif font-bold text-lg text-[#4b001f] flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-[#c9973e]" />
-                  <span>Full Biodata Directory</span>
-                </h3>
-                <p className="text-xs text-stone-500 mt-0.5">
-                  Complete biodata of all registered profiles in chronological order. Total: {profiles.length} profiles.
-                </p>
+        {activeTab === 'biodata_directory' && (() => {
+          const totalCount = profiles.length;
+          const uploadedCount = profiles.filter((p) => p.biodata_uploaded || p.biodata_document_name || p.biodata_document_url).length;
+          const premiumCount = profiles.filter((p) => p.is_premium).length;
+          const freeCount = profiles.filter((p) => !p.is_premium).length;
+          const formCount = totalCount - uploadedCount;
+
+          return (
+            <div className="space-y-4">
+              {/* Header Card with Stats and Real-Time Sync */}
+              <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-serif font-bold text-lg text-[#4b001f] flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-[#c9973e]" />
+                    <span>Full Biodata Directory</span>
+                  </h3>
+                  <p className="text-xs text-stone-500 mt-1">
+                    Centralized directory of all registered candidate biodatas. Total: <span className="font-bold text-stone-800">{totalCount} profiles</span> ({uploadedCount} with attached document files, {premiumCount} premium).
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleRefresh}
+                    disabled={isRefreshing}
+                    className="px-3.5 py-2 rounded-xl border border-stone-200 hover:bg-stone-50 text-stone-700 text-xs font-bold transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-60 shadow-2xs"
+                    title="Sync with Supabase Database in real-time"
+                  >
+                    <RotateCw className={`w-3.5 h-3.5 text-[#c9973e] ${isRefreshing ? 'animate-spin' : ''}`} />
+                    <span>{isRefreshing ? 'Syncing...' : 'Sync Database'}</span>
+                  </button>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* Search & Filter Controls */}
+              <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs space-y-3">
                 <div className="relative">
+                  <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search by name, place, phone, job..."
-                    className="pl-8 pr-3 py-1.5 text-xs rounded-xl border border-stone-300 focus:border-[#4b001f] outline-none w-56 sm:w-64"
+                    value={biodataSearchQuery}
+                    onChange={(e) => setBiodataSearchQuery(e.target.value)}
+                    placeholder="Search candidate by Name, NCSM ID (e.g. NCSM1001), Place, District, Profession, Education, Guardian Phone..."
+                    className="w-full pl-9 pr-8 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:border-[#4b001f] focus:bg-white transition-colors"
                   />
-                  <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  {biodataSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setBiodataSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Filter Pills */}
+                <div className="flex flex-wrap items-center gap-2 text-xs font-semibold pt-1">
+                  <span className="text-stone-400 text-[11px] mr-1">Plan:</span>
+                  <button
+                    type="button"
+                    onClick={() => setBiodataPlanFilter('ALL')}
+                    className={`px-3 py-1.5 rounded-xl border transition-colors cursor-pointer ${
+                      biodataPlanFilter === 'ALL'
+                        ? 'bg-[#4b001f] text-white border-[#4b001f] shadow-2xs'
+                        : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
+                    }`}
+                  >
+                    All ({totalCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBiodataPlanFilter('PREMIUM')}
+                    className={`px-3 py-1.5 rounded-xl border transition-colors cursor-pointer ${
+                      biodataPlanFilter === 'PREMIUM'
+                        ? 'bg-[#4b001f] text-white border-[#4b001f] shadow-2xs'
+                        : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
+                    }`}
+                  >
+                    ★ Premium ({premiumCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBiodataPlanFilter('FREE')}
+                    className={`px-3 py-1.5 rounded-xl border transition-colors cursor-pointer ${
+                      biodataPlanFilter === 'FREE'
+                        ? 'bg-[#4b001f] text-white border-[#4b001f] shadow-2xs'
+                        : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
+                    }`}
+                  >
+                    Free Plan ({freeCount})
+                  </button>
+
+                  <div className="h-4 w-px bg-stone-200 mx-1 hidden sm:block" />
+
+                  <span className="text-stone-400 text-[11px] mr-1">Biodata File:</span>
+                  <button
+                    type="button"
+                    onClick={() => setBiodataUploadedFilter('ALL')}
+                    className={`px-3 py-1.5 rounded-xl border transition-colors cursor-pointer ${
+                      biodataUploadedFilter === 'ALL'
+                        ? 'bg-[#c9973e] text-[#350016] border-[#c9973e] font-bold shadow-2xs'
+                        : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
+                    }`}
+                  >
+                    All Formats ({totalCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBiodataUploadedFilter('UPLOADED')}
+                    className={`px-3 py-1.5 rounded-xl border transition-colors cursor-pointer ${
+                      biodataUploadedFilter === 'UPLOADED'
+                        ? 'bg-emerald-600 text-white border-emerald-600 font-bold shadow-2xs'
+                        : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
+                    }`}
+                  >
+                    Attached Files ({uploadedCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBiodataUploadedFilter('FORM')}
+                    className={`px-3 py-1.5 rounded-xl border transition-colors cursor-pointer ${
+                      biodataUploadedFilter === 'FORM'
+                        ? 'bg-stone-700 text-white border-stone-700 font-bold shadow-2xs'
+                        : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
+                    }`}
+                  >
+                    Form Profiles ({formCount})
+                  </button>
+                </div>
+              </div>
+
+              {/* Biodata Table */}
+              <div className="bg-white rounded-2xl border border-stone-200 shadow-xs overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[#fff6fa] text-[#4b001f] border-b border-stone-200 font-bold uppercase tracking-wider text-[10px]">
+                      <tr>
+                        <th className="p-3.5">Candidate / Name</th>
+                        <th className="p-3.5">Age & Gender</th>
+                        <th className="p-3.5">Place & District</th>
+                        <th className="p-3.5">Profession & Education</th>
+                        <th className="p-3.5">Guardian Contact</th>
+                        <th className="p-3.5">Contact (Candidate)</th>
+                        <th className="p-3.5">Plan / Status</th>
+                        <th className="p-3.5 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100">
+                      {biodataProfilesList.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="p-12 text-center text-stone-500">
+                            <BookOpen className="w-8 h-8 text-stone-300 mx-auto mb-2" />
+                            <p className="font-semibold text-stone-700">No candidate biodatas match your criteria</p>
+                            <p className="text-xs text-stone-400 mt-1">
+                              {biodataSearchQuery || biodataPlanFilter !== 'ALL' || biodataUploadedFilter !== 'ALL'
+                                ? 'Try resetting your search query or filters to view all biodatas.'
+                                : 'Candidate biodatas will automatically appear here once registered or updated.'}
+                            </p>
+                            {(biodataSearchQuery || biodataPlanFilter !== 'ALL' || biodataUploadedFilter !== 'ALL') && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setBiodataSearchQuery('');
+                                  setBiodataPlanFilter('ALL');
+                                  setBiodataUploadedFilter('ALL');
+                                }}
+                                className="mt-3 px-3 py-1.5 rounded-lg bg-stone-100 text-stone-700 hover:bg-stone-200 text-xs font-bold cursor-pointer transition-colors"
+                              >
+                                Clear Filters
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ) : (
+                        biodataProfilesList.map((p) => {
+                          const displayMemberId = p.member_id || (p.id?.startsWith('NCSM') ? p.id : `NCSM${p.id?.replace(/\D/g, '').slice(-4) || '1001'}`);
+                          const hasFile = Boolean(p.biodata_uploaded || p.biodata_document_name || p.biodata_document_url);
+
+                          return (
+                            <tr
+                              key={p.id}
+                              onClick={() => setViewingProfile(p)}
+                              className="hover:bg-amber-50/50 transition-colors cursor-pointer group"
+                              title="Click to view full candidate biodata & details"
+                            >
+                              <td className="p-3.5">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-10 h-10 rounded-xl overflow-hidden bg-stone-100 border border-stone-200 shrink-0 shadow-2xs group-hover:scale-105 transition-transform flex items-center justify-center font-bold text-[#4b001f] text-sm">
+                                    {p.profile_photo ? (
+                                      <img src={p.profile_photo} alt={p.full_name} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#fff0f5] to-[#fce7f3] text-[#4b001f]">
+                                        {(p.full_name || 'C').charAt(0).toUpperCase()}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="font-mono text-[10px] font-bold bg-[#4b001f] text-white px-1.5 py-0.5 rounded shadow-2xs">
+                                        {displayMemberId}
+                                      </span>
+                                      <span className="font-bold text-stone-900 group-hover:text-[#4b001f] transition-colors">{p.full_name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                      {hasFile ? (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                                          <FileText className="w-2.5 h-2.5 text-emerald-600" />
+                                          <span>Attached Biodata</span>
+                                        </span>
+                                      ) : (
+                                        <span className="text-[10px] text-stone-400">Standard Form</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+
+                              <td className="p-3.5 text-stone-700">
+                                <div className="font-semibold text-stone-900">{normalizeGender(p.gender)}</div>
+                                <div className="text-[11px] text-stone-500">
+                                  {p.date_of_birth
+                                    ? `${p.date_of_birth} (${p.age || Math.max(18, new Date().getFullYear() - new Date(p.date_of_birth).getFullYear())} yrs)`
+                                    : p.age
+                                    ? `${p.age} yrs`
+                                    : '-'}
+                                </div>
+                                <div className="text-[10px] text-stone-400">{p.marital_status || 'Never Married'}</div>
+                              </td>
+
+                              <td className="p-3.5 text-stone-700">
+                                <div className="font-medium text-stone-900">{p.place || p.location || '-'}</div>
+                                <div className="text-[11px] text-stone-500">{p.district || p.state || 'Kerala'}</div>
+                              </td>
+
+                              <td className="p-3.5 text-stone-700">
+                                <div className="font-medium text-stone-900">{p.profession || '-'}</div>
+                                <div className="text-[11px] text-stone-500">{p.education || '-'}</div>
+                              </td>
+
+                              <td className="p-3.5">
+                                <a
+                                  href={p.guardian_mobile ? `tel:${p.guardian_mobile}` : undefined}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="font-bold text-emerald-800 hover:underline flex items-center gap-1"
+                                >
+                                  <Phone className="w-3 h-3 text-emerald-600" />
+                                  <span>{p.guardian_mobile || '-'}</span>
+                                </a>
+                                <div className="text-[11px] text-stone-500">
+                                  {p.guardian_name || 'Guardian'} {p.guardian_relation ? `(${p.guardian_relation})` : ''}
+                                </div>
+                              </td>
+
+                              <td className="p-3.5">
+                                <a
+                                  href={p.mobile ? `tel:${p.mobile}` : undefined}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="font-bold text-stone-800 hover:underline flex items-center gap-1"
+                                >
+                                  <Phone className="w-3 h-3 text-stone-500" />
+                                  <span>{p.mobile || '-'}</span>
+                                </a>
+                                {p.email && (
+                                  <a
+                                    href={`mailto:${p.email}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-[11px] text-stone-400 hover:underline truncate max-w-[140px] block"
+                                  >
+                                    {p.email}
+                                  </a>
+                                )}
+                              </td>
+
+                              <td className="p-3.5">
+                                <div className="flex flex-col gap-1 items-start">
+                                  {p.is_premium ? (
+                                    <div className="inline-flex flex-col items-start gap-0.5">
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-gradient-to-r from-amber-500 to-amber-600 text-white flex items-center gap-1 shadow-2xs">
+                                        <Sparkles className="w-2.5 h-2.5 text-amber-200 fill-amber-200" />
+                                        <span>★ Premium Plan</span>
+                                      </span>
+                                      {p.premium_plan && (
+                                        <span className="text-[10px] text-amber-900 font-semibold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 truncate max-w-[120px]">
+                                          {p.premium_plan}
+                                        </span>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-700 border border-stone-200">
+                                      Free Plan
+                                    </span>
+                                  )}
+                                  <span
+                                    className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
+                                      p.profile_status === 'APPROVED'
+                                        ? 'bg-emerald-50 text-emerald-700'
+                                        : 'bg-amber-50 text-amber-700'
+                                    }`}
+                                  >
+                                    {p.profile_status}
+                                  </span>
+                                </div>
+                              </td>
+
+                              <td className="p-3.5 text-right">
+                                <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                  <button
+                                    onClick={() => setViewingProfile(p)}
+                                    title="View Full Biodata"
+                                    className="p-1.5 rounded-lg border border-stone-200 text-stone-700 hover:bg-[#fff6fa] hover:text-[#4b001f] transition-colors cursor-pointer"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                  </button>
+                                  {p.biodata_document_url && (
+                                    <a
+                                      href={p.biodata_document_url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      title="Open Attached Biodata Document"
+                                      className="p-1.5 rounded-lg border border-emerald-200 text-emerald-700 hover:bg-emerald-50 transition-colors"
+                                    >
+                                      <FileText className="w-3.5 h-3.5" />
+                                    </a>
+                                  )}
+                                  <button
+                                    onClick={() => handleEditClick(p)}
+                                    title="Edit Biodata"
+                                    className="p-1.5 rounded-lg border border-stone-200 text-stone-700 hover:bg-stone-50 transition-colors cursor-pointer"
+                                  >
+                                    <Edit className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
-
-            {/* Biodata Cards / Table */}
-            <div className="bg-white rounded-2xl border border-stone-200 shadow-xs overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-[#fff6fa] text-[#4b001f] border-b border-stone-200 font-bold uppercase tracking-wider text-[10px]">
-                    <tr>
-                      <th className="p-3.5">Candidate / Name</th>
-                      <th className="p-3.5">Age & Gender</th>
-                      <th className="p-3.5">Place & District</th>
-                      <th className="p-3.5">Profession & Education</th>
-                      <th className="p-3.5">Guardian Contact</th>
-                      <th className="p-3.5">Contact (Candidate)</th>
-                      <th className="p-3.5">Plan / Status</th>
-                      <th className="p-3.5 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-100">
-                    {filteredProfiles.length === 0 ? (
-                      <tr>
-                        <td colSpan={8} className="p-8 text-center text-stone-500">
-                          No profiles found.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredProfiles.map((p) => (
-                        <tr
-                          key={p.id}
-                          onClick={() => setViewingProfile(p)}
-                          className="hover:bg-amber-50/50 transition-colors cursor-pointer group"
-                          title="Click to view full candidate biodata & details"
-                        >
-                          <td className="p-3.5">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-9 h-9 rounded-xl overflow-hidden bg-stone-100 border border-stone-200 shrink-0">
-                                {p.profile_photo ? (
-                                  <img src={p.profile_photo} alt={p.full_name} className="w-full h-full object-cover" />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center font-bold text-[#4b001f] text-xs">
-                                    {(p.full_name || 'C').charAt(0)}
-                                  </div>
-                                )}
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-mono text-[10px] font-bold bg-[#4b001f] text-white px-1.5 py-0.5 rounded shadow-2xs">
-                                    {p.member_id || (p.id?.startsWith('NCSM') ? p.id : `NCSM${p.id?.replace(/\D/g, '').slice(-4) || '1001'}`)}
-                                  </span>
-                                  <span className="font-bold text-stone-900 group-hover:text-[#4b001f] transition-colors">{p.full_name}</span>
-                                </div>
-                                <span className="text-[10px] text-stone-400">ID: {p.id.slice(0, 8)}</span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="p-3.5 text-stone-700">
-                            <div>{normalizeGender(p.gender)}</div>
-                            <div className="text-[11px] text-stone-500">
-                              {p.date_of_birth ? `${p.date_of_birth} (${p.age || Math.max(18, new Date().getFullYear() - new Date(p.date_of_birth).getFullYear())} yrs)` : (p.age ? `${p.age} yrs` : '-')}
-                            </div>
-                          </td>
-                          <td className="p-3.5 text-stone-700">
-                            <div className="font-medium">{p.place || p.location || '-'}</div>
-                            <div className="text-[11px] text-stone-500">{p.district || p.state || 'Kerala'}</div>
-                          </td>
-                          <td className="p-3.5 text-stone-700">
-                            <div className="font-medium text-stone-900">{p.profession || '-'}</div>
-                            <div className="text-[11px] text-stone-500">{p.education || '-'}</div>
-                          </td>
-                          <td className="p-3.5">
-                            <div className="font-bold text-emerald-800">{p.guardian_mobile || '-'}</div>
-                            <div className="text-[11px] text-stone-500">{p.guardian_name || 'Guardian'} ({p.guardian_relation || 'Parent'})</div>
-                          </td>
-                          <td className="p-3.5">
-                            <div className="text-stone-800">{p.mobile || '-'}</div>
-                            <div className="text-[11px] text-stone-400 truncate max-w-[120px]">{p.email || '-'}</div>
-                          </td>
-                          <td className="p-3.5">
-                            <div className="flex flex-col gap-1">
-                              {p.is_premium ? (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 w-fit">
-                                  <Sparkles className="w-2.5 h-2.5 text-amber-600" />
-                                  <span>Premium</span>
-                                </span>
-                              ) : (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-stone-100 text-stone-600 border border-stone-200 w-fit">
-                                  Free
-                                </span>
-                              )}
-                              <span className={`text-[10px] font-semibold ${p.profile_status === 'APPROVED' ? 'text-emerald-700' : 'text-amber-700'}`}>
-                                {p.profile_status}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="p-3.5 text-right">
-                            <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-                              <button
-                                onClick={() => setViewingProfile(p)}
-                                title="View Full Biodata"
-                                className="p-1.5 rounded-lg border border-stone-200 text-stone-700 hover:bg-[#fff6fa] hover:text-[#4b001f] transition-colors cursor-pointer"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleEditClick(p)}
-                                title="Edit Biodata"
-                                className="p-1.5 rounded-lg border border-stone-200 text-stone-700 hover:bg-stone-50 transition-colors cursor-pointer"
-                              >
-                                <Edit className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* TAB: USER ACCOUNTS */}
         {activeTab === 'user_accounts' && (() => {
@@ -1190,21 +1435,25 @@ export const AdminPortal: React.FC<Props> = ({
 
                               <td className="p-3.5">
                                 {p.is_premium ? (
-                                  <div className="inline-flex flex-col items-start gap-0.5">
-                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 shadow-2xs">
-                                      <Sparkles className="w-3 h-3 text-amber-600 fill-amber-500" />
+                                  <div className="inline-flex flex-col items-start gap-1">
+                                    <span className="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-gradient-to-r from-amber-500 to-amber-600 text-white flex items-center gap-1.5 shadow-2xs">
+                                      <Sparkles className="w-3.5 h-3.5 text-amber-200 fill-amber-200" />
                                       <span>★ Premium Plan</span>
                                     </span>
-                                    {p.premium_plan && (
-                                      <span className="text-[10px] text-amber-800 font-medium pl-1 truncate max-w-[120px]">
-                                        {p.premium_plan}
-                                      </span>
-                                    )}
+                                    <span className="text-[10px] text-amber-900 font-semibold pl-1 truncate max-w-[140px] bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                      {p.premium_plan || 'Active Premium'}
+                                    </span>
                                   </div>
                                 ) : (
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-600 border border-stone-200">
-                                    Free Plan
-                                  </span>
+                                  <div className="inline-flex flex-col items-start gap-1">
+                                    <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-stone-100 text-stone-700 border border-stone-300 flex items-center gap-1.5">
+                                      <span className="w-2 h-2 rounded-full bg-stone-400" />
+                                      <span>Free Plan</span>
+                                    </span>
+                                    <span className="text-[10px] text-stone-500 font-medium pl-1">
+                                      Standard Free Tier
+                                    </span>
+                                  </div>
                                 )}
                               </td>
 

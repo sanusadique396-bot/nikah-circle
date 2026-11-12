@@ -135,9 +135,9 @@ export function isProfileDeleted(
   const phone = profile.mobile ? profile.mobile.replace(/\D/g, '').slice(-8) : '';
   const gPhone = profile.guardian_mobile ? profile.guardian_mobile.replace(/\D/g, '').slice(-8) : '';
   const name = (profile.full_name || '').toLowerCase().trim();
-  if (phone && deleted.phones.some((dp) => phone.includes(dp) || dp.includes(phone))) return true;
-  if (gPhone && deleted.phones.some((dp) => gPhone.includes(dp) || dp.includes(gPhone))) return true;
-  if (name && deleted.names.includes(name)) return true;
+  if (phone && deleted.phones.some((dp) => dp && dp.length >= 6 && (phone.includes(dp) || dp.includes(phone)))) return true;
+  if (gPhone && deleted.phones.some((dp) => dp && dp.length >= 6 && (gPhone.includes(dp) || dp.includes(gPhone)))) return true;
+  if (name && deleted.names.some((dn) => dn && dn.length >= 3 && name === dn)) return true;
   return false;
 }
 
@@ -516,6 +516,31 @@ export default function App() {
   // Comprehensive data refresh that loads ALL registered profiles from Supabase and merges with local
   const refreshAllData = async () => {
     try {
+      // 1. Fetch payments and premium requests first to ensure subscription statuses can be linked
+      const { data: dbPayments } = await supabase
+        .from('payments')
+        .select('*')
+        .order('payment_date', { ascending: false });
+
+      if (dbPayments && dbPayments.length > 0) {
+        setPayments(dbPayments);
+        saveStoredPayments(dbPayments);
+      }
+
+      const { data: dbRequests } = await supabase
+        .from('premium_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (dbRequests && dbRequests.length > 0) {
+        setPremiumRequests(dbRequests);
+        saveStoredPremiumRequests(dbRequests);
+      }
+
+      const activeRequests = (dbRequests && dbRequests.length > 0 ? dbRequests : premiumRequests) || [];
+      const activePayments = (dbPayments && dbPayments.length > 0 ? dbPayments : payments) || [];
+
+      // 2. Fetch all profiles from Supabase profiles table
       const { data: dbProfiles, error: profileErr } = await supabase
         .from('profiles')
         .select('*')
@@ -527,16 +552,48 @@ export default function App() {
       let merged: Profile[] = [];
       if (!profileErr && dbProfiles) {
         const parsedDb: Profile[] = dbProfiles.map((p: any, idx: number) => parseSupabaseProfile(p, idx));
+
+        // Create fast lookup map for localProfiles to preserve newly updated biodata & subscription fields
+        const localMap = new Map<string, Profile>();
+        localProfiles.forEach((lp) => {
+          if (lp.id) localMap.set(lp.id, lp);
+          if (lp.email) localMap.set(lp.email.toLowerCase(), lp);
+          if (lp.mobile) localMap.set(lp.mobile.replace(/\D/g, '').slice(-8), lp);
+        });
+
+        const mergedDb = parsedDb.map((dp) => {
+          const phoneKey = dp.mobile ? dp.mobile.replace(/\D/g, '').slice(-8) : '';
+          const emailKey = dp.email ? dp.email.toLowerCase() : '';
+          const localMatch = localMap.get(dp.id) || (emailKey && localMap.get(emailKey)) || (phoneKey && localMap.get(phoneKey));
+          if (localMatch) {
+            return {
+              ...dp,
+              biodata_uploaded: localMatch.biodata_uploaded || dp.biodata_uploaded,
+              biodata_document_name: localMatch.biodata_document_name || dp.biodata_document_name,
+              biodata_document_url: localMatch.biodata_document_url || dp.biodata_document_url,
+              is_premium: localMatch.is_premium || dp.is_premium,
+              premium_plan: localMatch.premium_plan || dp.premium_plan,
+              premium_start: localMatch.premium_start || dp.premium_start,
+              premium_end: localMatch.premium_end || dp.premium_end,
+              place: localMatch.place || dp.place,
+              district: localMatch.district || dp.district,
+              gender: normalizeGender(localMatch.gender || dp.gender),
+              hobbies: localMatch.hobbies || dp.hobbies,
+              interests: localMatch.interests || dp.interests,
+            };
+          }
+          return dp;
+        });
+
         const dbIds = new Set(parsedDb.map((p) => p.id));
         const dbEmails = new Set(parsedDb.map((p) => p.email?.toLowerCase()).filter(Boolean));
-        const dbMobiles = new Set(parsedDb.map((p) => p.mobile).filter(Boolean));
+        const dbMobiles = new Set(parsedDb.map((p) => p.mobile ? p.mobile.replace(/\D/g, '').slice(-8) : '').filter(Boolean));
 
-        const missingFromDb = localProfiles.filter(
-          (lp) =>
-            !dbIds.has(lp.id) &&
-            (!lp.email || !dbEmails.has(lp.email.toLowerCase())) &&
-            (!lp.mobile || !dbMobiles.has(lp.mobile))
-        );
+        const missingFromDb = localProfiles.filter((lp) => {
+          const lPhone = lp.mobile ? lp.mobile.replace(/\D/g, '').slice(-8) : '';
+          const lEmail = lp.email ? lp.email.toLowerCase() : '';
+          return !dbIds.has(lp.id) && (!lEmail || !dbEmails.has(lEmail)) && (!lPhone || !dbMobiles.has(lPhone));
+        });
 
         // Async sync missing local profiles to Supabase
         missingFromDb.forEach(async (lp) => {
@@ -548,45 +605,110 @@ export default function App() {
           }
         });
 
-        merged = [...parsedDb, ...missingFromDb].filter((p) => !isProfileDeleted(p, deleted));
+        merged = [...mergedDb, ...missingFromDb].filter((p) => !isProfileDeleted(p, deleted));
       } else {
         merged = localProfiles.filter((p) => !isProfileDeleted(p, deleted));
       }
 
-      // Ensure every profile has a sequential member_id starting at NCSM1001
-      const finalized = merged.map((p, idx) => ({
-        ...p,
-        member_id: p.member_id || `NCSM${1001 + idx}`,
-      }));
+      // 3. Ensure currentUserProfile is also unified into merged so freshly registered / updated candidates are never missing
+      try {
+        const storedCup = localStorage.getItem('nikah_circle_user_profile');
+        if (storedCup) {
+          const cup: UserProfileData = JSON.parse(storedCup);
+          const cupPhone = cup.mobile ? cup.mobile.replace(/\D/g, '').slice(-8) : '';
+          const cupEmail = cup.email ? cup.email.toLowerCase() : '';
+          const foundIdx = merged.findIndex(
+            (p) =>
+              (p.id && cup.id && p.id === cup.id) ||
+              (cupPhone && p.mobile && p.mobile.replace(/\D/g, '').includes(cupPhone)) ||
+              (cupEmail && p.email && p.email.toLowerCase() === cupEmail)
+          );
+          if (foundIdx >= 0) {
+            merged[foundIdx] = {
+              ...merged[foundIdx],
+              biodata_uploaded: cup.biodata_uploaded || merged[foundIdx].biodata_uploaded,
+              biodata_document_name: cup.biodata_document_name || merged[foundIdx].biodata_document_name,
+              biodata_document_url: cup.biodata_document_url || merged[foundIdx].biodata_document_url,
+              is_premium: cup.is_premium ?? merged[foundIdx].is_premium,
+              premium_plan: cup.premium_plan || merged[foundIdx].premium_plan,
+              place: cup.place || merged[foundIdx].place,
+              district: cup.district || merged[foundIdx].district,
+              gender: normalizeGender(cup.gender || merged[foundIdx].gender),
+            };
+          } else if (cup.full_name) {
+            const cupProfile: Profile = {
+              id: cup.id || `usr-${Date.now()}`,
+              member_id: cup.member_id || getNextMemberId(),
+              full_name: cup.full_name,
+              mobile: cup.mobile,
+              email: cup.email,
+              gender: normalizeGender(cup.gender),
+              date_of_birth: cup.date_of_birth,
+              location: `${cup.place || ''}, ${cup.district || ''}`.replace(/^,\s*|,\s*$/g, '') || 'Kerala',
+              district: cup.district || 'Kozhikode',
+              place: cup.place || 'Kerala',
+              education: cup.education || 'Graduate',
+              profession: cup.profession || 'Professional',
+              guardian_name: cup.guardian_name || 'Guardian',
+              guardian_mobile: cup.guardian_mobile || cup.mobile,
+              guardian_relation: 'Parent (Guardian)',
+              marital_status: 'Never Married',
+              biodata_uploaded: cup.biodata_uploaded ?? false,
+              biodata_document_name: cup.biodata_document_name || null,
+              biodata_document_url: cup.biodata_document_url || null,
+              registration_type: 'ONLINE',
+              is_verified: true,
+              profile_status: 'APPROVED',
+              is_premium: Boolean(cup.is_premium),
+              premium_plan: cup.premium_plan || null,
+              created_at: new Date().toISOString(),
+            };
+            merged = [cupProfile, ...merged];
+          }
+        }
+      } catch {}
+
+      // 4. Link & automatically synchronize subscription statuses from approved requests and paid payments
+      const finalized = merged.map((p, idx) => {
+        const phone = p.mobile ? p.mobile.replace(/\D/g, '').slice(-8) : '';
+        const name = (p.full_name || '').toLowerCase().trim();
+        const email = (p.email || '').toLowerCase().trim();
+
+        // Check if there is an approved request
+        const matchedReq = activeRequests.find(
+          (r) =>
+            r.status === 'APPROVED' &&
+            ((phone && r.phone_number && r.phone_number.replace(/\D/g, '').includes(phone)) ||
+              (name && r.user_name.toLowerCase().trim() === name))
+        );
+
+        // Check if there is a paid payment
+        const matchedPay = activePayments.find(
+          (pay) =>
+            pay.payment_status === 'PAID' &&
+            (pay.profile_id === p.id || (name && (pay.profile_name || '').toLowerCase().trim() === name))
+        );
+
+        const isPrem = p.is_premium || Boolean(matchedReq) || Boolean(matchedPay);
+        const premPlan = p.premium_plan || matchedReq?.plan_name || (matchedPay ? 'Premium Plan' : null);
+
+        return {
+          ...p,
+          member_id: p.member_id || `NCSM${1001 + idx}`,
+          gender: normalizeGender(p.gender),
+          is_premium: isPrem,
+          premium_plan: isPrem ? (premPlan || 'Premium Plan') : null,
+        };
+      });
 
       setProfiles(finalized);
       saveStoredProfiles(finalized);
-
-      const { data: dbPayments, error: paymentErr } = await supabase
-        .from('payments')
-        .select('*')
-        .order('payment_date', { ascending: false });
-
-      if (!paymentErr && dbPayments && dbPayments.length > 0) {
-        setPayments(dbPayments);
-        saveStoredPayments(dbPayments);
-      }
-
-      const { data: dbRequests, error: reqErr } = await supabase
-        .from('premium_requests')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (!reqErr && dbRequests && dbRequests.length > 0) {
-        setPremiumRequests(dbRequests);
-        saveStoredPremiumRequests(dbRequests);
-      }
     } catch (err) {
       console.warn('Data sync offline fallback', err);
     }
   };
 
-  // Sync Supabase on Mount
+  // Sync Supabase on Mount & Realtime updates
   useEffect(() => {
     async function loadData() {
       try {
@@ -604,6 +726,45 @@ export default function App() {
       }
     }
     loadData();
+
+    // Supabase Real-time Channel Listener
+    const channel = supabase
+      .channel('nikah-admin-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        refreshAllData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'premium_requests' }, () => {
+        refreshAllData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
+        refreshAllData();
+      })
+      .subscribe();
+
+    // Cross-tab storage change listener
+    const handleStorageChange = (e: StorageEvent) => {
+      if (
+        e.key === 'nikah_circle_profiles_v2' ||
+        e.key === 'nikah_circle_user_profile' ||
+        e.key === 'nikah_circle_premium_requests_v1' ||
+        e.key === 'nikah_circle_payments_v2' ||
+        e.key === 'nikah_circle_user_is_premium'
+      ) {
+        refreshAllData();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    // Background periodic refresh every 10 seconds
+    const interval = setInterval(() => {
+      refreshAllData();
+    }, 10000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
   }, []);
 
   // Sync changes to local storage
@@ -943,30 +1104,138 @@ export default function App() {
     });
   };
 
-  // Submit Premium Request (UPI Scanner, Cash Office, or Free Request)
+  // Submit Premium Request (UPI Scanner, Cash Office, or Free Request) - Automatic Payment Upgradation Sync
   const handleSubmitPremiumRequest = async (
     req: Omit<PremiumRequest, 'id' | 'created_at' | 'status'>
   ) => {
     const isUUID = (str?: string) => !!str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
     const newId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `req-${Date.now()}`;
+    
+    // Automatic Payment Upgradation: Immediately mark request as APPROVED
     const newReq: PremiumRequest = {
       ...req,
       id: newId,
-      status: 'PENDING',
+      status: 'APPROVED',
       created_at: new Date().toISOString(),
     };
-    const updated = [newReq, ...premiumRequests];
-    setPremiumRequests(updated);
-    saveStoredPremiumRequests(updated);
-    showToast('Premium request submitted to admin!');
+    const updatedRequests = [newReq, ...premiumRequests];
+    setPremiumRequests(updatedRequests);
+    saveStoredPremiumRequests(updatedRequests);
 
-    // Requirement 4: Post-Premium Biodata Upload trigger
+    // 1. Instantly activate session premium state
+    setIsUserPremium(true);
+    setUserPlanName(req.plan_name);
+    localStorage.setItem('nikah_circle_user_is_premium', 'true');
+    localStorage.setItem('nikah_circle_user_plan_name', req.plan_name);
+
+    // 2. Identify and instantly upgrade the user's profile in state & localStorage
+    const phoneClean = req.phone_number ? req.phone_number.replace(/\D/g, '').slice(-8) : '';
+    const nameClean = (req.user_name || '').toLowerCase().trim();
+    const emailClean = (currentUser?.email || '').toLowerCase().trim();
+
+    const existingIdx = profiles.findIndex(
+      (p) =>
+        (phoneClean && p.mobile && p.mobile.replace(/\D/g, '').includes(phoneClean)) ||
+        (phoneClean && p.guardian_mobile && p.guardian_mobile.replace(/\D/g, '').includes(phoneClean)) ||
+        (nameClean && p.full_name.toLowerCase().trim() === nameClean) ||
+        (emailClean && p.email && p.email.toLowerCase().trim() === emailClean)
+    );
+
+    let targetProf: Profile;
+    let nextProfiles: Profile[];
+
+    const todayDate = new Date().toISOString().slice(0, 10);
+    const expiryDate = new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10);
+
+    if (existingIdx >= 0) {
+      targetProf = {
+        ...profiles[existingIdx],
+        is_premium: true,
+        premium_plan: req.plan_name,
+        premium_start: todayDate,
+        premium_end: expiryDate,
+        profile_status: 'APPROVED',
+        is_verified: true,
+        gender: req.gender ? normalizeGender(req.gender) : normalizeGender(profiles[existingIdx].gender),
+        updated_at: new Date().toISOString(),
+      };
+      nextProfiles = profiles.map((p, idx) => (idx === existingIdx ? targetProf : p));
+    } else {
+      const memberId = currentUserProfile?.member_id || getNextMemberId();
+      targetProf = {
+        id: `nc-prem-${Date.now()}`,
+        member_id: memberId,
+        full_name: req.user_name,
+        gender: normalizeGender(req.gender || currentUserProfile?.gender || 'Male'),
+        mobile: req.phone_number,
+        email: currentUser?.email || null,
+        location: 'Kerala',
+        district: 'Malappuram',
+        place: 'Kerala',
+        marital_status: 'Never Married',
+        education: 'Graduate',
+        profession: 'Professional',
+        guardian_name: `${req.user_name}'s Guardian`,
+        guardian_mobile: req.phone_number,
+        guardian_relation: 'Parent (Guardian)',
+        registration_type: 'ONLINE',
+        profile_status: 'APPROVED',
+        is_verified: true,
+        is_premium: true,
+        premium_plan: req.plan_name,
+        premium_start: todayDate,
+        premium_end: expiryDate,
+        created_at: new Date().toISOString(),
+      };
+      nextProfiles = [targetProf, ...profiles];
+    }
+
+    setProfiles(nextProfiles);
+    saveStoredProfiles(nextProfiles);
+
+    // 3. Update currentUserProfile in state and localStorage
+    if (currentUserProfile) {
+      const updatedCup: UserProfileData = {
+        ...currentUserProfile,
+        is_premium: true,
+        premium_plan: req.plan_name,
+        is_approved: true,
+      };
+      setCurrentUserProfile(updatedCup);
+      localStorage.setItem('nikah_circle_user_profile', JSON.stringify(updatedCup));
+    }
+
+    // 4. Automatically record completed payment in payments list
+    const payPayload: Payment = {
+      id: `pay-${Date.now()}`,
+      profile_id: targetProf.id,
+      profile_name: targetProf.full_name,
+      amount: req.amount,
+      payment_method: req.plan_type === 'UPI_QR' ? 'UPI' : (req.plan_type === 'CASH_OFFICE' ? 'CASH' : 'ONLINE'),
+      payment_status: 'PAID',
+      payment_date: new Date().toISOString(),
+      transaction_reference: req.utr_number || req.referral_code || undefined,
+      notes: req.notes ? `${req.plan_name} - ${req.notes}` : req.plan_name,
+    };
+    const nextPayments = [payPayload, ...payments];
+    setPayments(nextPayments);
+    saveStoredPayments(nextPayments);
+
+    showToast('Alhamdulillah! Premium plan activated automatically!');
+    confetti({
+      particleCount: 80,
+      spread: 70,
+      origin: { y: 0.6 },
+    });
+
+    // Requirement: Post-Premium Biodata Upload trigger
     setTimeout(() => {
       setIsPremiumOpen(false);
       setIsPostPremiumBiodataUpload(true);
       setIsEditingProfile(true);
-    }, 450);
+    }, 400);
 
+    // 5. Sync directly to Supabase profiles, payments, and premium_requests tables
     try {
       const payload: any = {
         user_name: req.user_name,
@@ -977,15 +1246,49 @@ export default function App() {
         utr_number: req.utr_number || null,
         payment_screenshot: req.payment_screenshot || null,
         referral_code: req.referral_code || null,
-        status: 'PENDING',
+        status: 'APPROVED',
         notes: req.notes || null,
       };
       if (isUUID(newId)) {
         payload.id = newId;
       }
       await supabase.from('premium_requests').insert(payload);
+
+      // Sync updated profile to Supabase
+      const profPayload = prepareSupabaseProfilePayload(targetProf);
+      if (targetProf.id && isUUID(targetProf.id)) {
+        await supabase.from('profiles').upsert(profPayload);
+      } else {
+        const { data: existingDb } = await supabase
+          .from('profiles')
+          .select('id')
+          .or(`email.eq.${targetProf.email},mobile.eq.${targetProf.mobile}`)
+          .maybeSingle();
+
+        if (existingDb?.id) {
+          await supabase.from('profiles').update(profPayload).eq('id', existingDb.id);
+          targetProf.id = existingDb.id;
+        } else {
+          delete profPayload.id;
+          const { data: dbCreated } = await supabase.from('profiles').insert(profPayload).select().single();
+          if (dbCreated?.id) {
+            targetProf.id = dbCreated.id;
+          }
+        }
+      }
+
+      // Sync payment to Supabase payments table
+      await supabase.from('payments').insert({
+        profile_id: targetProf.id && isUUID(targetProf.id) ? targetProf.id : null,
+        profile_name: targetProf.full_name,
+        amount: req.amount,
+        payment_method: payPayload.payment_method,
+        payment_status: 'PAID',
+        transaction_reference: req.utr_number || req.referral_code || null,
+        notes: req.notes || req.plan_name,
+      });
     } catch (e) {
-      console.warn('Supabase premium request sync:', e);
+      console.warn('Supabase premium request auto-upgradation sync:', e);
     }
   };
 
