@@ -44,6 +44,8 @@ import {
   Calendar,
   ShieldCheck,
   X as XIcon,
+  Send,
+  HeartHandshake,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -1310,14 +1312,18 @@ export default function App() {
       {/* Navigation Bar with Clean 3-Dot Dropdown, Separated Tabs, and Plan Button */}
       <Navbar
         activeView={activeView}
-        onNavigate={(view) => {
+        onNavigate={(view, tab) => {
           if (view === 'admin' && !isAdmin) {
             setLoginMode('admin');
             setIsLoginOpen(true);
           } else {
             setActiveView(view);
+            if (tab) {
+              setInterestsActiveTab(tab);
+            }
           }
         }}
+        interestsActiveTab={interestsActiveTab}
         currentUser={currentUser}
         userProfile={currentUserProfile}
         onEditProfile={() => setIsEditingProfile(true)}
@@ -1660,78 +1666,104 @@ export default function App() {
       )}
 
       {/* =========================================
-          VIEW 4: INTERESTS & PROPOSAL SANCTUARY
-          - Tab 1: Received Proposals (Interests that came to your profile)
-          - Tab 2: Sent Interests (Proposals you sent to others)
+          VIEW 4: INTERESTS & PROPOSALS HUB
+          - Toggle Button: Send vs Receive
+          - Send Section: Outgoing proposals you sent to candidates
+          - Receive Section: Incoming proposals received for your profile
+          - Accept Interest is strictly and exclusively on Received profiles
          ========================================= */}
       {activeView === 'interests' && (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6 flex-1">
-          {/* Header & Sub-Tab Switcher */}
+          {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#eadfe4]">
             <div>
               <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#4b001f] flex items-center gap-2.5">
-                <Inbox className="w-7 h-7 text-[#c9973e]" />
+                <HeartHandshake className="w-7 h-7 text-[#c9973e]" />
                 <span>Interests & Proposals Hub</span>
               </h2>
               <p className="text-xs text-stone-500 mt-1">
-                Manage incoming proposals received for your profile and view sent proposal requests.
+                Toggle between sent proposals and incoming proposals received for your profile.
               </p>
             </div>
 
             <div className="flex items-center gap-2 self-start sm:self-auto">
               <button
+                type="button"
                 onClick={() => setActiveView('profiles')}
-                className="px-4 py-2 rounded-xl border border-[#4b001f] text-[#4b001f] text-xs font-bold hover:bg-[#fff6fa] transition-colors cursor-pointer"
+                className="px-4 py-2.5 rounded-xl border border-[#4b001f] text-[#4b001f] text-xs font-bold hover:bg-[#fff6fa] transition-colors cursor-pointer"
               >
                 Browse Profiles
               </button>
             </div>
           </div>
 
-          {/* Sub-Tabs: Received Proposals vs Sent Interests */}
-          <div className="flex items-center gap-3 border-b border-stone-200 pb-2">
-            <button
-              type="button"
-              onClick={() => setInterestsActiveTab('received')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                interestsActiveTab === 'received'
-                  ? 'bg-[#4b001f] text-white shadow-sm'
-                  : 'bg-stone-100 hover:bg-stone-200 text-stone-700'
-              }`}
-            >
-              <Inbox className="w-4 h-4 text-[#c9973e]" />
-              <span>Received Proposals</span>
-              <span
-                className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                  interestsActiveTab === 'received'
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-[#4b001f] text-white'
+          {/* Segmented Toggle Control: Send vs Receive */}
+          <div className="flex justify-center sm:justify-start">
+            <div className="inline-flex p-1.5 rounded-2xl bg-stone-200/80 border border-stone-300 shadow-inner w-full sm:w-auto min-w-[320px]">
+              {/* Send Button */}
+              <button
+                type="button"
+                onClick={() => setInterestsActiveTab('sent')}
+                className={`flex-1 py-3 px-6 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
+                  interestsActiveTab === 'sent'
+                    ? 'bg-[#4b001f] text-white shadow-md'
+                    : 'text-stone-700 hover:text-stone-900 hover:bg-white/60'
                 }`}
               >
-                {incomingInterests.filter((i) => i.status === 'pending').length} New
-              </span>
-            </button>
+                <Send className="w-4 h-4 text-emerald-400" />
+                <span>Send</span>
+                <span
+                  className={`text-[11px] px-2 py-0.5 rounded-full font-bold transition-colors ${
+                    interestsActiveTab === 'sent'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-stone-300 text-stone-800'
+                  }`}
+                >
+                  {interestedProfiles.length}
+                </span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => setInterestsActiveTab('sent')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                interestsActiveTab === 'sent'
-                  ? 'bg-[#4b001f] text-white shadow-sm'
-                  : 'bg-stone-100 hover:bg-stone-200 text-stone-700'
-              }`}
-            >
-              <UserCheck className="w-4 h-4 text-emerald-400" />
-              <span>Sent Interests</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-stone-200 text-stone-800">
-                {interestedProfiles.length}
-              </span>
-            </button>
+              {/* Receive Button */}
+              <button
+                type="button"
+                onClick={() => setInterestsActiveTab('received')}
+                className={`flex-1 py-3 px-6 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
+                  interestsActiveTab === 'received'
+                    ? 'bg-[#4b001f] text-white shadow-md'
+                    : 'text-stone-700 hover:text-stone-900 hover:bg-white/60'
+                }`}
+              >
+                <Inbox className="w-4 h-4 text-[#c9973e]" />
+                <span>Receive</span>
+                <span
+                  className={`text-[11px] px-2 py-0.5 rounded-full font-bold transition-colors ${
+                    interestsActiveTab === 'received'
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-[#4b001f] text-white'
+                  }`}
+                >
+                  {incomingInterests.filter((i) => i.status === 'pending').length > 0
+                    ? `${incomingInterests.filter((i) => i.status === 'pending').length} New`
+                    : incomingInterests.length}
+                </span>
+              </button>
+            </div>
           </div>
 
-          {/* TAB 1: RECEIVED PROPOSALS (Incoming Interests to this Profile) */}
+          {/* SECTION 1: RECEIVED PROPOSALS (Incoming Interests to this Profile) */}
           {interestsActiveTab === 'received' && (
             <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-serif text-lg font-bold text-[#4b001f]">
+                    Received Proposals ({incomingInterests.length})
+                  </h3>
+                  <p className="text-xs text-stone-500">
+                    Proposals sent to your profile by candidates and families. Accept an interest to unlock mutual contact details.
+                  </p>
+                </div>
+              </div>
+
               {incomingInterests.length === 0 ? (
                 <div className="bg-white rounded-2xl border border-[#eadfe4] p-12 text-center space-y-3">
                   <Inbox className="w-12 h-12 text-stone-300 mx-auto" />
@@ -1872,10 +1904,41 @@ export default function App() {
                                 <MessageCircle className="w-3.5 h-3.5" />
                                 <span>Chat on WhatsApp</span>
                               </a>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const match = profiles.find(
+                                    (p) => p.full_name?.toLowerCase().trim() === item.sender_name.toLowerCase().trim()
+                                  );
+                                  if (match) {
+                                    setSelectedProfile(match);
+                                  } else {
+                                    setSelectedProfile({
+                                      id: item.id,
+                                      full_name: item.sender_name,
+                                      gender: item.sender_gender,
+                                      age: item.sender_age,
+                                      location: item.sender_location,
+                                      education: item.sender_education,
+                                      profession: item.sender_profession,
+                                      guardian_name: item.guardian_name,
+                                      guardian_mobile: item.guardian_mobile,
+                                      mobile: item.guardian_mobile,
+                                      about: item.notes || 'Matrimonial proposal on Nikah Circle.',
+                                      is_verified: true,
+                                      profile_status: 'APPROVED',
+                                    });
+                                  }
+                                }}
+                                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold cursor-pointer transition-colors text-center"
+                              >
+                                View Complete Biodata
+                              </button>
                             </div>
                           </div>
                         ) : !isDeclined ? (
-                          /* PENDING ACTIONS */
+                          /* ACCEPT PROPOSAL ACTION - EXCLUSIVELY ON RECEIVED PROFILES */
                           <div className="pt-2 border-t border-stone-100 flex items-center justify-end gap-2.5">
                             <button
                               type="button"
@@ -1892,7 +1955,7 @@ export default function App() {
                               className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer transition-all shadow-xs flex items-center gap-1.5"
                             >
                               <Check className="w-4 h-4" />
-                              <span>Accept Proposal & Unlock Contact</span>
+                              <span>Accept Interest & Unlock Contact</span>
                             </button>
                           </div>
                         ) : (
@@ -1914,12 +1977,23 @@ export default function App() {
             </div>
           )}
 
-          {/* TAB 2: SENT INTERESTS (Outbox - Profiles you sent an interest to) */}
+          {/* SECTION 2: SENT INTERESTS (Outbox - Profiles you sent an interest to) */}
           {interestsActiveTab === 'sent' && (
             <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-serif text-lg font-bold text-[#4b001f]">
+                    Proposals You Sent ({interestedProfiles.length})
+                  </h3>
+                  <p className="text-xs text-stone-500">
+                    Proposals you sent to prospective candidates. Biodata is locked until candidate accepts.
+                  </p>
+                </div>
+              </div>
+
               {interestedProfiles.length === 0 ? (
                 <div className="bg-white rounded-2xl border border-[#eadfe4] p-12 text-center space-y-3">
-                  <Clock className="w-12 h-12 text-stone-300 mx-auto" />
+                  <Send className="w-12 h-12 text-stone-300 mx-auto" />
                   <h3 className="font-serif text-xl font-bold text-[#4b001f]">
                     No Sent Interests Yet
                   </h3>
@@ -1928,6 +2002,7 @@ export default function App() {
                   </p>
                   <div className="pt-3">
                     <button
+                      type="button"
                       onClick={() => setActiveView('profiles')}
                       className="px-5 py-2.5 rounded-xl bg-[#4b001f] text-white text-xs font-bold hover:bg-[#350016] transition-colors cursor-pointer shadow-xs"
                     >
@@ -1976,7 +2051,7 @@ export default function App() {
                           </span>
                         </div>
 
-                        <div className="p-3 rounded-xl bg-stone-50 text-xs text-stone-700">
+                        <div className="p-3.5 rounded-xl bg-stone-50 text-xs text-stone-700 border border-stone-100">
                           {isAccepted ? (
                             <div className="space-y-2">
                               <p className="text-emerald-800 font-bold flex items-center gap-1.5">
@@ -2015,32 +2090,26 @@ export default function App() {
                               </div>
                             </div>
                           ) : (
-                            <div className="flex items-center justify-between">
-                              <span className="text-stone-500">
-                                Biodata is locked until candidate accepts.
-                              </span>
-                              <button
-                                onClick={() => handleAcceptInterest(p.id)}
-                                className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold cursor-pointer"
-                              >
-                                (Test) Accept Interest
-                              </button>
+                            <div className="flex items-center gap-2 text-stone-600">
+                              <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                              <span>Proposal sent. Biodata is locked until candidate accepts.</span>
                             </div>
                           )}
                         </div>
 
+                        {/* Actions for Sent Profile: ONLY Cancel Interest and View Details! NO Accept button here! */}
                         <div className="pt-2 border-t border-stone-100 flex items-center justify-end gap-2">
-                          {!isAccepted && (
-                            <button
-                              onClick={() => handleCancelInterest(p.id)}
-                              className="px-3 py-2 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold cursor-pointer"
-                            >
-                              Cancel Interest
-                            </button>
-                          )}
                           <button
+                            type="button"
+                            onClick={() => handleCancelInterest(p.id)}
+                            className="px-3.5 py-2 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold cursor-pointer transition-colors"
+                          >
+                            Cancel Interest
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => setSelectedProfile(p)}
-                            className="px-4 py-2 rounded-xl bg-[#4b001f] text-white text-xs font-bold cursor-pointer"
+                            className="px-4 py-2 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold cursor-pointer transition-colors"
                           >
                             {isAccepted ? 'View Complete Biodata' : 'View Profile Details'}
                           </button>
@@ -2069,7 +2138,6 @@ export default function App() {
           setIsPremiumOpen(true);
         }}
         isUserPremium={effectiveIsPremium}
-        onAcceptInterestTest={handleAcceptInterest}
         currentUserGender={currentUserProfile?.gender}
         currentUserMobile={currentUserProfile?.mobile}
       />

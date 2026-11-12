@@ -24,7 +24,6 @@ interface Props {
   onToggleBookmark: (profileId: string) => void;
   onOpenPremium: () => void;
   isUserPremium: boolean;
-  onAcceptInterestTest?: (profileId: string) => void;
   currentUserGender?: 'Male' | 'Female' | null;
   currentUserMobile?: string | null;
 }
@@ -39,7 +38,6 @@ export const ProfileModal: React.FC<Props> = ({
   onToggleBookmark,
   onOpenPremium,
   isUserPremium,
-  onAcceptInterestTest,
   currentUserGender,
   currentUserMobile,
 }) => {
@@ -175,17 +173,6 @@ export const ProfileModal: React.FC<Props> = ({
                   >
                     <Heart className="w-4 h-4 text-[#c9973e]" />
                     <span>Send Interest to Unlock Biodata</span>
-                  </button>
-                )}
-
-                {/* Instant Test Accept Simulation button for user verification */}
-                {onAcceptInterestTest && interestStatus === 'pending' && (
-                  <button
-                    onClick={() => onAcceptInterestTest(profile.id)}
-                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>(Test) Accept Interest Now</span>
                   </button>
                 )}
               </div>

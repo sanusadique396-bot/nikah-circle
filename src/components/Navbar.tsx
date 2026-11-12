@@ -18,7 +18,8 @@ import { usePWAInstall } from '../hooks/usePWAInstall';
 
 interface Props {
   activeView: 'home' | 'profiles' | 'shortlist' | 'interests' | 'admin';
-  onNavigate: (view: 'home' | 'profiles' | 'shortlist' | 'interests' | 'admin') => void;
+  onNavigate: (view: 'home' | 'profiles' | 'shortlist' | 'interests' | 'admin', tab?: 'received' | 'sent') => void;
+  interestsActiveTab?: 'received' | 'sent';
   currentUser: { email?: string; id?: string } | null;
   userProfile?: { full_name?: string; profile_photo?: string | null; mobile?: string | null; email?: string | null } | null;
   onEditProfile?: () => void;
@@ -38,6 +39,7 @@ interface Props {
 export const Navbar: React.FC<Props> = ({
   activeView,
   onNavigate,
+  interestsActiveTab = 'sent',
   currentUser,
   userProfile,
   onEditProfile,
@@ -126,11 +128,24 @@ export const Navbar: React.FC<Props> = ({
               <span>Shortlist ({savedCount})</span>
             </button>
 
-            {/* Special Icon to see interests that have come to this profile */}
+            {/* Sent Interests */}
             <button
-              onClick={() => onNavigate('interests')}
+              onClick={() => onNavigate('interests', 'sent')}
               className={`hover:text-[#4b001f] transition-colors whitespace-nowrap cursor-pointer py-1 flex items-center gap-1.5 ${
-                activeView === 'interests'
+                activeView === 'interests' && interestsActiveTab === 'sent'
+                  ? 'text-[#4b001f] font-bold border-b-2 border-[#4b001f]'
+                  : ''
+              }`}
+            >
+              <UserCheck className="w-4 h-4 text-emerald-600" />
+              <span>Sent ({interestsCount})</span>
+            </button>
+
+            {/* Received Interests */}
+            <button
+              onClick={() => onNavigate('interests', 'received')}
+              className={`hover:text-[#4b001f] transition-colors whitespace-nowrap cursor-pointer py-1 flex items-center gap-1.5 ${
+                activeView === 'interests' && interestsActiveTab === 'received'
                   ? 'text-[#4b001f] font-bold border-b-2 border-[#4b001f]'
                   : ''
               }`}
@@ -143,18 +158,6 @@ export const Navbar: React.FC<Props> = ({
                   {receivedInterestsCount} New
                 </span>
               )}
-            </button>
-
-            <button
-              onClick={() => onNavigate('interests')}
-              className={`hover:text-[#4b001f] transition-colors whitespace-nowrap cursor-pointer py-1 flex items-center gap-1.5 ${
-                activeView === 'interests'
-                  ? 'text-[#4b001f] font-bold border-b-2 border-[#4b001f]'
-                  : ''
-              }`}
-            >
-              <UserCheck className="w-4 h-4 text-emerald-600" />
-              <span>Sent ({interestsCount})</span>
             </button>
 
             {/* Prominent Plan Button at Top Navbar (Free Plan or Premium Plan) */}
@@ -186,7 +189,7 @@ export const Navbar: React.FC<Props> = ({
             {/* Dedicated Received Interests Icon Button */}
             <button
               type="button"
-              onClick={() => onNavigate('interests')}
+              onClick={() => onNavigate('interests', 'received')}
               className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all cursor-pointer shadow-2xs ${
                 receivedInterestsCount > 0
                   ? 'bg-[#fff6fa] border-[#4b001f]/30 text-[#4b001f] hover:bg-[#f7dce8]'
@@ -337,7 +340,22 @@ export const Navbar: React.FC<Props> = ({
           </button>
           <button
             onClick={() => {
-              onNavigate('interests');
+              onNavigate('interests', 'sent');
+              setMobileMenuOpen(false);
+            }}
+            className="w-full text-left px-3 py-2 text-sm font-semibold text-stone-700 hover:bg-[#fff6fa] rounded-lg flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2">
+              <UserCheck className="w-4 h-4 text-emerald-600" />
+              <span>Sent Interests</span>
+            </div>
+            <span className="px-2 py-0.5 text-xs bg-emerald-100 text-emerald-800 rounded-full font-bold">
+              {interestsCount}
+            </span>
+          </button>
+          <button
+            onClick={() => {
+              onNavigate('interests', 'received');
               setMobileMenuOpen(false);
             }}
             className="w-full text-left px-3 py-2 text-sm font-semibold text-stone-700 hover:bg-[#fff6fa] rounded-lg flex items-center justify-between"
@@ -355,21 +373,6 @@ export const Navbar: React.FC<Props> = ({
                 0
               </span>
             )}
-          </button>
-          <button
-            onClick={() => {
-              onNavigate('interests');
-              setMobileMenuOpen(false);
-            }}
-            className="w-full text-left px-3 py-2 text-sm font-semibold text-stone-700 hover:bg-[#fff6fa] rounded-lg flex items-center justify-between"
-          >
-            <div className="flex items-center gap-2">
-              <UserCheck className="w-4 h-4 text-emerald-600" />
-              <span>Sent Interests</span>
-            </div>
-            <span className="px-2 py-0.5 text-xs bg-emerald-100 text-emerald-800 rounded-full font-bold">
-              {interestsCount}
-            </span>
           </button>
           <button
             onClick={() => {
