@@ -1405,14 +1405,11 @@ export default function App() {
     });
   };
 
-  // Approved Profiles List: Featured with Premium profiles in front
+  // Public Profiles List: Premium-Only Visibility (Free plan profiles are completely hidden from public listings)
   const approvedProfiles = useMemo(() => {
     return [...profiles]
-      .filter((p) => p.profile_status === 'APPROVED')
+      .filter((p) => p.profile_status === 'APPROVED' && Boolean(p.is_premium))
       .sort((a, b) => {
-        // Premium profiles featured prominently first
-        if (a.is_premium && !b.is_premium) return -1;
-        if (!a.is_premium && b.is_premium) return 1;
         return (new Date(b.created_at || '').getTime() || 0) - (new Date(a.created_at || '').getTime() || 0);
       });
   }, [profiles]);
@@ -1482,9 +1479,9 @@ export default function App() {
     });
   }, [approvedProfiles, searchQuery, filters]);
 
-  // Bookmarked Profiles
+  // Bookmarked Profiles: Only visible if active premium
   const shortlistedProfiles = useMemo(() => {
-    return profiles.filter((p) => bookmarks.includes(p.id));
+    return profiles.filter((p) => bookmarks.includes(p.id) && p.profile_status === 'APPROVED' && Boolean(p.is_premium));
   }, [profiles, bookmarks]);
 
   // Active Interests List
@@ -1673,28 +1670,48 @@ export default function App() {
               </div>
 
               {/* Grid with ONLY 6 Profiles */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {approvedProfiles.slice(0, 6).map((profile) => (
-                  <ProfileCard
-                    key={profile.id}
-                    profile={profile}
-                    onView={setSelectedProfile}
-                    onSendInterest={handleSendInterest}
-                    onCancelInterest={handleCancelInterest}
-                    isBookmarked={bookmarks.includes(profile.id)}
-                    onToggleBookmark={handleToggleBookmark}
-                    interestStatus={interestsMap[profile.id]}
-                    isUserPremium={effectiveIsPremium}
-                    onOpenPremium={() => setIsPremiumOpen(true)}
-                    currentUserGender={currentUserProfile?.gender}
-                    currentUserId={currentUserProfile?.id || currentUser?.id}
-                    currentUserMobile={currentUserProfile?.mobile}
-                    onOppositeGenderRequired={(genderNeeded) => {
-                      showToast(`Proposals can only be exchanged between opposite gender profiles (${genderNeeded}).`);
-                    }}
-                  />
-                ))}
-              </div>
+              {approvedProfiles.length === 0 ? (
+                <div className="bg-white rounded-3xl border border-[#eadfe4] p-10 text-center space-y-3 max-w-xl mx-auto shadow-xs">
+                  <Sparkles className="w-10 h-10 text-[#c9973e] mx-auto" />
+                  <h3 className="font-serif text-xl font-bold text-[#4b001f]">
+                    Premium Profiles Sanctuary
+                  </h3>
+                  <p className="text-xs text-stone-500 leading-relaxed">
+                    Only verified candidates with active Premium Plans are publicly featured and discoverable. Free plan accounts remain hidden from public listings until upgraded.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setIsPremiumOpen(true)}
+                    className="px-6 py-2.5 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold transition-colors cursor-pointer inline-flex items-center gap-2 shadow-2xs"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-[#c9973e]" />
+                    <span>Explore Premium Packages</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {approvedProfiles.slice(0, 6).map((profile) => (
+                    <ProfileCard
+                      key={profile.id}
+                      profile={profile}
+                      onView={setSelectedProfile}
+                      onSendInterest={handleSendInterest}
+                      onCancelInterest={handleCancelInterest}
+                      isBookmarked={bookmarks.includes(profile.id)}
+                      onToggleBookmark={handleToggleBookmark}
+                      interestStatus={interestsMap[profile.id]}
+                      isUserPremium={effectiveIsPremium}
+                      onOpenPremium={() => setIsPremiumOpen(true)}
+                      currentUserGender={currentUserProfile?.gender}
+                      currentUserId={currentUserProfile?.id || currentUser?.id}
+                      currentUserMobile={currentUserProfile?.mobile}
+                      onOppositeGenderRequired={(genderNeeded) => {
+                        showToast(`Proposals can only be exchanged between opposite gender profiles (${genderNeeded}).`);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
 
               {/* PROMINENT "VIEW MORE" BUTTON NAVIGATING TO PROFILES PAGE */}
               <div className="text-center pt-4">
@@ -1778,7 +1795,7 @@ export default function App() {
                 All Profiles
               </h2>
               <p className="text-xs text-stone-500 mt-0.5">
-                Showing all verified candidates. Total: {approvedProfiles.length} active profiles.
+                Showing verified active Premium candidates. Total: {approvedProfiles.length} active profiles.
               </p>
             </div>
 
@@ -1789,6 +1806,33 @@ export default function App() {
               ← Back to Home
             </button>
           </div>
+
+          {/* Free Plan Visibility Gating Notice */}
+          {!effectiveIsPremium && (
+            <div className="bg-gradient-to-r from-[#fff9fa] via-amber-50/50 to-[#fff2f7] border border-[#f3d3df] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-5 h-5 text-amber-700" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[#4b001f]">
+                    Free Plan Account — Public Visibility Gated
+                  </p>
+                  <p className="text-[11px] text-stone-500 mt-0.5">
+                    You can freely browse verified premium profiles. To feature and publish your own profile in search & listings, upgrade to a Premium Plan.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPremiumOpen(true)}
+                className="px-4 py-2 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold transition-colors shrink-0 shadow-2xs cursor-pointer flex items-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#c9973e]" />
+                <span>Upgrade to Premium</span>
+              </button>
+            </div>
+          )}
 
           {/* Premium Search Filter Strip */}
           <SearchFilter
@@ -1806,16 +1850,29 @@ export default function App() {
           {/* Profiles Grid */}
           {filteredProfiles.length === 0 ? (
             <div className="bg-white rounded-2xl border border-[#eadfe4] p-12 text-center space-y-3">
+              <Sparkles className="w-10 h-10 text-[#c9973e] mx-auto" />
               <h3 className="font-serif text-xl font-bold text-[#4b001f]">
-                No Profiles Found
+                No Premium Profiles Found
               </h3>
-              <p className="text-xs text-stone-500">Try changing your search terms or filters.</p>
-              <button
-                onClick={handleResetFilters}
-                className="px-4 py-2 rounded-xl bg-[#4b001f] text-white text-xs font-bold"
-              >
-                Reset Filters
-              </button>
+              <p className="text-xs text-stone-500">
+                {searchQuery || Object.values(filters).some(Boolean)
+                  ? 'Try changing your search terms or resetting filters.'
+                  : 'Only profiles with an active Premium subscription are publicly listed. Upgrade your account to feature your profile.'}
+              </p>
+              <div className="flex items-center justify-center gap-2 pt-2">
+                <button
+                  onClick={handleResetFilters}
+                  className="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Reset Filters
+                </button>
+                <button
+                  onClick={() => setIsPremiumOpen(true)}
+                  className="px-4 py-2 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Explore Premium Plans
+                </button>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">

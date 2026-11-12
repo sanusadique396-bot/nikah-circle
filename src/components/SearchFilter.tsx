@@ -269,16 +269,10 @@ export const SearchFilter: React.FC<Props> = ({
           <span>Verified Profiles Only</span>
         </label>
 
-        <label className="inline-flex items-center gap-2 cursor-pointer font-medium text-stone-700 select-none">
-          <input
-            type="checkbox"
-            checked={filters.premiumOnly}
-            onChange={(e) => onFilterChange({ ...filters, premiumOnly: e.target.checked })}
-            className="w-4 h-4 rounded text-[#c9973e] border-stone-300 focus:ring-[#c9973e]"
-          />
+        <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#855e10] bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
           <Sparkles className="w-3.5 h-3.5 text-[#c9973e]" />
-          <span>Premium Featured Profiles Only</span>
-        </label>
+          <span>Active Premium Directory</span>
+        </div>
       </div>
     </div>
   );
