@@ -281,13 +281,18 @@ export default function App() {
   const userMatchedProfile = useMemo(() => {
     const phone = currentUserProfile?.mobile ? currentUserProfile.mobile.replace(/\D/g, '').slice(-8) : '';
     const name = (currentUserProfile?.full_name || '').toLowerCase().trim();
-    if (!phone && !name) return null;
+    const email = (currentUserProfile?.email || currentUser?.email || '').toLowerCase().trim();
+    const id = currentUserProfile?.id || currentUser?.id;
+
+    if (!phone && !name && !email && !id) return null;
     return profiles.find(
       (p) =>
+        (id && p.id === id) ||
         (phone && p.mobile && p.mobile.replace(/\D/g, '').includes(phone)) ||
-        (name && p.full_name.toLowerCase().trim() === name)
+        (email && p.email && p.email.toLowerCase().trim() === email) ||
+        (name && p.full_name && p.full_name.toLowerCase().trim() === name)
     );
-  }, [currentUserProfile, profiles]);
+  }, [currentUserProfile, currentUser, profiles]);
 
   const effectiveIsPremium = useMemo(() => {
     try {
@@ -310,12 +315,23 @@ export default function App() {
     return effectiveIsPremium ? 'Premium Plan' : 'Free Plan';
   }, [userApprovedRequest, userMatchedProfile, userPlanName, effectiveIsPremium]);
 
-  const isUserApproved = useMemo(() => {
-    if (userApprovedRequest) return true;
-    if (userMatchedProfile?.profile_status === 'APPROVED') return true;
-    if (currentUserProfile?.is_approved) return true;
+  const isAdminApproved = useMemo(() => {
+    // 1. If matching profile exists in profiles database: its status MUST be 'APPROVED'
+    if (userMatchedProfile) {
+      return userMatchedProfile.profile_status === 'APPROVED';
+    }
+    // 2. If approved via an approved premium request by admin:
+    if (userApprovedRequest && userApprovedRequest.status === 'APPROVED') {
+      return true;
+    }
+    // 3. Fallback to currentUserProfile if explicitly marked approved and profile status is not pending:
+    if (currentUserProfile) {
+      return currentUserProfile.is_approved === true && currentUserProfile.profile_status === 'APPROVED';
+    }
     return false;
-  }, [userApprovedRequest, userMatchedProfile, currentUserProfile]);
+  }, [userMatchedProfile, userApprovedRequest, currentUserProfile]);
+
+  const isUserApproved = isAdminApproved;
 
   const effectiveMemberId = useMemo(() => {
     if (currentUserProfile?.member_id) return currentUserProfile.member_id;
@@ -790,12 +806,34 @@ export default function App() {
     });
   };
 
+  const handleOpenEditProfile = () => {
+    if (!isAdminApproved) {
+      showToast('Your profile is waiting for Admin Approval. Profile editing and uploads will be enabled once approved.');
+      return;
+    }
+    setIsEditingProfile(true);
+  };
+
+  const handleOpenPremium = () => {
+    if (!isAdminApproved) {
+      showToast('Your profile is waiting for Admin Approval. Premium plans can be activated once approved by admin.');
+      return;
+    }
+    setIsPremiumOpen(true);
+  };
+
   const handleSendInterest = async (profileId: string) => {
+    // Condition 0: Must be officially approved by Admin
+    if (!isAdminApproved) {
+      showToast('Your profile is waiting for Admin Approval. You can send proposals once approved by admin.');
+      return;
+    }
+
     // Condition 1: Must have active Premium Plan
     const hasPremium = effectiveIsPremium || localStorage.getItem('nikah_circle_user_is_premium') === 'true';
     if (!hasPremium) {
       showToast('Sending interest proposals requires an active Premium Plan. Please upgrade.');
-      setIsPremiumOpen(true);
+      handleOpenPremium();
       return;
     }
 
@@ -807,8 +845,10 @@ export default function App() {
     );
     if (!hasBiodata) {
       showToast('Please upload your biodata document before sending interest proposals.');
-      setIsPostPremiumBiodataUpload(true);
-      setIsEditingProfile(true);
+      if (isAdminApproved) {
+        setIsPostPremiumBiodataUpload(true);
+        setIsEditingProfile(true);
+      }
       return;
     }
 
@@ -994,10 +1034,16 @@ export default function App() {
 
     const normalizedGender = normalizeGender(data.gender);
 
+    const isApprovedStatus = existingIndex >= 0 ? profiles[existingIndex].profile_status === 'APPROVED' : false;
+    const profileStatus = existingIndex >= 0 ? profiles[existingIndex].profile_status : 'PENDING';
+    const isVerifiedStatus = existingIndex >= 0 ? profiles[existingIndex].is_verified : false;
+
     const updatedData: UserProfileData = {
       ...data,
       gender: normalizedGender,
       member_id: memberId,
+      is_approved: isApprovedStatus,
+      profile_status: profileStatus,
     };
     setCurrentUserProfile(updatedData);
     localStorage.setItem('nikah_circle_user_profile', JSON.stringify(updatedData));
@@ -1036,11 +1082,11 @@ export default function App() {
       biodata_document_name: data.biodata_document_name ?? null,
       biodata_document_url: data.biodata_document_url ?? null,
       registration_type: 'ONLINE',
-      profile_status: 'APPROVED',
-      is_verified: true,
-      is_premium: effectiveIsPremium,
-      premium_plan: effectivePlanName,
-      created_at: new Date().toISOString(),
+      profile_status: profileStatus,
+      is_verified: isVerifiedStatus,
+      is_premium: existingIndex >= 0 ? profiles[existingIndex].is_premium : effectiveIsPremium,
+      premium_plan: existingIndex >= 0 ? profiles[existingIndex].premium_plan : effectivePlanName,
+      created_at: existingIndex >= 0 ? profiles[existingIndex].created_at : new Date().toISOString(),
     };
 
     let updatedProfiles: Profile[];
@@ -1199,7 +1245,7 @@ export default function App() {
         ...currentUserProfile,
         is_premium: true,
         premium_plan: req.plan_name,
-        is_approved: true,
+        is_approved: isAdminApproved,
       };
       setCurrentUserProfile(updatedCup);
       localStorage.setItem('nikah_circle_user_profile', JSON.stringify(updatedCup));
@@ -1221,19 +1267,26 @@ export default function App() {
     setPayments(nextPayments);
     saveStoredPayments(nextPayments);
 
-    showToast('Alhamdulillah! Premium plan activated automatically!');
+    showToast('Alhamdulillah! Premium plan payment recorded!');
     confetti({
       particleCount: 80,
       spread: 70,
       origin: { y: 0.6 },
     });
 
-    // Requirement: Post-Premium Biodata Upload trigger
-    setTimeout(() => {
-      setIsPremiumOpen(false);
-      setIsPostPremiumBiodataUpload(true);
-      setIsEditingProfile(true);
-    }, 400);
+    // Requirement: Post-Premium Biodata Upload trigger ONLY IF profile is already admin approved
+    if (isAdminApproved) {
+      setTimeout(() => {
+        setIsPremiumOpen(false);
+        setIsPostPremiumBiodataUpload(true);
+        setIsEditingProfile(true);
+      }, 400);
+    } else {
+      setTimeout(() => {
+        setIsPremiumOpen(false);
+      }, 400);
+      showToast('Payment recorded! Profile is waiting for Admin Approval before biodata upload & proposals activate.');
+    }
 
     // 5. Sync directly to Supabase profiles, payments, and premium_requests tables
     try {
@@ -1735,6 +1788,29 @@ export default function App() {
     );
     setProfiles(updated);
     saveStoredProfiles(updated);
+
+    if (currentUserProfile) {
+      const uPhone = currentUserProfile.mobile ? currentUserProfile.mobile.replace(/\D/g, '').slice(-8) : '';
+      const uName = (currentUserProfile.full_name || '').toLowerCase().trim();
+      const approvedProf = updated.find((p) => p.id === id);
+      const aPhone = approvedProf?.mobile ? approvedProf.mobile.replace(/\D/g, '').slice(-8) : '';
+      const aName = (approvedProf?.full_name || '').toLowerCase().trim();
+
+      if (
+        id === currentUserProfile.id ||
+        (uPhone && aPhone && (uPhone.includes(aPhone) || aPhone.includes(uPhone))) ||
+        (uName && aName && uName === aName)
+      ) {
+        const updatedCup: UserProfileData = {
+          ...currentUserProfile,
+          is_approved: true,
+          profile_status: 'APPROVED',
+        };
+        setCurrentUserProfile(updatedCup);
+        localStorage.setItem('nikah_circle_user_profile', JSON.stringify(updatedCup));
+      }
+    }
+
     try {
       await supabase.from('profiles').update({ profile_status: 'APPROVED', is_verified: true }).eq('id', id);
     } catch {}
@@ -1747,6 +1823,29 @@ export default function App() {
     );
     setProfiles(updated);
     saveStoredProfiles(updated);
+
+    if (currentUserProfile) {
+      const uPhone = currentUserProfile.mobile ? currentUserProfile.mobile.replace(/\D/g, '').slice(-8) : '';
+      const uName = (currentUserProfile.full_name || '').toLowerCase().trim();
+      const rejectedProf = updated.find((p) => p.id === id);
+      const rPhone = rejectedProf?.mobile ? rejectedProf.mobile.replace(/\D/g, '').slice(-8) : '';
+      const rName = (rejectedProf?.full_name || '').toLowerCase().trim();
+
+      if (
+        id === currentUserProfile.id ||
+        (uPhone && rPhone && (uPhone.includes(rPhone) || rPhone.includes(uPhone))) ||
+        (uName && rName && uName === rName)
+      ) {
+        const updatedCup: UserProfileData = {
+          ...currentUserProfile,
+          is_approved: false,
+          profile_status: 'REJECTED',
+        };
+        setCurrentUserProfile(updatedCup);
+        localStorage.setItem('nikah_circle_user_profile', JSON.stringify(updatedCup));
+      }
+    }
+
     try {
       await supabase.from('profiles').update({ profile_status: 'REJECTED' }).eq('id', id);
     } catch {}
@@ -1944,22 +2043,61 @@ export default function App() {
         interestsActiveTab={interestsActiveTab}
         currentUser={currentUser}
         userProfile={currentUserProfile}
-        onEditProfile={() => setIsEditingProfile(true)}
+        onEditProfile={handleOpenEditProfile}
         isAdmin={isAdmin}
         onOpenLogin={(mode) => {
           setLoginMode(mode || 'member');
           setIsLoginOpen(true);
         }}
         onOpenRegister={handleOpenRegister}
-        onOpenPremium={() => setIsPremiumOpen(true)}
+        onOpenPremium={handleOpenPremium}
         onLogout={handleLogout}
         savedCount={bookmarks.length}
         interestsCount={Object.keys(interestsMap).length}
         receivedInterestsCount={incomingInterests.filter((i) => i.status === 'pending').length}
         isUserPremium={effectiveIsPremium}
-        isUserApproved={isUserApproved}
+        isUserApproved={isAdminApproved}
         currentPlanName={effectivePlanName}
       />
+
+      {/* Waiting for Admin Approval Status Banner */}
+      {currentUserProfile && !isAdminApproved && (
+        <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-amber-500/10 border-b border-amber-200/80">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+              <div className="flex items-start sm:items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-xs">
+                  ⏳
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-serif font-bold text-sm sm:text-base text-amber-950">
+                      Waiting for Admin Approval
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-900 border border-amber-300">
+                      Verification Pending
+                    </span>
+                    {effectiveMemberId && (
+                      <span className="font-mono text-[10px] font-bold bg-[#4b001f] text-white px-2 py-0.5 rounded">
+                        {effectiveMemberId}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-amber-900/90 mt-1 max-w-3xl leading-relaxed">
+                    Assalamu Alaikum <strong>{currentUserProfile.full_name}</strong>. Your profile has been submitted and is currently awaiting review by our administration. For safety and authenticity, profile editing, biodata document uploads, and sending proposal interests will be unlocked immediately once an admin approves your profile.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+                <span className="text-[11px] font-semibold text-amber-800 bg-white/80 px-3 py-1.5 rounded-xl border border-amber-200 shadow-2xs">
+                  Review in Progress
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* On-Screen Status Banner: Admin Approved & Premium Activated */}
       {adminApprovedBanner && (
@@ -1996,7 +2134,7 @@ export default function App() {
               <button
                 onClick={() => {
                   setPlanAlertBanner(null);
-                  setIsPremiumOpen(true);
+                  handleOpenPremium();
                 }}
                 className="px-3 py-1 rounded-lg bg-white text-[#4b001f] text-xs font-bold hover:bg-stone-100 cursor-pointer shadow-xs"
               >
@@ -2031,7 +2169,7 @@ export default function App() {
               const el = document.getElementById('featured-section');
               el?.scrollIntoView({ behavior: 'smooth' });
             }}
-            onExplorePremium={() => setIsPremiumOpen(true)}
+            onExplorePremium={handleOpenPremium}
             onRegisterClick={handleOpenRegister}
             memberId={effectiveMemberId}
           />
@@ -2063,7 +2201,7 @@ export default function App() {
                   </p>
                   <button
                     type="button"
-                    onClick={() => setIsPremiumOpen(true)}
+                    onClick={handleOpenPremium}
                     className="px-6 py-2.5 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold transition-colors cursor-pointer inline-flex items-center gap-2 shadow-2xs"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-[#c9973e]" />
@@ -2083,7 +2221,7 @@ export default function App() {
                       onToggleBookmark={handleToggleBookmark}
                       interestStatus={interestsMap[profile.id]}
                       isUserPremium={effectiveIsPremium}
-                      onOpenPremium={() => setIsPremiumOpen(true)}
+                      onOpenPremium={handleOpenPremium}
                       currentUserGender={currentUserProfile?.gender}
                       currentUserId={currentUserProfile?.id || currentUser?.id}
                       currentUserMobile={currentUserProfile?.mobile}
@@ -2207,7 +2345,7 @@ export default function App() {
               </div>
               <button
                 type="button"
-                onClick={() => setIsPremiumOpen(true)}
+                onClick={handleOpenPremium}
                 className="px-4 py-2 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold transition-colors shrink-0 shadow-2xs cursor-pointer flex items-center gap-1.5"
               >
                 <Sparkles className="w-3.5 h-3.5 text-[#c9973e]" />
@@ -2226,7 +2364,7 @@ export default function App() {
             totalCount={approvedProfiles.length}
             filteredCount={filteredProfiles.length}
             isUserPremium={effectiveIsPremium}
-            onOpenPremium={() => setIsPremiumOpen(true)}
+            onOpenPremium={handleOpenPremium}
           />
 
           {/* Profiles Grid */}
@@ -2249,7 +2387,7 @@ export default function App() {
                   Reset Filters
                 </button>
                 <button
-                  onClick={() => setIsPremiumOpen(true)}
+                  onClick={handleOpenPremium}
                   className="px-4 py-2 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold transition-colors cursor-pointer"
                 >
                   Explore Premium Plans
@@ -2269,7 +2407,7 @@ export default function App() {
                   onToggleBookmark={handleToggleBookmark}
                   interestStatus={interestsMap[profile.id]}
                   isUserPremium={effectiveIsPremium}
-                  onOpenPremium={() => setIsPremiumOpen(true)}
+                  onOpenPremium={handleOpenPremium}
                   currentUserGender={currentUserProfile?.gender}
                   currentUserId={currentUserProfile?.id || currentUser?.id}
                   currentUserMobile={currentUserProfile?.mobile}
@@ -2890,9 +3028,10 @@ export default function App() {
         onToggleBookmark={handleToggleBookmark}
         onOpenPremium={() => {
           setSelectedProfile(null);
-          setIsPremiumOpen(true);
+          handleOpenPremium();
         }}
         isUserPremium={effectiveIsPremium}
+        isAdminApproved={isAdminApproved}
         currentUserGender={currentUserProfile?.gender}
         currentUserMobile={currentUserProfile?.mobile}
       />
@@ -2903,10 +3042,11 @@ export default function App() {
         isMandatory={isCreateAccountOpen && !isEditingProfile}
         isEditing={isEditingProfile}
         initialData={currentUserProfile}
-        isApproved={isUserApproved}
+        isApproved={isAdminApproved}
+        isAdminApproved={isAdminApproved}
         isPremium={effectiveIsPremium}
         planName={effectivePlanName}
-        isPostPremium={isPostPremiumBiodataUpload}
+        isPostPremium={isPostPremiumBiodataUpload && isAdminApproved}
         onClose={() => {
           setIsCreateAccountOpen(false);
           setIsEditingProfile(false);
@@ -2944,7 +3084,7 @@ export default function App() {
         isUserPremium={effectiveIsPremium || isAdmin}
         onOpenPremium={() => {
           setIsRegisterOpen(false);
-          setIsPremiumOpen(true);
+          handleOpenPremium();
         }}
       />
 
@@ -2975,8 +3115,8 @@ export default function App() {
                 marital_status: 'Never Married',
                 location: 'Kerala',
                 registration_type: 'ONLINE',
-                profile_status: 'APPROVED',
-                is_verified: true,
+                profile_status: 'PENDING',
+                is_verified: false,
                 is_premium: false,
                 created_at: new Date().toISOString(),
               };
@@ -3021,7 +3161,7 @@ export default function App() {
             setIsLoginOpen(true);
           }
         }}
-        onOpenPremium={() => setIsPremiumOpen(true)}
+        onOpenPremium={handleOpenPremium}
         onOpenRegister={handleOpenRegister}
       />
     </div>

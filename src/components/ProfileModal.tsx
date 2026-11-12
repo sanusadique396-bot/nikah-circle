@@ -24,6 +24,7 @@ interface Props {
   onToggleBookmark: (profileId: string) => void;
   onOpenPremium: () => void;
   isUserPremium: boolean;
+  isAdminApproved?: boolean;
   currentUserGender?: 'Male' | 'Female' | null;
   currentUserMobile?: string | null;
 }
@@ -38,6 +39,7 @@ export const ProfileModal: React.FC<Props> = ({
   onToggleBookmark,
   onOpenPremium,
   isUserPremium,
+  isAdminApproved = true,
   currentUserGender,
   currentUserMobile,
 }) => {
@@ -163,6 +165,10 @@ export const ProfileModal: React.FC<Props> = ({
                 ) : (normUserGender && normProfileGender === normUserGender) ? (
                   <div className="px-5 py-2.5 rounded-xl bg-stone-100 text-stone-600 border border-stone-200 text-xs font-semibold text-center">
                     Proposals can only be exchanged between Groom and Bride profiles
+                  </div>
+                ) : !isAdminApproved ? (
+                  <div className="px-5 py-2.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200 text-xs font-semibold text-center flex items-center justify-center gap-2">
+                    <span>⏳ Waiting for Admin Approval to Send Proposals</span>
                   </div>
                 ) : (
                   <button

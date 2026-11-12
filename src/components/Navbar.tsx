@@ -158,7 +158,7 @@ export const Navbar: React.FC<Props> = ({
             >
               <Sparkles className={`w-3.5 h-3.5 ${isUserPremium ? 'text-white' : 'text-[#c9973e]'}`} />
               <span>{isUserPremium ? 'Premium Plan' : 'Free Plan'}</span>
-              {isUserPremium && (
+              {isUserApproved && (
                 <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold ml-1 shadow-2xs">
                   Admin Approved ✓
                 </span>
@@ -176,7 +176,7 @@ export const Navbar: React.FC<Props> = ({
                   type="button"
                   onClick={onEditProfile}
                   className="flex items-center gap-2 p-1 pl-1.5 pr-2.5 rounded-full border border-[#eadfe4] bg-white hover:bg-[#fff6fa] transition-all cursor-pointer shadow-2xs group"
-                  title="Click to view & edit your profile"
+                  title={isUserApproved ? "Click to view & edit your profile" : "Profile verification pending admin approval"}
                 >
                   <div className="w-8 h-8 rounded-full overflow-hidden bg-[#4b001f] text-white flex items-center justify-center font-bold text-xs shrink-0 border border-[#c9973e]/40 shadow-xs">
                     {userProfile.profile_photo ? (
@@ -193,12 +193,14 @@ export const Navbar: React.FC<Props> = ({
                     <span className="block text-xs font-bold text-stone-800 leading-none group-hover:text-[#4b001f] truncate max-w-[100px]">
                       {userProfile.full_name?.split(' ')[0] || 'User'}
                     </span>
-                    {isUserApproved || isUserPremium ? (
+                    {isUserApproved ? (
                       <span className="text-[10px] text-emerald-700 font-bold block leading-tight mt-0.5">
                         Admin Approved ✓
                       </span>
                     ) : (
-                      <span className="text-[10px] text-stone-500 block leading-tight mt-0.5">Edit Profile ✎</span>
+                      <span className="text-[10px] text-amber-700 font-bold block leading-tight mt-0.5">
+                        Waiting for Approval ⏳
+                      </span>
                     )}
                   </div>
                 </button>
@@ -327,7 +329,7 @@ export const Navbar: React.FC<Props> = ({
               <Sparkles className="w-4 h-4 text-[#c9973e]" />
               <span>Plan: {isUserPremium ? 'Premium Plan' : 'Free Plan'}</span>
             </div>
-            {isUserPremium && (
+            {isUserApproved && (
               <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-emerald-600 text-white shadow-2xs">
                 Admin Approved ✓
               </span>
