@@ -59,6 +59,9 @@ export const Navbar: React.FC<Props> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isInstallable, isIOS, install } = usePWAInstall();
 
+  // Show count if there is data in either sent or receive
+  const totalProposalsCount = (interestsCount || 0) + (receivedInterestsCount || 0);
+
   const handleInstallClick = async () => {
     if (isInstallable) {
       await install();
@@ -141,9 +144,13 @@ export const Navbar: React.FC<Props> = ({
             >
               <Inbox className="w-4 h-4 text-[#c9973e]" />
               <span>Proposals</span>
-              {receivedInterestsCount > 0 && (
-                <span className="bg-[#4b001f] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-2xs animate-pulse">
-                  {receivedInterestsCount} New
+              {totalProposalsCount > 0 && (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-2xs ${
+                  receivedInterestsCount > 0
+                    ? 'bg-emerald-600 text-white animate-pulse'
+                    : 'bg-[#4b001f] text-white'
+                }`}>
+                  {totalProposalsCount}
                 </span>
               )}
             </button>
@@ -300,9 +307,11 @@ export const Navbar: React.FC<Props> = ({
               <Inbox className="w-4 h-4 text-[#c9973e]" />
               <span>Proposals</span>
             </div>
-            {receivedInterestsCount > 0 && (
-              <span className="px-2 py-0.5 text-xs bg-[#4b001f] text-white rounded-full font-bold">
-                {receivedInterestsCount} New
+            {totalProposalsCount > 0 && (
+              <span className={`px-2 py-0.5 text-xs rounded-full font-bold ${
+                receivedInterestsCount > 0 ? 'bg-emerald-600 text-white animate-pulse' : 'bg-[#4b001f] text-white'
+              }`}>
+                {totalProposalsCount}
               </span>
             )}
           </button>

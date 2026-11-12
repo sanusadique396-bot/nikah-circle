@@ -229,45 +229,7 @@ export default function App() {
     saveStoredProposals(allProposals);
   }, [allProposals]);
 
-  // Incoming proposals received strictly for this user (Starts 100% BLANK [] on every new account)
-  const incomingInterests = useMemo(() => {
-    // If not logged in, or user has no registered profile yet, received tab is strictly blank []
-    if (!currentUserProfile && !currentUser) return [];
 
-    const userMemberId = currentUserProfile?.member_id || currentUser?.member_id;
-    const userId = currentUserProfile?.id || currentUser?.id;
-    const userPhoneNorm = currentUserProfile?.mobile ? currentUserProfile.mobile.replace(/\D/g, '').slice(-8) : '';
-    const userNameNorm = (currentUserProfile?.full_name || '').toLowerCase().trim();
-
-    return allProposals.filter((p) => {
-      if (!p) return false;
-      // Filter out any obsolete dummy records
-      if (p.id === 'inc-001' || p.id === 'inc-002') return false;
-      if (DUMMY_SENDER_NAMES.includes(p.sender_name)) return false;
-
-      // Do not deliver self-sent proposals to own received inbox
-      if (userId && p.sender_profile_id && p.sender_profile_id === userId) return false;
-      if (userMemberId && p.sender_member_id && p.sender_member_id.toUpperCase() === userMemberId.toUpperCase()) return false;
-
-      // 0. Member ID match (e.g. NCSM1001, NCSM1003) - primary exact link
-      if (userMemberId && p.recipient_member_id && p.recipient_member_id.toUpperCase() === userMemberId.toUpperCase()) {
-        return true;
-      }
-
-      // 1. Direct recipient profile ID match
-      if (userId && p.recipient_profile_id && p.recipient_profile_id === userId) return true;
-
-      // 2. Mobile number match (strictly at least 8 clean digits)
-      if (userPhoneNorm && userPhoneNorm.length >= 8 && p.recipient_mobile) {
-        const pPhoneNorm = p.recipient_mobile.replace(/\D/g, '').slice(-8);
-        if (pPhoneNorm && pPhoneNorm.length >= 8 && pPhoneNorm === userPhoneNorm) {
-          return true;
-        }
-      }
-
-      return false;
-    });
-  }, [allProposals, currentUserProfile, currentUser]);
 
   const [interestsActiveTab, setInterestsActiveTab] = useState<'received' | 'sent'>('received');
 
@@ -396,6 +358,116 @@ export default function App() {
 
     return '';
   }, [currentUserProfile, currentUser, userMatchedProfile, profiles]);
+
+  // Auto-sync currentUserProfile from userMatchedProfile if available to ensure correct member_id, mobile, and id binding
+  useEffect(() => {
+    if (userMatchedProfile && (!currentUserProfile || !currentUserProfile.member_id || currentUserProfile.id !== userMatchedProfile.id)) {
+      const synced: UserProfileData = {
+        id: userMatchedProfile.id,
+        member_id: userMatchedProfile.member_id,
+        full_name: userMatchedProfile.full_name,
+        email: userMatchedProfile.email || currentUser?.email || '',
+        mobile: userMatchedProfile.mobile || '',
+        gender: userMatchedProfile.gender,
+        date_of_birth: userMatchedProfile.date_of_birth || '2000-01-01',
+        place: userMatchedProfile.place || 'Kerala',
+        district: userMatchedProfile.district || 'Kozhikode',
+        state: userMatchedProfile.state || 'Kerala',
+        marital_status: userMatchedProfile.marital_status || 'Never Married',
+        education: userMatchedProfile.education || 'Graduate',
+        profession: userMatchedProfile.profession || 'Professional',
+        guardian_name: userMatchedProfile.guardian_name || 'Family Guardian',
+        guardian_mobile: userMatchedProfile.guardian_mobile || userMatchedProfile.mobile || undefined,
+        hobbies: Array.isArray(userMatchedProfile.hobbies) ? userMatchedProfile.hobbies.join(', ') : (userMatchedProfile.hobbies || ''),
+        interests: Array.isArray(userMatchedProfile.interests) ? userMatchedProfile.interests.join(', ') : (userMatchedProfile.interests || ''),
+        biodata_uploaded: userMatchedProfile.biodata_uploaded,
+        biodata_document_name: userMatchedProfile.biodata_document_name || undefined,
+        biodata_document_url: userMatchedProfile.biodata_document_url || undefined,
+        is_premium: userMatchedProfile.is_premium,
+        premium_plan: userMatchedProfile.premium_plan || undefined,
+      };
+      setCurrentUserProfile(synced);
+      try {
+        localStorage.setItem('nikah_circle_user_profile', JSON.stringify(synced));
+      } catch {}
+    }
+  }, [userMatchedProfile]);
+
+  // Incoming proposals received strictly for this user (Matches across profile ID, Member ID, phone, email, and name)
+  const incomingInterests = useMemo(() => {
+    // If not logged in, or user has no registered profile yet, received tab is strictly blank []
+    if (!currentUserProfile && !currentUser && !userMatchedProfile) return [];
+
+    // Gather all possible identifiers for the active user
+    const validIds = new Set<string>();
+    if (currentUserProfile?.id) validIds.add(currentUserProfile.id);
+    if (currentUser?.id) validIds.add(currentUser.id);
+    if (userMatchedProfile?.id) validIds.add(userMatchedProfile.id);
+
+    const validMemberIds = new Set<string>();
+    if (currentUserProfile?.member_id) validMemberIds.add(currentUserProfile.member_id.toUpperCase());
+    if (currentUser?.member_id) validMemberIds.add(currentUser.member_id.toUpperCase());
+    if (userMatchedProfile?.member_id) validMemberIds.add(userMatchedProfile.member_id.toUpperCase());
+    if (effectiveMemberId) validMemberIds.add(effectiveMemberId.toUpperCase());
+
+    const validEmails = new Set<string>();
+    if (currentUserProfile?.email) validEmails.add(currentUserProfile.email.toLowerCase().trim());
+    if (currentUser?.email) validEmails.add(currentUser.email.toLowerCase().trim());
+    if (userMatchedProfile?.email) validEmails.add(userMatchedProfile.email.toLowerCase().trim());
+
+    const validPhones = new Set<string>();
+    const cleanPhone = (num?: string | null) => (num ? num.replace(/\D/g, '').slice(-8) : '');
+    const p1 = cleanPhone(currentUserProfile?.mobile);
+    const p2 = cleanPhone(userMatchedProfile?.mobile);
+    const p3 = cleanPhone(userMatchedProfile?.guardian_mobile);
+    if (p1 && p1.length >= 7) validPhones.add(p1);
+    if (p2 && p2.length >= 7) validPhones.add(p2);
+    if (p3 && p3.length >= 7) validPhones.add(p3);
+
+    const validNames = new Set<string>();
+    if (currentUserProfile?.full_name) validNames.add(currentUserProfile.full_name.toLowerCase().trim());
+    if (userMatchedProfile?.full_name) validNames.add(userMatchedProfile.full_name.toLowerCase().trim());
+
+    return allProposals.filter((p) => {
+      if (!p) return false;
+      // Filter out any obsolete dummy records
+      if (p.id === 'inc-001' || p.id === 'inc-002') return false;
+      if (DUMMY_SENDER_NAMES.includes(p.sender_name)) return false;
+
+      // Do not deliver self-sent proposals to own received inbox
+      if (p.sender_profile_id && validIds.has(p.sender_profile_id)) return false;
+      if (p.sender_member_id && validMemberIds.has(p.sender_member_id.toUpperCase())) return false;
+      if (p.sender_email && validEmails.has(p.sender_email.toLowerCase().trim())) return false;
+
+      // 1. Direct recipient profile ID match
+      if (p.recipient_profile_id && validIds.has(p.recipient_profile_id)) return true;
+
+      // 2. Member ID match (e.g. NCSM1001, NCSM1002, NCSM1003) - primary exact link
+      if (p.recipient_member_id && validMemberIds.has(p.recipient_member_id.toUpperCase())) {
+        return true;
+      }
+
+      // 3. Email match
+      if (p.recipient_email && validEmails.has(p.recipient_email.toLowerCase().trim())) {
+        return true;
+      }
+
+      // 4. Mobile number match (at least 7-8 digits)
+      if (p.recipient_mobile) {
+        const targetClean = cleanPhone(p.recipient_mobile);
+        if (targetClean && validPhones.has(targetClean)) {
+          return true;
+        }
+      }
+
+      // 5. Name match fallback
+      if (p.recipient_name && validNames.has(p.recipient_name.toLowerCase().trim())) {
+        return true;
+      }
+
+      return false;
+    });
+  }, [allProposals, currentUserProfile, currentUser, userMatchedProfile, effectiveMemberId]);
 
   useEffect(() => {
     localStorage.setItem('nikah_circle_user_is_premium', String(effectiveIsPremium));
@@ -960,21 +1032,26 @@ export default function App() {
     saveStoredUserSentInterests(currentUserKey, updatedMap);
 
     // 2. Deliver proposal into persistent proposals registry targeting the recipient
-    const senderName = currentUserProfile?.full_name || currentUser?.email?.split('@')[0] || 'Premium Member';
-    const senderAge = currentUserProfile?.age || (currentUserProfile?.date_of_birth ? Math.max(18, new Date().getFullYear() - new Date(currentUserProfile.date_of_birth).getFullYear()) : 25);
+    const senderName = currentUserProfile?.full_name || userMatchedProfile?.full_name || currentUser?.email?.split('@')[0] || 'Premium Member';
+    const senderAge = currentUserProfile?.age || userMatchedProfile?.age || (currentUserProfile?.date_of_birth ? Math.max(18, new Date().getFullYear() - new Date(currentUserProfile.date_of_birth).getFullYear()) : 25);
     const senderGender: 'Male' | 'Female' = userGender || (targetGender === 'Female' ? 'Male' : 'Female');
-    const senderLocation = currentUserProfile?.location || (currentUserProfile?.place ? `${currentUserProfile.place}, ${currentUserProfile.district}` : 'Kerala');
-    const senderEducation = currentUserProfile?.education || 'Graduate';
-    const senderProfession = currentUserProfile?.profession || 'Professional';
-    const senderGuardianName = currentUserProfile?.guardian_name || `${senderName}'s Guardian`;
-    const senderGuardianPhone = currentUserProfile?.guardian_mobile || currentUserProfile?.mobile || '+91 90000 00000';
-    const senderMemberId = currentUserProfile?.member_id || effectiveMemberId || 'Member';
+    const senderLocation = currentUserProfile?.location || userMatchedProfile?.location || (currentUserProfile?.place ? `${currentUserProfile.place}, ${currentUserProfile.district}` : 'Kerala');
+    const senderEducation = currentUserProfile?.education || userMatchedProfile?.education || 'Graduate';
+    const senderProfession = currentUserProfile?.profession || userMatchedProfile?.profession || 'Professional';
+    const senderGuardianName = currentUserProfile?.guardian_name || userMatchedProfile?.guardian_name || `${senderName}'s Guardian`;
+    const senderGuardianPhone = currentUserProfile?.guardian_mobile || currentUserProfile?.mobile || userMatchedProfile?.guardian_mobile || userMatchedProfile?.mobile || '+91 90000 00000';
+    const senderMemberId = currentUserProfile?.member_id || userMatchedProfile?.member_id || effectiveMemberId || 'Member';
+    const senderEmail = (currentUserProfile?.email || userMatchedProfile?.email || currentUser?.email || '').toLowerCase().trim();
+
     const recipientMemberId = targetProfile.member_id || (targetProfile.id?.startsWith('NCSM') ? targetProfile.id : targetProfile.id);
+    const recipientEmail = (targetProfile.email || '').toLowerCase().trim();
+    const recipientPhone = targetProfile.mobile || targetProfile.guardian_mobile || undefined;
 
     const newProposal: IncomingInterest = {
       id: `prop-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-      sender_profile_id: currentUserProfile?.id || currentUser?.id || `usr-${Date.now()}`,
+      sender_profile_id: currentUserProfile?.id || userMatchedProfile?.id || currentUser?.id || `usr-${Date.now()}`,
       sender_member_id: senderMemberId,
+      sender_email: senderEmail,
       sender_name: senderName,
       sender_age: senderAge,
       sender_gender: senderGender,
@@ -989,8 +1066,9 @@ export default function App() {
       notes: `Assalamu Alaikum. ${senderName} (${senderMemberId}) expressed matrimonial proposal interest with ${targetProfile.full_name} (${recipientMemberId}).`,
       recipient_profile_id: targetProfile.id,
       recipient_member_id: recipientMemberId,
+      recipient_email: recipientEmail,
       recipient_name: targetProfile.full_name,
-      recipient_mobile: targetProfile.mobile || targetProfile.guardian_mobile || undefined,
+      recipient_mobile: recipientPhone,
     };
 
     const updatedAllProposals = [
@@ -998,8 +1076,8 @@ export default function App() {
       ...allProposals.filter(
         (p) =>
           !(
-            p.recipient_profile_id === targetProfile.id &&
-            p.sender_profile_id === (currentUserProfile?.id || currentUser?.id)
+            (p.recipient_profile_id === targetProfile.id || (recipientMemberId && p.recipient_member_id === recipientMemberId) || (recipientEmail && p.recipient_email === recipientEmail)) &&
+            (p.sender_profile_id === (currentUserProfile?.id || userMatchedProfile?.id || currentUser?.id) || (senderMemberId && p.sender_member_id === senderMemberId))
           )
       ),
     ];
@@ -2325,8 +2403,11 @@ export default function App() {
             if (tab) {
               setInterestsActiveTab(tab);
             } else if (view === 'interests') {
-              const pendingCount = incomingInterests.filter((i) => i.status === 'pending').length;
-              if (pendingCount > 0) {
+              if (incomingInterests.length > 0) {
+                setInterestsActiveTab('received');
+              } else if (Object.keys(interestsMap).length > 0) {
+                setInterestsActiveTab('sent');
+              } else {
                 setInterestsActiveTab('received');
               }
             }
@@ -2346,7 +2427,7 @@ export default function App() {
         onLogout={handleLogout}
         savedCount={bookmarks.length}
         interestsCount={Object.keys(interestsMap).length}
-        receivedInterestsCount={incomingInterests.filter((i) => i.status === 'pending').length}
+        receivedInterestsCount={incomingInterests.length}
         isUserPremium={effectiveIsPremium}
         isUserApproved={isAdminApproved}
         currentPlanName={effectivePlanName}
@@ -3425,50 +3506,107 @@ export default function App() {
           localStorage.setItem('nikah_circle_is_admin', String(isAdminUser));
           setIsLoginOpen(false);
 
-          // If a new regular user logs in and does not have a profile, register base account
-          if (!isAdminUser && user.email && user.email.toLowerCase() !== 'nikahcircle01@gmail.com') {
-            const hasExisting = profiles.some(
-              (p) => p.email && p.email.toLowerCase() === user.email.toLowerCase()
-            );
-            if (!hasExisting) {
-              const newMemberId = getNextMemberId(profiles);
-              const updatedUser = { ...user, member_id: newMemberId };
-              setCurrentUser(updatedUser);
-              localStorage.setItem('nikah_circle_user', JSON.stringify(updatedUser));
-              const autoProfile: Profile = {
-                id: `usr-${Date.now().toString().slice(-6)}`,
-                member_id: newMemberId,
-                full_name: user.email.split('@')[0],
-                email: user.email,
-                mobile: '',
-                gender: normalizeGender(currentUserProfile?.gender || 'Male'),
-                marital_status: 'Never Married',
-                location: 'Kerala',
-                registration_type: 'ONLINE',
-                profile_status: 'PENDING',
-                is_verified: false,
-                is_premium: false,
-                created_at: new Date().toISOString(),
-              };
-              const updated = deduplicateProfiles([autoProfile, ...profiles]);
-              setProfiles(updated);
-              saveStoredProfiles(updated);
+          // Check if user already has an existing profile in profiles
+          const existing = profiles.find(
+            (p) =>
+              (p.email && user.email && p.email.toLowerCase().trim() === user.email.toLowerCase().trim()) ||
+              (p.id && user.id && p.id === user.id)
+          );
+
+          if (existing) {
+            const userProfData: UserProfileData = {
+              id: existing.id,
+              member_id: existing.member_id,
+              full_name: existing.full_name,
+              email: existing.email || user.email,
+              mobile: existing.mobile || '',
+              gender: existing.gender,
+              date_of_birth: existing.date_of_birth || '2000-01-01',
+              place: existing.place || 'Kerala',
+              district: existing.district || 'Kozhikode',
+              state: existing.state || 'Kerala',
+              marital_status: existing.marital_status || 'Never Married',
+              education: existing.education || 'Graduate',
+              profession: existing.profession || 'Professional',
+              guardian_name: existing.guardian_name || 'Family Guardian',
+              guardian_mobile: existing.guardian_mobile || existing.mobile || undefined,
+              hobbies: Array.isArray(existing.hobbies) ? existing.hobbies.join(', ') : (existing.hobbies || ''),
+              interests: Array.isArray(existing.interests) ? existing.interests.join(', ') : (existing.interests || ''),
+              biodata_uploaded: existing.biodata_uploaded,
+              biodata_document_name: existing.biodata_document_name || undefined,
+              biodata_document_url: existing.biodata_document_url || undefined,
+              is_premium: existing.is_premium,
+              premium_plan: existing.premium_plan || undefined,
+            };
+            setCurrentUserProfile(userProfData);
+            try {
+              localStorage.setItem('nikah_circle_user_profile', JSON.stringify(userProfData));
+            } catch {}
+          } else if (!isAdminUser && user.email && user.email.toLowerCase() !== 'nikahcircle01@gmail.com') {
+            const newMemberId = getNextMemberId(profiles);
+            const updatedUser = { ...user, member_id: newMemberId };
+            setCurrentUser(updatedUser);
+            localStorage.setItem('nikah_circle_user', JSON.stringify(updatedUser));
+            const autoProfile: Profile = {
+              id: `usr-${Date.now().toString().slice(-6)}`,
+              member_id: newMemberId,
+              full_name: user.email.split('@')[0],
+              email: user.email,
+              mobile: '',
+              gender: normalizeGender(currentUserProfile?.gender || 'Male'),
+              marital_status: 'Never Married',
+              location: 'Kerala',
+              registration_type: 'ONLINE',
+              profile_status: 'PENDING',
+              is_verified: false,
+              is_premium: false,
+              created_at: new Date().toISOString(),
+            };
+            const updated = deduplicateProfiles([autoProfile, ...profiles]);
+            setProfiles(updated);
+            saveStoredProfiles(updated);
+
+            const autoProfData: UserProfileData = {
+              id: autoProfile.id,
+              member_id: autoProfile.member_id,
+              full_name: autoProfile.full_name,
+              email: autoProfile.email || user.email,
+              mobile: '',
+              gender: autoProfile.gender,
+              date_of_birth: '2000-01-01',
+              place: 'Kerala',
+              district: 'Kozhikode',
+              state: 'Kerala',
+              marital_status: 'Never Married',
+              education: 'Graduate',
+              profession: 'Professional',
+              guardian_name: 'Family Guardian',
+              guardian_mobile: '',
+              hobbies: '',
+              interests: '',
+              biodata_uploaded: false,
+              is_premium: false,
+              premium_plan: 'Free Plan',
+            };
+            setCurrentUserProfile(autoProfData);
+            try {
+              localStorage.setItem('nikah_circle_user_profile', JSON.stringify(autoProfData));
+            } catch {}
 
               try {
-                const payload = prepareSupabaseProfilePayload(autoProfile);
-                supabase
-                  .from('profiles')
-                  .insert(payload)
-                  .select()
-                  .single()
-                  .then(({ data: createdDb }) => {
-                    if (createdDb?.id) {
-                      autoProfile.id = createdDb.id;
-                    }
-                  });
-              } catch (e) {
-                console.warn('Auto profile register error', e);
-              }
+              const payload = prepareSupabaseProfilePayload(autoProfile);
+              supabase
+                .from('profiles')
+                .insert(payload)
+                .select()
+                .single()
+                .then(({ data: createdDb }) => {
+                  if (createdDb?.id) {
+                    autoProfile.id = createdDb.id;
+                  }
+                });
+            } catch (e) {
+              console.warn('Auto profile register error', e);
             }
           }
 

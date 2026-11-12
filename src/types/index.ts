@@ -113,7 +113,9 @@ export interface IncomingInterest {
   recipient_mobile?: string;
   recipient_name?: string;
   sender_member_id?: string;
+  sender_email?: string;
   recipient_member_id?: string;
+  recipient_email?: string;
 }
 
 export interface SearchFilters {
