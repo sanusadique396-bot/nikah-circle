@@ -35,11 +35,21 @@ export function deduplicateProfiles(inputProfiles: Profile[]): Profile[] {
 
     const existingIdx = result.findIndex((existing) => {
       if (pId && existing.id && pId === existing.id) return true;
-      if (pMemberId && existing.member_id && pMemberId === existing.member_id.trim().toUpperCase()) return true;
       if (pEmail && existing.email && pEmail === existing.email.toLowerCase().trim()) return true;
       const exMobile = existing.mobile ? existing.mobile.replace(/\D/g, '').slice(-8) : '';
       if (pMobile && exMobile && pMobile.length >= 7 && pMobile === exMobile) return true;
       if (pName && existing.full_name && pName.length >= 3 && pName === existing.full_name.toLowerCase().trim() && (pMobile === exMobile || (pEmail && pEmail === (existing.email || '').toLowerCase().trim()))) return true;
+      // Never match purely by member_id unless name, phone or email also matches
+      if (
+        pMemberId &&
+        existing.member_id &&
+        pMemberId === existing.member_id.trim().toUpperCase() &&
+        (pName === (existing.full_name || '').toLowerCase().trim() ||
+          (pMobile && exMobile && pMobile === exMobile) ||
+          (pEmail && pEmail === (existing.email || '').toLowerCase().trim()))
+      ) {
+        return true;
+      }
       return false;
     });
 
@@ -53,6 +63,8 @@ export function deduplicateProfiles(inputProfiles: Profile[]): Profile[] {
         bestMemberId = 'NCSM1002';
       } else if (pEmail === 'sanusadique396@gmail.com' || (pMobile && pMobile.endsWith('43549396'))) {
         bestMemberId = 'NCSM1001';
+      } else if (bestMemberId === 'NCSM1001' || bestMemberId === 'NCSM1002') {
+        bestMemberId = '';
       }
 
       const isPrem = Boolean(existing.is_premium || prof.is_premium);
@@ -94,13 +106,80 @@ export function deduplicateProfiles(inputProfiles: Profile[]): Profile[] {
   return result;
 }
 
+// Guaranteed unique, sequential Member ID normalization & collision resolver
+export function ensureUniqueSequentialMemberIds(profiles: Profile[]): Profile[] {
+  if (!Array.isArray(profiles) || profiles.length === 0) return [];
+
+  const assigned = new Map<string, string>(); // member_id -> unique profile key
+  let maxNumber = 1002;
+
+  // Step 1: Permanently bind canonical accounts & retain valid unique IDs >= 1003
+  const processed = profiles.map((p) => {
+    const email = (p.email || '').toLowerCase().trim();
+    const phone = (p.mobile || '').replace(/\D/g, '').slice(-8);
+
+    const isNoushida = email === 'sanusadique396@gmail.com' || (phone.length >= 7 && phone.endsWith('43549396'));
+    const isSadiq = email === 'nikahcircle01@gmail.com' || (phone.length >= 7 && phone.endsWith('44905093'));
+
+    if (isNoushida) {
+      assigned.set('NCSM1001', p.id || email);
+      return { ...p, member_id: 'NCSM1001' };
+    }
+    if (isSadiq) {
+      assigned.set('NCSM1002', p.id || email);
+      return { ...p, member_id: 'NCSM1002' };
+    }
+
+    // For any other profile: if it mistakenly has NCSM1001 or NCSM1002, CLEAR IT!
+    let currentId = p.member_id || '';
+    if (currentId === 'NCSM1001' || currentId === 'NCSM1002') {
+      currentId = '';
+    }
+
+    const num = extractMemberIdNumber(currentId);
+    // If it has a valid number >= 1003 that hasn't been claimed yet
+    if (num && num >= 1003 && !assigned.has(`NCSM${num}`)) {
+      assigned.set(`NCSM${num}`, p.id || email || phone || p.full_name);
+      if (num > maxNumber) maxNumber = num;
+      return { ...p, member_id: `NCSM${num}` };
+    }
+
+    // Needs a new or re-assigned unique sequential ID
+    return { ...p, member_id: '' };
+  });
+
+  // Step 2: Assign sequential unique IDs starting from NCSM1003 to any profiles needing one
+  let nextSeq = 1003;
+  const finalized = processed.map((p) => {
+    if (p.member_id && assigned.has(p.member_id)) {
+      return p;
+    }
+    while (assigned.has(`NCSM${nextSeq}`)) {
+      nextSeq++;
+    }
+    const newId = `NCSM${nextSeq}`;
+    assigned.set(newId, p.id || p.email || p.full_name);
+    if (nextSeq > maxNumber) maxNumber = nextSeq;
+    nextSeq++;
+    return { ...p, member_id: newId };
+  });
+
+  // Step 3: Persist the highest sequence counter into localStorage
+  try {
+    localStorage.setItem(MEMBER_ID_SEQ_KEY, Math.max(1002, maxNumber).toString());
+  } catch {}
+
+  return finalized;
+}
+
 export function getStoredProfiles(): Profile[] {
   try {
     const raw = localStorage.getItem(PROFILES_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        return deduplicateProfiles(parsed.map((p) => autoCorrectMistakenGenders(p)));
+        const cleaned = deduplicateProfiles(parsed.map((p) => autoCorrectMistakenGenders(p)));
+        return ensureUniqueSequentialMemberIds(cleaned);
       }
     }
   } catch (e) {
@@ -112,7 +191,8 @@ export function getStoredProfiles(): Profile[] {
 export function saveStoredProfiles(profiles: Profile[]) {
   try {
     const deduped = deduplicateProfiles(profiles);
-    localStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(deduped));
+    const uniqueIds = ensureUniqueSequentialMemberIds(deduped);
+    localStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(uniqueIds));
   } catch (e) {
     console.warn("Could not persist local profiles", e);
   }
@@ -307,6 +387,17 @@ export function getHighestExistingMemberNumber(
     }
   } catch {}
 
+  // 4. Check sequence counter storage key
+  try {
+    const seqRaw =
+      localStorage.getItem(MEMBER_ID_SEQ_KEY) ||
+      localStorage.getItem('nikah_circle_member_id_seq_v4');
+    if (seqRaw) {
+      const num = parseInt(seqRaw, 10);
+      if (!isNaN(num) && num > highest) highest = num;
+    }
+  } catch {}
+
   return highest;
 }
 
@@ -447,16 +538,18 @@ export function parseSupabaseProfile(p: any, defaultIndex?: number): Profile {
   // Permanent canonical binding for established accounts
   const emailNorm = (p.email || '').toLowerCase().trim();
   const phoneNorm = p.mobile ? p.mobile.replace(/\D/g, '').slice(-8) : '';
-  let memberId = 'NCSM1003';
+  let memberId = '';
 
   if (emailNorm === 'nikahcircle01@gmail.com' || phoneNorm.endsWith('44905093')) {
     memberId = 'NCSM1002';
   } else if (emailNorm === 'sanusadique396@gmail.com' || phoneNorm.endsWith('43549396')) {
     memberId = 'NCSM1001';
-  } else if (parsedNum) {
+  } else if (parsedNum && parsedNum >= 1003) {
     memberId = `NCSM${parsedNum}`;
   } else if (typeof defaultIndex === 'number') {
     memberId = `NCSM${1003 + defaultIndex}`;
+  } else {
+    memberId = '';
   }
 
   return autoCorrectMistakenGenders({

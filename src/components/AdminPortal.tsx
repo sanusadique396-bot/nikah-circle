@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { Profile, Payment, PremiumRequest, normalizeGender } from '../types';
-import { deduplicateProfiles } from '../lib/supabase';
+import { deduplicateProfiles, ensureUniqueSequentialMemberIds } from '../lib/supabase';
 import {
   LayoutDashboard,
   Users,
@@ -115,7 +115,7 @@ export const AdminPortal: React.FC<Props> = ({
   adminEmail,
   onRefreshData,
 }) => {
-  const profiles = useMemo(() => deduplicateProfiles(rawProfiles), [rawProfiles]);
+  const profiles = useMemo(() => ensureUniqueSequentialMemberIds(deduplicateProfiles(rawProfiles)), [rawProfiles]);
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -782,7 +782,7 @@ export const AdminPortal: React.FC<Props> = ({
                           <td className="p-3">
                             <div className="flex items-center gap-2.5">
                               <span className="font-mono text-[11px] font-bold bg-[#4b001f] text-white px-2 py-0.5 rounded shadow-2xs">
-                                {p.member_id || (p.id?.startsWith('NCSM') ? p.id : 'NCSM1001')}
+                                {p.member_id || (p.id?.startsWith('NCSM') ? p.id : 'Member')}
                               </span>
                               <div>
                                 <span className="font-bold text-stone-900 group-hover:text-[#4b001f] transition-colors">
@@ -1060,7 +1060,7 @@ export const AdminPortal: React.FC<Props> = ({
                         </tr>
                       ) : (
                         biodataProfilesList.map((p) => {
-                          const displayMemberId = p.member_id || (p.id?.startsWith('NCSM') ? p.id : 'NCSM1001');
+                          const displayMemberId = p.member_id || (p.id?.startsWith('NCSM') ? p.id : 'Member');
                           const hasFile = Boolean(p.biodata_uploaded || p.biodata_document_name || p.biodata_document_url);
 
                           return (
@@ -1454,7 +1454,7 @@ export const AdminPortal: React.FC<Props> = ({
                         </tr>
                       ) : (
                         filtered.map((p) => {
-                          const displayMemberId = p.member_id || (p.id?.startsWith('NCSM') ? p.id : 'NCSM1001');
+                          const displayMemberId = p.member_id || (p.id?.startsWith('NCSM') ? p.id : 'Member');
                           return (
                             <tr
                               key={p.id}
@@ -2533,7 +2533,7 @@ export const AdminPortal: React.FC<Props> = ({
 
       {/* View Full Biodata & Member Details Modal */}
       {viewingProfile && (() => {
-        const displayMemberId = viewingProfile.member_id || (viewingProfile.id?.startsWith('NCSM') ? viewingProfile.id : 'NCSM1001');
+        const displayMemberId = viewingProfile.member_id || (viewingProfile.id?.startsWith('NCSM') ? viewingProfile.id : 'Member');
         const guardianPhoneClean = (viewingProfile.guardian_mobile || viewingProfile.mobile || '').replace(/\D/g, '');
 
         return (

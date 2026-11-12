@@ -369,7 +369,7 @@ export const BiodataWizardModal: React.FC<Props> = ({
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-mono text-xs font-bold bg-[#c9973e] text-[#350016] px-2.5 py-0.5 rounded-md shadow-xs">
-                  {userMemberId || 'NCSM1001'}
+                  {userMemberId || 'Member'}
                 </span>
                 <span className="text-[11px] font-extrabold bg-white/20 text-white px-2 py-0.5 rounded-full backdrop-blur-xs flex items-center gap-1">
                   <Sparkles className="w-3 h-3 text-amber-300 fill-amber-300" />

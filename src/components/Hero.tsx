@@ -104,7 +104,7 @@ export const Hero: React.FC<Props> = ({
               {/* Top-Left: Unique Member ID Badge */}
               <div className="absolute -top-3.5 left-3 sm:left-4 bg-[#4b001f] text-white py-1.5 px-3.5 rounded-xl border border-amber-400/50 shadow-md text-xs font-mono font-bold flex items-center gap-2 z-20 animate-fade-in tracking-wider">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>{memberId || 'NCSM1001'}</span>
+                <span>{memberId || 'Nikah Circle'}</span>
               </div>
 
               {/* Top-Right: Plan Badge (Strictly Free Plan or Premium Plan) */}
