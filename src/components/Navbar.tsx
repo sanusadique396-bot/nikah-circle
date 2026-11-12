@@ -148,28 +148,22 @@ export const Navbar: React.FC<Props> = ({
               ) : null}
             </button>
 
-            {/* Prominent Plan Button at Top Navbar (Free Plan or Premium Plan) */}
-            <button
-              onClick={onOpenPremium}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-2xs ${
+            {/* Static Non-Clickable Plan Display Badge */}
+            <div
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold select-none pointer-events-none shadow-2xs ${
                 isUserPremium
-                  ? 'bg-gradient-to-r from-amber-500 via-[#c9973e] to-amber-600 text-white border border-amber-300 hover:shadow-sm'
-                  : 'bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-200'
+                  ? 'bg-gradient-to-r from-amber-500 via-[#c9973e] to-amber-600 text-white border border-amber-300'
+                  : 'bg-stone-100 text-stone-700 border border-stone-200'
               }`}
-              title={isUserPremium ? 'Active Premium Plan - Click to manage' : 'Current: Free Plan - Click to upgrade'}
             >
               <Sparkles className={`w-3.5 h-3.5 ${isUserPremium ? 'text-white' : 'text-[#c9973e]'}`} />
-              <span>{isUserPremium ? (currentPlanName || 'Premium Plan') : 'Free Plan'}</span>
-              {isUserPremium ? (
+              <span>{isUserPremium ? 'Premium Plan' : 'Free Plan'}</span>
+              {isUserPremium && (
                 <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold ml-1 shadow-2xs">
                   Admin Approved ✓
                 </span>
-              ) : (
-                <span className="text-[10px] bg-[#4b001f] text-white px-1.5 py-0.2 rounded font-semibold ml-0.5">
-                  Upgrade
-                </span>
               )}
-            </button>
+            </div>
           </nav>
 
           {/* Zone 3: Profile Avatar & Quick Actions */}
@@ -244,10 +238,9 @@ export const Navbar: React.FC<Props> = ({
               </button>
             )}
 
-            {/* Mobile / Tablet Quick Plan Badge */}
-            <button
-              onClick={onOpenPremium}
-              className={`md:hidden flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold cursor-pointer ${
+            {/* Mobile / Tablet Static Plan Badge (Non-clickable) */}
+            <div
+              className={`md:hidden flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold select-none pointer-events-none ${
                 isUserPremium
                   ? 'bg-gradient-to-r from-amber-500 to-[#c9973e] text-white'
                   : 'bg-stone-100 text-stone-700 border border-stone-200'
@@ -255,7 +248,7 @@ export const Navbar: React.FC<Props> = ({
             >
               <Sparkles className="w-3 h-3 text-[#c9973e]" />
               <span>{isUserPremium ? 'Premium Plan' : 'Free Plan'}</span>
-            </button>
+            </div>
 
             {/* Mobile Nav Toggle */}
             <button
@@ -323,25 +316,23 @@ export const Navbar: React.FC<Props> = ({
               </span>
             ) : null}
           </button>
-          <button
-            onClick={() => {
-              onOpenPremium();
-              setMobileMenuOpen(false);
-            }}
-            className={`w-full text-left px-3 py-2 text-sm font-bold rounded-lg flex items-center justify-between ${
+          <div
+            className={`w-full px-3 py-2 text-sm font-bold rounded-lg flex items-center justify-between select-none ${
               isUserPremium
                 ? 'bg-[#fff6fa] text-[#946b17] border border-[#eadfe4]'
-                : 'text-stone-700 hover:bg-[#fff6fa]'
+                : 'bg-stone-50 text-stone-700 border border-stone-200'
             }`}
           >
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#c9973e]" />
-              <span>Current Plan: {isUserPremium ? (currentPlanName || 'Premium Plan') : 'Free Plan'}</span>
+              <span>Plan: {isUserPremium ? 'Premium Plan' : 'Free Plan'}</span>
             </div>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${isUserPremium ? 'bg-emerald-600 text-white' : 'bg-[#4b001f] text-white'}`}>
-              {isUserPremium ? 'Admin Approved ✓' : 'Upgrade'}
-            </span>
-          </button>
+            {isUserPremium && (
+              <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-emerald-600 text-white shadow-2xs">
+                Admin Approved ✓
+              </span>
+            )}
+          </div>
         </div>
       )}
     </header>

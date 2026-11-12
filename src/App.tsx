@@ -24,6 +24,7 @@ import {
   saveStoredInterestsMap,
   getStoredPremiumRequests,
   saveStoredPremiumRequests,
+  getNextMemberId,
 } from './lib/supabase';
 import {
   Heart,
@@ -207,6 +208,11 @@ export default function App() {
       // Filter out any obsolete dummy records
       if (p.id === 'inc-001' || p.id === 'inc-002') return false;
 
+      // 0. Member ID match (e.g. NCSM1001, NCSM1003)
+      if (currentUserProfile?.member_id && p.recipient_member_id && p.recipient_member_id === currentUserProfile.member_id) {
+        return true;
+      }
+
       // 1. Direct recipient profile ID match
       if (userId && p.recipient_profile_id && p.recipient_profile_id === userId) return true;
 
@@ -355,6 +361,7 @@ export default function App() {
           const isFemale = req.plan_name.toLowerCase().includes('girl') || (req.notes && req.notes.toLowerCase().includes('girl'));
           const newProf: Profile = {
             id: `nc-prem-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            member_id: getNextMemberId(),
             full_name: req.user_name,
             gender: isFemale ? 'Female' : 'Male',
             age: isFemale ? 22 : 26,
@@ -402,6 +409,7 @@ export default function App() {
     }
   });
   const [isEditingProfile, setIsEditingProfile] = useState<boolean>(false);
+  const [isPostPremiumBiodataUpload, setIsPostPremiumBiodataUpload] = useState<boolean>(false);
 
   // Login Modal (for returning members or admin login)
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false);
@@ -529,36 +537,54 @@ export default function App() {
   };
 
   const handleSendInterest = async (profileId: string) => {
-    // Premium requirement check
+    // Condition 1: Must have active Premium Plan
     const hasPremium = effectiveIsPremium || localStorage.getItem('nikah_circle_user_is_premium') === 'true';
     if (!hasPremium) {
+      showToast('Sending interest proposals requires an active Premium Plan. Please upgrade.');
       setIsPremiumOpen(true);
       return;
     }
 
+    // Condition 2: Must have successfully uploaded biodata
+    const hasBiodata = Boolean(
+      currentUserProfile?.biodata_uploaded ||
+      currentUserProfile?.biodata_document_name ||
+      currentUserProfile?.biodata_document_url
+    );
+    if (!hasBiodata) {
+      showToast('Please upload your biodata document before sending interest proposals.');
+      setIsPostPremiumBiodataUpload(true);
+      setIsEditingProfile(true);
+      return;
+    }
+
     const targetProfile = profiles.find((p) => p.id === profileId);
-    if (targetProfile) {
-      // Cannot send interest to own profile
-      const isSelf =
-        (currentUserProfile?.id && targetProfile.id === currentUserProfile.id) ||
-        (currentUser?.id && targetProfile.id === currentUser.id) ||
-        (currentUserProfile?.mobile &&
-          targetProfile.mobile &&
-          targetProfile.mobile.replace(/\D/g, '').slice(-8) ===
-            currentUserProfile.mobile.replace(/\D/g, '').slice(-8));
+    if (!targetProfile) {
+      showToast('Profile not found.');
+      return;
+    }
 
-      if (isSelf) {
-        showToast('You cannot send a proposal interest to your own profile.');
-        return;
-      }
+    // Cannot send interest to own profile
+    const isSelf =
+      (currentUserProfile?.id && targetProfile.id === currentUserProfile.id) ||
+      (currentUser?.id && targetProfile.id === currentUser.id) ||
+      (currentUserProfile?.member_id && targetProfile.member_id && currentUserProfile.member_id === targetProfile.member_id) ||
+      (currentUserProfile?.mobile &&
+        targetProfile.mobile &&
+        targetProfile.mobile.replace(/\D/g, '').slice(-8) ===
+          currentUserProfile.mobile.replace(/\D/g, '').slice(-8));
 
-      // Halal Matrimony Gender rule: Male to Female only, Female to Male only
-      const userGender = currentUserProfile?.gender;
-      if (userGender && targetProfile.gender === userGender) {
-        const needed = userGender === 'Female' ? 'Groom (Male)' : 'Bride (Female)';
-        showToast(`Halal Matrimony: You can only send proposals to ${needed} profiles.`);
-        return;
-      }
+    if (isSelf) {
+      showToast('You cannot send a proposal interest to your own profile.');
+      return;
+    }
+
+    // Halal Matrimony Gender rule: Male to Female only, Female to Male only
+    const userGender = currentUserProfile?.gender;
+    if (userGender && targetProfile.gender === userGender) {
+      const needed = userGender === 'Female' ? 'Groom (Male)' : 'Bride (Female)';
+      showToast(`Halal Matrimony: You can only send proposals to ${needed} profiles.`);
+      return;
     }
 
     if (interestsMap[profileId]) {
@@ -571,7 +597,7 @@ export default function App() {
     setInterestsMap(updatedMap);
     saveStoredUserSentInterests(currentUserKey, updatedMap);
 
-    // 2. Deliver proposal into the persistent proposals registry targeting the recipient
+    // 2. Deliver proposal into persistent proposals registry targeting the recipient
     const senderName = currentUserProfile?.full_name || currentUser?.email?.split('@')[0] || 'Premium Member';
     const senderAge = currentUserProfile?.age || (currentUserProfile?.date_of_birth ? Math.max(18, new Date().getFullYear() - new Date(currentUserProfile.date_of_birth).getFullYear()) : 25);
     const senderGender = (currentUserProfile?.gender as 'Male' | 'Female') || (targetProfile.gender === 'Female' ? 'Male' : 'Female');
@@ -580,10 +606,13 @@ export default function App() {
     const senderProfession = currentUserProfile?.profession || 'Professional';
     const senderGuardianName = currentUserProfile?.guardian_name || `${senderName}'s Guardian`;
     const senderGuardianPhone = currentUserProfile?.guardian_mobile || currentUserProfile?.mobile || '+91 90000 00000';
+    const senderMemberId = currentUserProfile?.member_id || 'NCSM1001';
+    const recipientMemberId = targetProfile.member_id || (targetProfile.id?.startsWith('NCSM') ? targetProfile.id : targetProfile.id);
 
     const newProposal: IncomingInterest = {
       id: `prop-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
       sender_profile_id: currentUserProfile?.id || currentUser?.id || `usr-${Date.now()}`,
+      sender_member_id: senderMemberId,
       sender_name: senderName,
       sender_age: senderAge,
       sender_gender: senderGender,
@@ -595,10 +624,11 @@ export default function App() {
       guardian_relation: 'Parent (Guardian)',
       received_at: 'Today, Just now',
       status: 'pending',
-      notes: `Assalamu Alaikum. ${senderName} and family expressed interest in a matrimonial proposal with ${targetProfile.full_name}.`,
+      notes: `Assalamu Alaikum. ${senderName} (${senderMemberId}) expressed matrimonial proposal interest with ${targetProfile.full_name} (${recipientMemberId}).`,
       recipient_profile_id: targetProfile.id,
+      recipient_member_id: recipientMemberId,
       recipient_name: targetProfile.full_name,
-      recipient_mobile: targetProfile.mobile || targetProfile.guardian_mobile,
+      recipient_mobile: targetProfile.mobile || targetProfile.guardian_mobile || undefined,
     };
 
     const updatedAllProposals = [
@@ -696,16 +726,27 @@ export default function App() {
   };
 
   const handleSaveUserProfile = async (data: UserProfileData) => {
-    setCurrentUserProfile(data);
-    localStorage.setItem('nikah_circle_user_profile', JSON.stringify(data));
-
-    const userObj = { email: data.email, id: `usr-${data.mobile}` };
-    setCurrentUser(userObj);
-    localStorage.setItem('nikah_circle_user', JSON.stringify(userObj));
-
     const existingIndex = profiles.findIndex(
       (p) => (p.mobile && p.mobile === data.mobile) || (p.email && p.email === data.email)
     );
+
+    // Auto-generate sequential Member ID (NCSM1001, NCSM1002...) if not already present
+    const memberId =
+      data.member_id ||
+      currentUserProfile?.member_id ||
+      (existingIndex >= 0 && profiles[existingIndex].member_id) ||
+      getNextMemberId();
+
+    const updatedData: UserProfileData = {
+      ...data,
+      member_id: memberId,
+    };
+    setCurrentUserProfile(updatedData);
+    localStorage.setItem('nikah_circle_user_profile', JSON.stringify(updatedData));
+
+    const userObj = { email: data.email, id: `usr-${data.mobile}`, member_id: memberId };
+    setCurrentUser(userObj);
+    localStorage.setItem('nikah_circle_user', JSON.stringify(userObj));
 
     const calculatedAge = data.date_of_birth
       ? Math.max(18, new Date().getFullYear() - new Date(data.date_of_birth).getFullYear())
@@ -713,6 +754,7 @@ export default function App() {
 
     const profilePayload: Profile = {
       id: existingIndex >= 0 ? profiles[existingIndex].id : `usr-${Date.now().toString().slice(-6)}`,
+      member_id: memberId,
       full_name: data.full_name,
       mobile: data.mobile,
       email: data.email,
@@ -732,6 +774,9 @@ export default function App() {
       hobbies: data.hobbies,
       interests: data.interests,
       profile_photo: data.profile_photo || null,
+      biodata_uploaded: data.biodata_uploaded ?? false,
+      biodata_document_name: data.biodata_document_name ?? null,
+      biodata_document_url: data.biodata_document_url ?? null,
       registration_type: 'ONLINE',
       profile_status: 'APPROVED',
       is_verified: true,
@@ -788,6 +833,13 @@ export default function App() {
     setPremiumRequests(updated);
     saveStoredPremiumRequests(updated);
     showToast('Premium request submitted to admin!');
+
+    // Requirement 4: Post-Premium Biodata Upload trigger
+    setTimeout(() => {
+      setIsPremiumOpen(false);
+      setIsPostPremiumBiodataUpload(true);
+      setIsEditingProfile(true);
+    }, 450);
 
     try {
       const payload: any = {
@@ -866,6 +918,7 @@ export default function App() {
       const isFemale = target.plan_name.toLowerCase().includes('girl') || (target.notes && target.notes.toLowerCase().includes('girl'));
       const newProf: Profile = {
         id: targetProfileId,
+        member_id: getNextMemberId(),
         full_name: target.user_name,
         gender: isFemale ? 'Female' : 'Male',
         age: isFemale ? 22 : 26,
@@ -1088,8 +1141,10 @@ export default function App() {
     } else {
       const isUUID = (str?: string) => !!str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
       const newId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `nc-${Date.now().toString().slice(-4)}`;
+      const memberId = profileData.member_id || getNextMemberId();
       targetProfile = {
         id: newId,
+        member_id: memberId,
         full_name: profileData.full_name || 'Candidate',
         gender: profileData.gender || 'Female',
         location: profileData.location || 'Kerala',
@@ -1913,12 +1968,15 @@ export default function App() {
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
+                                <span className="font-mono text-[10px] font-bold bg-[#4b001f] text-white px-2 py-0.5 rounded-md tracking-wider">
+                                  {item.sender_member_id || (item.sender_profile_id?.startsWith('NCSM') ? item.sender_profile_id : 'NCSM1001')}
+                                </span>
                                 <h3 className="font-serif font-bold text-lg text-[#4b001f]">
                                   {item.sender_name}
                                 </h3>
                                 <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md">
                                   <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                                  Admin Approved
+                                  Admin Verified
                                 </span>
                               </div>
                               <div className="flex items-center gap-2 text-xs text-stone-500 mt-0.5">
@@ -2038,6 +2096,9 @@ export default function App() {
                                       guardian_name: item.guardian_name,
                                       guardian_mobile: item.guardian_mobile,
                                       mobile: item.guardian_mobile,
+                                      marital_status: 'Never Married',
+                                      registration_type: 'ONLINE',
+                                      is_premium: false,
                                       about: item.notes || 'Matrimonial proposal on Nikah Circle.',
                                       is_verified: true,
                                       profile_status: 'APPROVED',
@@ -2147,13 +2208,16 @@ export default function App() {
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
+                                <span className="font-mono text-[10px] font-bold bg-[#4b001f] text-white px-2 py-0.5 rounded-md tracking-wider">
+                                  {p.member_id || (p.id?.startsWith('NCSM') ? p.id : `NCSM${p.id?.replace(/\D/g, '').slice(-4) || '1001'}`)}
+                                </span>
                                 <h3 className="font-serif font-bold text-lg text-[#4b001f]">
                                   {p.full_name}
                                 </h3>
                                 {(p.profile_status === 'APPROVED' || p.is_verified) && (
                                   <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md">
                                     <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                                    Admin Approved
+                                    Admin Verified
                                   </span>
                                 )}
                               </div>
@@ -2331,14 +2395,20 @@ export default function App() {
         isApproved={isUserApproved}
         isPremium={effectiveIsPremium}
         planName={effectivePlanName}
+        isPostPremium={isPostPremiumBiodataUpload}
         onClose={() => {
           setIsCreateAccountOpen(false);
           setIsEditingProfile(false);
+          setIsPostPremiumBiodataUpload(false);
         }}
-        onSubmit={handleSaveUserProfile}
+        onSubmit={async (data) => {
+          await handleSaveUserProfile(data);
+          setIsPostPremiumBiodataUpload(false);
+        }}
         onSwitchToLogin={() => {
           setIsCreateAccountOpen(false);
           setIsEditingProfile(false);
+          setIsPostPremiumBiodataUpload(false);
           setLoginMode('member');
           setIsLoginOpen(true);
         }}

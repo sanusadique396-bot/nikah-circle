@@ -89,13 +89,16 @@ export const ProfileModal: React.FC<Props> = ({
 
             <div className="text-center sm:text-left space-y-1">
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                <span className="font-mono text-xs font-bold bg-[#c9973e]/30 text-amber-200 border border-[#c9973e]/50 px-2.5 py-0.5 rounded-md tracking-wider">
+                  {profile.member_id || (profile.id?.startsWith('NCSM') ? profile.id : `NCSM${profile.id?.replace(/\D/g, '').slice(-4) || '1001'}`)}
+                </span>
                 <h2 className="font-serif text-2xl font-bold tracking-tight text-white">
                   {profile.full_name}
                 </h2>
                 {(profile.profile_status === 'APPROVED' || profile.is_verified) && (
                   <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 px-2.5 py-1 rounded-md shadow-xs">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
-                    Admin Approved
+                    Admin Verified
                   </span>
                 )}
               </div>

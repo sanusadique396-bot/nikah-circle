@@ -1,5 +1,6 @@
 export interface Profile {
   id: string;
+  member_id?: string;
   auth_user_id?: string | null;
   full_name: string;
   email?: string | null;
@@ -33,6 +34,9 @@ export interface Profile {
   premium_plan?: string | null;
   premium_start?: string | null;
   premium_end?: string | null;
+  biodata_uploaded?: boolean;
+  biodata_document_name?: string | null;
+  biodata_document_url?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -92,6 +96,8 @@ export interface IncomingInterest {
   recipient_profile_id?: string;
   recipient_mobile?: string;
   recipient_name?: string;
+  sender_member_id?: string;
+  recipient_member_id?: string;
 }
 
 export interface SearchFilters {

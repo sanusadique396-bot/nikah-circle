@@ -85,18 +85,22 @@ export const ProfileCard: React.FC<Props> = ({
           </div>
         )}
 
-        {/* Top Left Badge: Admin Approved Only (No premium badge on cards) */}
+        {/* Top Left: Member ID (e.g. NCSM1001) */}
         <div className="absolute top-3 left-3 z-10">
+          <span className="flex items-center gap-1 bg-[#4b001f]/95 backdrop-blur-xs text-white font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-sm border border-amber-400/40 tracking-wider">
+            {profile.member_id || (profile.id?.startsWith('NCSM') ? profile.id : `NCSM${profile.id?.replace(/\D/g, '').slice(-4) || '1001'}`)}
+          </span>
+        </div>
+
+        {/* Top Right: Admin Verified Badge & Photo Privacy / Shortlist */}
+        <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
           {(profile.profile_status === 'APPROVED' || profile.is_verified) && (
             <span className="flex items-center gap-1 bg-emerald-600/95 backdrop-blur-xs text-white text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-xs">
               <ShieldCheck className="w-3.5 h-3.5 text-white" />
-              <span>Admin Approved</span>
+              <span>Admin Verified</span>
             </span>
           )}
-        </div>
 
-        {/* Top Right: Photo Privacy & Shortlist */}
-        <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
           {profile.profile_photo && (
             <button
               onClick={() => setPhotoBlurred(!photoBlurred)}

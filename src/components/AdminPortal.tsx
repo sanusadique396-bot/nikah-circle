@@ -785,7 +785,12 @@ export const AdminPortal: React.FC<Props> = ({
                                 )}
                               </div>
                               <div>
-                                <span className="font-bold text-stone-900 block">{p.full_name}</span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-mono text-[10px] font-bold bg-[#4b001f] text-white px-1.5 py-0.5 rounded shadow-2xs">
+                                    {p.member_id || (p.id?.startsWith('NCSM') ? p.id : `NCSM${p.id?.replace(/\D/g, '').slice(-4) || '1001'}`)}
+                                  </span>
+                                  <span className="font-bold text-stone-900">{p.full_name}</span>
+                                </div>
                                 <span className="text-[10px] text-stone-400">ID: {p.id.slice(0, 8)}</span>
                               </div>
                             </div>
@@ -911,7 +916,12 @@ export const AdminPortal: React.FC<Props> = ({
                                   )}
                                 </div>
                                 <div>
-                                  <span className="font-bold text-stone-900 block">{p.full_name}</span>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-mono text-[10px] font-bold bg-[#4b001f] text-white px-1.5 py-0.5 rounded shadow-2xs">
+                                      {p.member_id || (p.id?.startsWith('NCSM') ? p.id : `NCSM${p.id?.replace(/\D/g, '').slice(-4) || '1001'}`)}
+                                    </span>
+                                    <span className="font-bold text-stone-900">{p.full_name}</span>
+                                  </div>
                                   <span className="text-[11px] text-stone-500">{p.gender} · {p.age || 25} yrs</span>
                                   <div className="flex items-center gap-1 text-[10px] text-[#c9973e] font-semibold mt-0.5">
                                     <Calendar className="w-3 h-3 text-[#c9973e]" />

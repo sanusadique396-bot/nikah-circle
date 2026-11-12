@@ -15,11 +15,16 @@ import {
   Briefcase,
   ShieldCheck,
   CheckCircle2,
-  LogIn
+  LogIn,
+  FileText,
+  FileCheck,
+  Upload
 } from 'lucide-react';
 import { Profile } from '../types';
 
 export interface UserProfileData {
+  id?: string;
+  member_id?: string;
   full_name: string;
   mobile: string;
   email: string;
@@ -28,6 +33,8 @@ export interface UserProfileData {
   place: string;
   gender: 'Male' | 'Female';
   date_of_birth: string;
+  age?: number;
+  location?: string;
   hobbies: string;
   interests: string;
   profession?: string;
@@ -38,6 +45,9 @@ export interface UserProfileData {
   is_approved?: boolean;
   is_premium?: boolean;
   premium_plan?: string;
+  biodata_uploaded?: boolean;
+  biodata_document_name?: string | null;
+  biodata_document_url?: string | null;
 }
 
 interface Props {
@@ -51,6 +61,7 @@ interface Props {
   isApproved?: boolean;
   isPremium?: boolean;
   planName?: string;
+  isPostPremium?: boolean;
 }
 
 const KERALA_DISTRICTS = [
@@ -115,6 +126,7 @@ export const UserProfileModal: React.FC<Props> = ({
   isApproved = false,
   isPremium = false,
   planName = 'Free Plan',
+  isPostPremium = false,
 }) => {
   const [formData, setFormData] = useState<UserProfileData>({
     full_name: '',
@@ -132,11 +144,15 @@ export const UserProfileModal: React.FC<Props> = ({
     guardian_name: '',
     guardian_mobile: '',
     profile_photo: '',
+    biodata_uploaded: false,
+    biodata_document_name: null,
+    biodata_document_url: null,
   });
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const biodataFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (initialData) {
@@ -147,6 +163,9 @@ export const UserProfileModal: React.FC<Props> = ({
         district: initialData.district || prev.district,
         gender: initialData.gender || prev.gender,
         date_of_birth: initialData.date_of_birth || prev.date_of_birth,
+        biodata_uploaded: initialData.biodata_uploaded ?? prev.biodata_uploaded,
+        biodata_document_name: initialData.biodata_document_name ?? prev.biodata_document_name,
+        biodata_document_url: initialData.biodata_document_url ?? prev.biodata_document_url,
       }));
     }
   }, [initialData, isOpen]);
@@ -157,6 +176,28 @@ export const UserProfileModal: React.FC<Props> = ({
   const calculatedAge = formData.date_of_birth
     ? Math.max(18, new Date().getFullYear() - new Date(formData.date_of_birth).getFullYear())
     : 24;
+
+  const handleBiodataUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 15 * 1024 * 1024) {
+        alert('Please choose a file under 15MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          setFormData((prev) => ({
+            ...prev,
+            biodata_uploaded: true,
+            biodata_document_name: file.name,
+            biodata_document_url: reader.result as string,
+          }));
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -255,6 +296,19 @@ export const UserProfileModal: React.FC<Props> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 overflow-y-auto space-y-6 text-xs sm:text-sm text-stone-800">
+          {/* Post-Premium Biodata Upload Notice */}
+          {isPostPremium && (
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500 via-[#c9973e] to-amber-600 text-white shadow-sm flex items-start gap-3">
+              <Sparkles className="w-5 h-5 text-white shrink-0 mt-0.5 animate-pulse" />
+              <div>
+                <h4 className="font-bold text-xs sm:text-sm">✨ Premium Membership Activated!</h4>
+                <p className="text-[11px] sm:text-xs text-amber-50 mt-0.5">
+                  Please upload your matrimonial biodata document below so you can immediately begin sending interest proposals to profiles.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Admin Approval & Package Status Banner */}
           {(isApproved || isPremium) && (
             <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50 to-[#fff6fa] border border-emerald-200 text-emerald-950 flex items-center justify-between gap-3 shadow-xs">
@@ -337,6 +391,74 @@ export const UserProfileModal: React.FC<Props> = ({
                 />
               </div>
             </div>
+          </div>
+
+          {/* Dedicated Matrimonial Biodata Document Upload */}
+          <div className="p-4 rounded-2xl bg-[#fffdfa] border border-[#eadfe4] space-y-3">
+            <div className="flex items-center justify-between pb-1 border-b border-stone-100">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#c9973e]" />
+                <span className="font-bold text-stone-900 text-xs uppercase tracking-wider">
+                  Matrimonial Biodata Document
+                </span>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
+                Required for Sending Proposals
+              </span>
+            </div>
+
+            <p className="text-[11px] text-stone-500">
+              Upload your complete biodata file (PDF, Word DOC/DOCX, or Image). This is required before sending proposal interests.
+            </p>
+
+            <input
+              type="file"
+              ref={biodataFileInputRef}
+              onChange={handleBiodataUpload}
+              accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+              className="hidden"
+            />
+
+            {formData.biodata_uploaded || formData.biodata_document_name ? (
+              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-300 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-xs text-emerald-950 font-bold truncate">
+                  <FileCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="truncate">{formData.biodata_document_name || 'Biodata Document Attached'}</span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => biodataFileInputRef.current?.click()}
+                    className="text-xs text-[#4b001f] font-bold hover:underline cursor-pointer"
+                  >
+                    Change
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        biodata_uploaded: false,
+                        biodata_document_name: null,
+                        biodata_document_url: null,
+                      }))
+                    }
+                    className="text-xs text-red-600 font-bold hover:underline cursor-pointer"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => biodataFileInputRef.current?.click()}
+                className="w-full py-3.5 px-4 rounded-xl border-2 border-dashed border-[#c9973e]/60 bg-white hover:bg-[#fff9fa] transition-colors cursor-pointer flex items-center justify-center gap-2 text-xs font-bold text-[#4b001f]"
+              >
+                <Upload className="w-4 h-4 text-[#c9973e]" />
+                <span>Upload Biodata Document (PDF, Word, or Image)</span>
+              </button>
+            )}
           </div>
 
           {/* SECTION 1: Required Details */}
