@@ -8,8 +8,7 @@ import {
   Lock,
   Phone,
   UserCheck,
-  Clock,
-  FileText
+  Clock
 } from 'lucide-react';
 
 interface Props {
@@ -304,16 +303,6 @@ export const ProfileModal: React.FC<Props> = ({
                   <div className="px-4 py-2 rounded-xl bg-stone-100 text-stone-600 border border-stone-200 text-xs font-semibold text-center">
                     Proposals can only be exchanged between Groom and Bride profiles
                   </div>
-                ) : !hasUserBiodata ? (
-                  <button
-                    type="button"
-                    onClick={onOpenBiodataWizard}
-                    className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
-                    title="Complete your matrimonial biodata first"
-                  >
-                    <FileText className="w-3.5 h-3.5 text-white" />
-                    <span>Fill Your Biodata</span>
-                  </button>
                 ) : (
                   <button
                     type="button"
@@ -321,6 +310,12 @@ export const ProfileModal: React.FC<Props> = ({
                       const hasPrem = isUserPremium || localStorage.getItem('nikah_circle_user_is_premium') === 'true';
                       if (!hasPrem) {
                         onOpenPremium();
+                      } else if (!hasUserBiodata) {
+                        if (onOpenBiodataWizard) {
+                          onOpenBiodataWizard();
+                        } else {
+                          onSendInterest(profile.id);
+                        }
                       } else {
                         onSendInterest(profile.id);
                       }

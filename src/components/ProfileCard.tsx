@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Profile, normalizeGender } from '../types';
-import { MapPin, Heart, ShieldCheck, Eye, EyeOff, UserCheck, Lock, Clock, FileText } from 'lucide-react';
+import { MapPin, Heart, ShieldCheck, Eye, EyeOff, UserCheck, Lock, Clock } from 'lucide-react';
 
 interface Props {
   profile: Profile;
@@ -250,21 +250,6 @@ export const ProfileCard: React.FC<Props> = ({
                 Cancel
               </button>
             </div>
-          ) : !hasUserBiodata ? (
-            <button
-              onClick={() => {
-                if (onOpenBiodataWizard) {
-                  onOpenBiodataWizard();
-                } else {
-                  handleInterestClick();
-                }
-              }}
-              className="flex-1 py-2 px-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
-              title="Fill your candidate biodata before sending interest"
-            >
-              <FileText className="w-3.5 h-3.5 text-white" />
-              <span>Fill Your Biodata</span>
-            </button>
           ) : (
             <button
               onClick={handleInterestClick}
