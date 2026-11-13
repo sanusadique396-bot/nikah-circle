@@ -966,12 +966,6 @@ export default function App() {
   };
 
   const handleOpenBiodataWizard = () => {
-    const hasPremium = effectiveIsPremium || localStorage.getItem('nikah_circle_user_is_premium') === 'true';
-    if (!hasPremium) {
-      showToast('Matrimonial biodata writing and publishing is exclusively reserved for Premium members. Please activate a Premium plan.');
-      handleOpenPremium();
-      return;
-    }
     setIsBiodataWizardOpen(true);
   };
 
@@ -2543,9 +2537,16 @@ export default function App() {
               el?.scrollIntoView({ behavior: 'smooth' });
             }}
             onExplorePremium={handleOpenPremium}
-            onRegisterClick={handleOpenRegister}
+            onRegisterClick={() => {
+              if (currentUserProfile || currentUser) {
+                setIsBiodataWizardOpen(true);
+              } else {
+                handleOpenRegister();
+              }
+            }}
             memberId={effectiveMemberId}
             isUserPremium={effectiveIsPremium}
+            totalMembersCount={profiles.length}
           />
 
           <main id="featured-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12 flex-1">

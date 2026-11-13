@@ -7,6 +7,7 @@ interface Props {
   onRegisterClick: () => void;
   memberId?: string;
   isUserPremium?: boolean;
+  totalMembersCount?: number;
 }
 
 export const Hero: React.FC<Props> = ({
@@ -15,7 +16,10 @@ export const Hero: React.FC<Props> = ({
   onRegisterClick,
   memberId,
   isUserPremium = false,
+  totalMembersCount = 0,
 }) => {
+  const verifiedCount = (1500 + totalMembersCount).toLocaleString() + '+';
+  const marriagesCount = (100 + Math.floor(totalMembersCount / 4)).toLocaleString() + '+';
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-[#fff6fa] via-white to-stone-50 pt-12 pb-20 border-b border-[#eadfe4]">
       {/* Decorative Islamic Geometric Pattern / Ambient Radial Glow */}
@@ -66,7 +70,7 @@ export const Hero: React.FC<Props> = ({
                 onClick={onRegisterClick}
                 className="w-full sm:w-auto px-6 py-3 rounded-xl bg-white hover:bg-[#fff6fa] text-[#4b001f] border border-[#4b001f] font-bold text-sm transition-all cursor-pointer shadow-xs"
               >
-                Register Your Profile
+                Upload Your Biodata
               </button>
 
               <button
@@ -150,7 +154,7 @@ export const Hero: React.FC<Props> = ({
                 <div className="grid grid-cols-2 gap-3 pt-2 text-left">
                   <div className="p-3 rounded-xl bg-[#fff6fa] border border-[#eadfe4]">
                     <span className="block text-xl font-bold text-[#4b001f] tabular-nums font-serif">
-                      12,500+
+                      {verifiedCount}
                     </span>
                     <span className="text-[11px] text-stone-500 font-medium">
                       Verified Members
@@ -158,7 +162,7 @@ export const Hero: React.FC<Props> = ({
                   </div>
                   <div className="p-3 rounded-xl bg-[#fff6fa] border border-[#eadfe4]">
                     <span className="block text-xl font-bold text-[#c9973e] tabular-nums font-serif">
-                      3,800+
+                      {marriagesCount}
                     </span>
                     <span className="text-[11px] text-stone-500 font-medium">
                       Happy Marriages
