@@ -18,8 +18,11 @@ export const Hero: React.FC<Props> = ({
   isUserPremium = false,
   totalMembersCount = 0,
 }) => {
-  const verifiedCount = (1500 + totalMembersCount).toLocaleString() + '+';
-  const marriagesCount = (100 + Math.floor(totalMembersCount / 4)).toLocaleString() + '+';
+  // Increment cleanly in steps of 100: 1,500+, 1,600+, 1,700+...
+  const memberIncrement = Math.floor(totalMembersCount / 100) * 100;
+  const verifiedCount = (1500 + memberIncrement).toLocaleString() + '+';
+  const marriageIncrement = Math.floor(totalMembersCount / 100) * 10;
+  const marriagesCount = (100 + marriageIncrement).toLocaleString() + '+';
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-[#fff6fa] via-white to-stone-50 pt-12 pb-20 border-b border-[#eadfe4]">
       {/* Decorative Islamic Geometric Pattern / Ambient Radial Glow */}
