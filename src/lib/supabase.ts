@@ -4,9 +4,9 @@ import { Profile, Payment, InterestRecord, PremiumRequest, normalizeGender, auto
 export { normalizeGender, autoCorrectMistakenGenders };
 
 export const SUPABASE_URL = 
-  import.meta.env.VITE_SUPABASE_URL || "https://fowkuwwfmnzupzbrrxqf.supabase.co";
+  (typeof import.meta !== 'undefined' && import.meta?.env?.VITE_SUPABASE_URL) || "https://fowkuwwfmnzupzbrrxqf.supabase.co";
 export const SUPABASE_KEY = 
-  import.meta.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_fHxx0xpO65_m7WCrMRX6DQ_fShiZpoI";
+  (typeof import.meta !== 'undefined' && import.meta?.env?.VITE_SUPABASE_ANON_KEY) || "sb_publishable_fHxx0xpO65_m7WCrMRX6DQ_fShiZpoI";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -85,7 +85,9 @@ export function deduplicateProfiles(inputProfiles: Profile[]): Profile[] {
     } else {
       const existing = result[existingIdx];
 
-      let bestMemberId = existing.member_id || prof.member_id;
+      const nExisting = extractMemberIdNumber(existing.member_id);
+      const nProf = extractMemberIdNumber(prof.member_id);
+      let bestMemberId = nProf && nProf >= 1003 ? prof.member_id : (nExisting && nExisting >= 1003 ? existing.member_id : (prof.member_id || existing.member_id));
       if (pEmail === 'nikahcircle01@gmail.com' || (pMobile && pMobile.endsWith('44905093'))) {
         bestMemberId = 'NCSM1002';
       } else if (pEmail === 'sanusadique396@gmail.com' || (pMobile && pMobile.endsWith('43549396'))) {
@@ -156,6 +158,12 @@ export function ensureUniqueSequentialMemberIds(profiles: Profile[]): Profile[] 
     let currentId = p.member_id || '';
     if (currentId === 'NCSM1001' || currentId === 'NCSM1002') {
       currentId = '';
+    }
+    if (!currentId && p.about) {
+      const { meta } = decodeProfileMetadata(p.about);
+      if (meta?.member_id && meta.member_id !== 'NCSM1001' && meta.member_id !== 'NCSM1002') {
+        currentId = meta.member_id;
+      }
     }
 
     const num = extractMemberIdNumber(currentId);
@@ -613,10 +621,11 @@ export function parseSupabaseProfile(p: any, defaultIndex?: number): Profile {
 }
 
 // Full Fresh Database and User Reset System
-const CLEAN_RESET_KEY = 'nikah_circle_clean_reset_v6004';
+const CLEAN_RESET_KEY = 'nikah_circle_clean_reset_v6005';
 
 export function performInitialResetIfRequired() {
   try {
+    if (typeof localStorage === 'undefined') return;
     if (localStorage.getItem(CLEAN_RESET_KEY) !== 'true') {
       // Clear legacy deleted records and cached profiles
       localStorage.removeItem('nikah_circle_deleted_records_v2');

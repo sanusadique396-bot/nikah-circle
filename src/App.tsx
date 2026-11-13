@@ -692,7 +692,7 @@ export default function App() {
           if (localMatch) {
             return {
               ...dp,
-              member_id: localMatch.member_id || dp.member_id,
+              member_id: dp.member_id || localMatch.member_id,
               biodata_uploaded: localMatch.biodata_uploaded || dp.biodata_uploaded,
               biodata_document_name: localMatch.biodata_document_name || dp.biodata_document_name,
               biodata_document_url: localMatch.biodata_document_url || dp.biodata_document_url,
