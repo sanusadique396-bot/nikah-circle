@@ -953,9 +953,14 @@ export default function App() {
     });
   };
 
+  const handleOpenCreateProfile = () => {
+    setIsEditingProfile(false);
+    setIsCreateAccountOpen(true);
+  };
+
   const handleOpenEditProfile = () => {
-    if (!isAdminApproved) {
-      showToast('Your profile is waiting for Admin Approval. Profile editing and uploads will be enabled once approved.');
+    if (!currentUserProfile) {
+      handleOpenCreateProfile();
       return;
     }
     setIsEditingProfile(true);
@@ -2410,6 +2415,7 @@ export default function App() {
         interestsActiveTab={interestsActiveTab}
         currentUser={currentUser}
         userProfile={currentUserProfile}
+        onCreateProfile={handleOpenCreateProfile}
         onEditProfile={handleOpenEditProfile}
         isAdmin={isAdmin}
         onOpenLogin={(mode) => {
@@ -2541,7 +2547,7 @@ export default function App() {
               if (currentUserProfile || currentUser) {
                 setIsBiodataWizardOpen(true);
               } else {
-                handleOpenRegister();
+                handleOpenCreateProfile();
               }
             }}
             memberId={effectiveMemberId}
@@ -3420,12 +3426,12 @@ export default function App() {
         onOpenBiodataWizard={handleOpenBiodataWizard}
       />
 
-      {/* Mandatory Profile Account Setup on First Open / Edit Anytime */}
+      {/* Profile Account Setup / Edit Modal */}
       <UserProfileModal
         isOpen={isCreateAccountOpen || isEditingProfile}
-        isMandatory={isCreateAccountOpen && !isEditingProfile}
+        isMandatory={false}
         isEditing={isEditingProfile}
-        initialData={currentUserProfile}
+        initialData={isEditingProfile ? currentUserProfile : null}
         isApproved={isAdminApproved}
         isAdminApproved={isAdminApproved}
         isPremium={effectiveIsPremium}
@@ -3631,7 +3637,7 @@ export default function App() {
           }
         }}
         onOpenPremium={handleOpenPremium}
-        onOpenRegister={handleOpenRegister}
+        onOpenRegister={handleOpenCreateProfile}
       />
     </div>
   );

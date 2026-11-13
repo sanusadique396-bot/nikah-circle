@@ -20,6 +20,7 @@ interface Props {
   currentUser: { email?: string; id?: string } | null;
   userProfile?: { full_name?: string; profile_photo?: string | null; mobile?: string | null; email?: string | null } | null;
   onEditProfile?: () => void;
+  onCreateProfile?: () => void;
   isAdmin: boolean;
   onOpenLogin: (mode?: 'member' | 'admin') => void;
   onOpenRegister: () => void;
@@ -42,6 +43,7 @@ export const Navbar: React.FC<Props> = ({
   currentUser,
   userProfile,
   onEditProfile,
+  onCreateProfile,
   isAdmin,
   onOpenLogin,
   onOpenRegister,
@@ -217,7 +219,7 @@ export const Navbar: React.FC<Props> = ({
             ) : (
               <button
                 type="button"
-                onClick={onEditProfile}
+                onClick={onCreateProfile || onEditProfile}
                 className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#fff6fa] border border-[#4b001f]/30 text-[#4b001f] text-xs font-bold hover:bg-[#f7dce8] transition-all cursor-pointer shadow-2xs"
                 title="Create profile"
               >
@@ -331,6 +333,21 @@ export const Navbar: React.FC<Props> = ({
               <span>Plan: {isUserPremium ? 'Premium Plan' : 'Free Plan'}</span>
             </div>
           </div>
+
+          {!userProfile && (
+            <button
+              type="button"
+              onClick={() => {
+                if (onCreateProfile) onCreateProfile();
+                else if (onEditProfile) onEditProfile();
+                setMobileMenuOpen(false);
+              }}
+              className="w-full mt-2 py-2.5 px-3 rounded-xl bg-[#4b001f] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm"
+            >
+              <UserPlus className="w-3.5 h-3.5 text-amber-300" />
+              <span>Create Profile</span>
+            </button>
+          )}
         </div>
       )}
     </header>

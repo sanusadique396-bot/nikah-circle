@@ -192,6 +192,28 @@ export const UserProfileModal: React.FC<Props> = ({
         biodata_document_name: initialData.biodata_document_name ?? prev.biodata_document_name,
         biodata_document_url: initialData.biodata_document_url ?? prev.biodata_document_url,
       }));
+    } else if (isOpen) {
+      setFormData({
+        full_name: '',
+        mobile: '',
+        email: '',
+        state: 'Kerala',
+        district: 'Kozhikode',
+        place: '',
+        gender: 'Male',
+        date_of_birth: '1998-05-15',
+        hobbies: '',
+        interests: '',
+        profession: '',
+        education: '',
+        guardian_name: '',
+        guardian_mobile: '',
+        profile_photo: '',
+        biodata_uploaded: false,
+        biodata_document_name: null,
+        biodata_document_url: null,
+      });
+      setErrorMsg(null);
     }
   }, [initialData, isOpen]);
 
