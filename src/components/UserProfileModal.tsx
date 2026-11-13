@@ -225,6 +225,10 @@ export const UserProfileModal: React.FC<Props> = ({
     : 24;
 
   const handleBiodataUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isPremium) {
+      if (onOpenPremium) onOpenPremium();
+      return;
+    }
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 15 * 1024 * 1024) {
@@ -557,7 +561,13 @@ export const UserProfileModal: React.FC<Props> = ({
             ) : (
               <button
                 type="button"
-                onClick={() => biodataFileInputRef.current?.click()}
+                onClick={() => {
+                  if (!isPremium) {
+                    if (onOpenPremium) onOpenPremium();
+                    return;
+                  }
+                  biodataFileInputRef.current?.click();
+                }}
                 className="w-full py-3.5 px-4 rounded-xl border-2 border-dashed border-[#c9973e]/60 bg-white hover:bg-[#fff9fa] transition-colors cursor-pointer flex items-center justify-center gap-2 text-xs font-bold text-[#4b001f]"
               >
                 <Upload className="w-4 h-4 text-[#c9973e]" />

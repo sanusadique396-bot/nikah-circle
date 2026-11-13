@@ -971,6 +971,12 @@ export default function App() {
   };
 
   const handleOpenBiodataWizard = () => {
+    const hasPremium = effectiveIsPremium || localStorage.getItem('nikah_circle_user_is_premium') === 'true' || isAdmin;
+    if (!hasPremium) {
+      showToast('Candidate biodata upload is exclusive for Premium members. Please choose a premium plan to continue.');
+      handleOpenPremium();
+      return;
+    }
     setIsBiodataWizardOpen(true);
   };
 
@@ -2545,7 +2551,7 @@ export default function App() {
             onExplorePremium={handleOpenPremium}
             onRegisterClick={() => {
               if (currentUserProfile || currentUser) {
-                setIsBiodataWizardOpen(true);
+                handleOpenBiodataWizard();
               } else {
                 handleOpenCreateProfile();
               }
