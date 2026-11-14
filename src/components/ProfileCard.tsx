@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Profile, normalizeGender } from '../types';
+import { Profile, normalizeGender, resolveProfilePhoto } from '../types';
 import { MapPin, Heart, ShieldCheck, Eye, EyeOff, UserCheck, Lock, Clock, FileText } from 'lucide-react';
 
 interface Props {
@@ -41,6 +41,8 @@ export const ProfileCard: React.FC<Props> = ({
   const isUnlocked = interestStatus === 'accepted';
   const [photoBlurred, setPhotoBlurred] = useState(false);
 
+  const displayPhoto = resolveProfilePhoto(profile);
+
   const age = profile.age || (profile.date_of_birth ? new Date().getFullYear() - new Date(profile.date_of_birth).getFullYear() : 26);
 
   // Check if own profile or same gender
@@ -80,9 +82,9 @@ export const ProfileCard: React.FC<Props> = ({
     <div className="bg-white rounded-2xl border border-[#eadfe4] overflow-hidden shadow-xs hover:shadow-md transition-all duration-200 flex flex-col group">
       {/* Photo Header */}
       <div className="relative h-64 bg-[#fff6fa] overflow-hidden select-none">
-        {profile.profile_photo ? (
+        {displayPhoto ? (
           <img
-            src={profile.profile_photo}
+            src={displayPhoto}
             alt={profile.full_name}
             referrerPolicy="no-referrer"
             style={{ objectFit: 'cover', objectPosition: '50% 15%' }}

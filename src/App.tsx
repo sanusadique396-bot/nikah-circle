@@ -38,6 +38,8 @@ import {
   ensureUniqueSequentialMemberIds,
   decodeProfileMetadata,
   hasCompletedBiodata,
+  resolveProfilePhoto,
+  DEFAULT_BRIDE_AVATAR,
 } from './lib/supabase';
 import {
   checkAndCaptureUrlReferral,
@@ -2035,6 +2037,10 @@ export default function App() {
         ...existing!,
         ...profileData,
         gender: resolvedGender,
+        profile_photo: resolveProfilePhoto({
+          gender: resolvedGender,
+          profile_photo: profileData.profile_photo !== undefined ? profileData.profile_photo : existing?.profile_photo,
+        }),
         updated_at: new Date().toISOString(),
       } as Profile;
 
@@ -2084,6 +2090,10 @@ export default function App() {
         is_verified: profileData.is_verified ?? true,
         is_premium: profileData.is_premium ?? (isAdmin ? true : false),
         biodata_uploaded: profileData.biodata_uploaded ?? (isAdmin ? true : false),
+        profile_photo: resolveProfilePhoto({
+          gender: resolvedGender,
+          profile_photo: profileData.profile_photo,
+        }),
         created_at: new Date().toISOString(),
         ...profileData,
       } as Profile;

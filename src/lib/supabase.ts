@@ -1,7 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
-import { Profile, Payment, InterestRecord, PremiumRequest, normalizeGender, autoCorrectMistakenGenders } from '../types';
+import {
+  Profile,
+  Payment,
+  InterestRecord,
+  PremiumRequest,
+  normalizeGender,
+  autoCorrectMistakenGenders,
+  DEFAULT_BRIDE_AVATAR,
+  resolveProfilePhoto,
+} from '../types';
 
-export { normalizeGender, autoCorrectMistakenGenders };
+export { normalizeGender, autoCorrectMistakenGenders, DEFAULT_BRIDE_AVATAR, resolveProfilePhoto };
 
 export const SUPABASE_URL = 
   (typeof import.meta !== 'undefined' && import.meta?.env?.VITE_SUPABASE_URL) || "https://fowkuwwfmnzupzbrrxqf.supabase.co";
@@ -935,7 +944,7 @@ export function prepareSupabaseProfilePayload(profile: Partial<Profile>): any {
     about: encodedAbout,
     partner_preferences: profile.partner_preferences || null,
     family_details: profile.family_details || null,
-    profile_photo: profile.profile_photo || null,
+    profile_photo: resolveProfilePhoto(profile) || null,
     registration_type: profile.registration_type || 'ONLINE',
     profile_status: profile.profile_status || 'APPROVED',
     is_verified: profile.is_verified ?? true,
@@ -978,6 +987,7 @@ export function parseSupabaseProfile(p: any, defaultIndex?: number): Profile {
     member_id: memberId,
     full_name: p.full_name || 'Member',
     gender: normalizeGender(p.gender),
+    profile_photo: resolveProfilePhoto(p),
     marital_status: p.marital_status || 'Never Married',
     about: about,
     place: meta.place || p.place || (p.location ? p.location.split(',')[0].trim() : null),

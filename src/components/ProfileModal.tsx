@@ -1,5 +1,5 @@
 import React from 'react';
-import { Profile, normalizeGender } from '../types';
+import { Profile, normalizeGender, resolveProfilePhoto } from '../types';
 import {
   X,
   MapPin,
@@ -84,9 +84,9 @@ export const ProfileModal: React.FC<Props> = ({
 
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
             <div className="relative w-24 h-24 rounded-2xl overflow-hidden border-2 border-white/30 shrink-0 shadow-md bg-[#fff6fa]">
-              {profile.profile_photo ? (
+              {resolveProfilePhoto(profile) ? (
                 <img
-                  src={profile.profile_photo}
+                  src={resolveProfilePhoto(profile)!}
                   alt={profile.full_name}
                   referrerPolicy="no-referrer"
                   style={{ objectFit: 'cover', objectPosition: '50% 15%' }}

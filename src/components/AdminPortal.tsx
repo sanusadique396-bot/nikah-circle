@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { Profile, Payment, PremiumRequest, IncomingInterest, normalizeGender } from '../types';
+import { Profile, Payment, PremiumRequest, IncomingInterest, normalizeGender, resolveProfilePhoto, DEFAULT_BRIDE_AVATAR } from '../types';
 import { deduplicateProfiles, ensureUniqueSequentialMemberIds, hasCompletedBiodata, DEFAULT_PROFILES } from '../lib/supabase';
 import {
   LayoutDashboard,
@@ -458,9 +458,15 @@ export const AdminPortal: React.FC<Props> = ({
 
   const handleSubmitProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    const resolvedPhoto = resolveProfilePhoto({
+      gender: formData.gender,
+      profile_photo: formData.profile_photo,
+    });
+
     await onSaveProfile(
       {
         ...formData,
+        profile_photo: resolvedPhoto,
         source: 'admin',
         registration_type: 'CASH_ADMIN',
         biodata_uploaded: true,
@@ -1193,10 +1199,10 @@ export const AdminPortal: React.FC<Props> = ({
                                 </div>
 
                                 <div className="flex items-center gap-3 pt-1">
-                                  {targetCandidate?.profile_photo ? (
+                                  {resolveProfilePhoto(targetCandidate) ? (
                                     <img
-                                      src={targetCandidate.profile_photo}
-                                      alt={targetCandidate.full_name}
+                                      src={resolveProfilePhoto(targetCandidate)!}
+                                      alt={targetCandidate?.full_name}
                                       style={{ objectFit: 'cover', objectPosition: '50% 15%' }}
                                       className="w-12 h-12 rounded-xl object-cover object-top border border-purple-200 shrink-0"
                                     />
@@ -1348,9 +1354,9 @@ export const AdminPortal: React.FC<Props> = ({
 
                             {/* Candidate Photo & Basic Info */}
                             <div className="flex items-center gap-3">
-                              {p.profile_photo ? (
+                              {resolveProfilePhoto(p) ? (
                                 <img
-                                  src={p.profile_photo}
+                                  src={resolveProfilePhoto(p)!}
                                   alt={p.full_name}
                                   style={{ objectFit: 'cover', objectPosition: '50% 15%' }}
                                   className="w-14 h-14 rounded-2xl object-cover object-top border border-purple-200 shrink-0"
@@ -1652,8 +1658,8 @@ export const AdminPortal: React.FC<Props> = ({
                               <td className="p-3.5">
                                 <div className="flex items-center gap-2.5">
                                   <div className="w-10 h-10 rounded-xl overflow-hidden bg-stone-100 border border-stone-200 shrink-0 shadow-2xs group-hover:scale-105 transition-transform flex items-center justify-center font-bold text-[#4b001f] text-sm">
-                                    {p.profile_photo ? (
-                                      <img src={p.profile_photo} alt={p.full_name} style={{ objectFit: 'cover', objectPosition: '50% 15%' }} className="w-full h-full object-cover object-top" />
+                                    {resolveProfilePhoto(p) ? (
+                                      <img src={resolveProfilePhoto(p)!} alt={p.full_name} style={{ objectFit: 'cover', objectPosition: '50% 15%' }} className="w-full h-full object-cover object-top" />
                                     ) : (
                                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#fff0f5] to-[#fce7f3] text-[#4b001f]">
                                         {(p.full_name || 'C').charAt(0).toUpperCase()}
@@ -2053,8 +2059,8 @@ export const AdminPortal: React.FC<Props> = ({
                               <td className="p-3.5">
                                 <div className="flex items-center gap-3">
                                   <div className="w-10 h-10 rounded-xl overflow-hidden bg-stone-100 border border-stone-200 shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                                    {p.profile_photo ? (
-                                      <img src={p.profile_photo} alt={p.full_name} style={{ objectFit: 'cover', objectPosition: '50% 15%' }} className="w-full h-full object-cover object-top" />
+                                    {resolveProfilePhoto(p) ? (
+                                      <img src={resolveProfilePhoto(p)!} alt={p.full_name} style={{ objectFit: 'cover', objectPosition: '50% 15%' }} className="w-full h-full object-cover object-top" />
                                     ) : (
                                       <div className="w-full h-full flex items-center justify-center font-bold text-[#4b001f] text-sm bg-gradient-to-br from-[#fff0f5] to-[#fce7f3]">
                                         {(p.full_name || 'U').charAt(0).toUpperCase()}
@@ -3160,8 +3166,8 @@ export const AdminPortal: React.FC<Props> = ({
               <div className="flex items-start justify-between pb-4 border-b border-stone-200">
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 rounded-2xl overflow-hidden bg-stone-100 border border-stone-200 shrink-0 shadow-xs flex items-center justify-center font-bold text-[#4b001f] text-xl">
-                    {viewingProfile.profile_photo ? (
-                      <img src={viewingProfile.profile_photo} alt={viewingProfile.full_name} style={{ objectFit: 'cover', objectPosition: '50% 15%' }} className="w-full h-full object-cover object-top" />
+                    {resolveProfilePhoto(viewingProfile) ? (
+                      <img src={resolveProfilePhoto(viewingProfile)!} alt={viewingProfile.full_name} style={{ objectFit: 'cover', objectPosition: '50% 15%' }} className="w-full h-full object-cover object-top" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#fff0f5] to-[#fce7f3] text-[#4b001f]">
                         {(viewingProfile.full_name || 'U').charAt(0).toUpperCase()}

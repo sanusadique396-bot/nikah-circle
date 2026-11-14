@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { X, UserPlus, CheckCircle2, ShieldCheck, Image as ImageIcon, Camera, Upload, Trash2, Link as LinkIcon, Lock, Sparkles, LogIn } from 'lucide-react';
-import { Profile, normalizeGender } from '../types';
+import { Profile, normalizeGender, resolveProfilePhoto } from '../types';
 
 interface Props {
   isOpen: boolean;
@@ -114,10 +114,17 @@ export const RegisterModal: React.FC<Props> = ({
     e.preventDefault();
     setLoading(true);
     try {
+      const resolvedGender = normalizeGender(formData.gender);
+      const photo = resolveProfilePhoto({
+        gender: resolvedGender,
+        profile_photo: formData.profile_photo,
+      });
+
       // User registrations are immediately active on Free Plan (no admin approval waiting)
       await onSubmit({
         ...formData,
-        gender: normalizeGender(formData.gender),
+        profile_photo: photo,
+        gender: resolvedGender,
         religion: 'Islam',
         registration_type: 'ONLINE',
         profile_status: 'APPROVED',

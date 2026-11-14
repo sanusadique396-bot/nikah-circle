@@ -165,6 +165,28 @@ const KNOWN_MALE_FIRST_NAMES = new Set([
  * Auto-corrects legacy or misassigned profiles where a male candidate was mistakenly
  * saved as 'Female' due to free package defaults ("Girls & Other").
  */
+export const DEFAULT_BRIDE_AVATAR = '/default-bride-avatar.png';
+
+/**
+ * Automatically assigns the default modest hijab avatar for female (Bride) candidates
+ * whenever a custom portrait photo is absent.
+ */
+export function resolveProfilePhoto(profile?: { gender?: string | null; profile_photo?: string | null } | null): string | null {
+  if (!profile) return null;
+  if (profile.profile_photo && typeof profile.profile_photo === 'string' && profile.profile_photo.trim().length > 0) {
+    return profile.profile_photo;
+  }
+  const normGender = normalizeGender(profile.gender);
+  if (normGender === 'Female') {
+    return DEFAULT_BRIDE_AVATAR;
+  }
+  return null;
+}
+
+/**
+ * Auto-corrects legacy or misassigned profiles where a male candidate was mistakenly
+ * saved as 'Female' due to free package defaults ("Girls & Other").
+ */
 export function autoCorrectMistakenGenders(p: Profile): Profile {
   const normGender = normalizeGender(p.gender);
   const nameParts = (p.full_name || '').toLowerCase().trim().split(/\s+/);
