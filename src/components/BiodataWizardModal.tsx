@@ -380,10 +380,10 @@ export const BiodataWizardModal: React.FC<Props> = ({
               </p>
             </div>
 
-            {/* Skip / Close Button */}
+            {/* Close Button */}
             <button
               onClick={onClose}
-              title="Skip for now / Save and Close"
+              title="Close"
               className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer shrink-0"
             >
               <X className="w-5 h-5" />
@@ -1036,16 +1036,6 @@ export const BiodataWizardModal: React.FC<Props> = ({
                 <span>Previous</span>
               </button>
             )}
-
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="flex-1 sm:flex-none px-3.5 py-2.5 rounded-xl text-stone-500 hover:text-stone-800 text-xs font-medium cursor-pointer"
-              title="Skip for now. You can complete it anytime before sending proposals."
-            >
-              Skip for now
-            </button>
           </div>
 
           <div className="w-full sm:w-auto flex items-center gap-2">

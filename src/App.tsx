@@ -39,6 +39,11 @@ import {
   hasCompletedBiodata,
 } from './lib/supabase';
 import {
+  checkAndCaptureUrlReferral,
+  recordReferralSignup,
+  getReferralStatus,
+} from './lib/referral';
+import {
   Heart,
   ArrowRight,
   UserCheck,
@@ -273,47 +278,11 @@ export default function App() {
     );
   }, [currentUserProfile, currentUser, profiles]);
 
-  const effectiveIsPremium = useMemo(() => {
-    try {
-      const adminStatus = localStorage.getItem('nikah_circle_premium_admin_status');
-      if (adminStatus === 'ADMIN_OFF' || adminStatus === 'EXPIRED') return false;
-    } catch {}
-    return (
-      isUserPremium ||
-      Boolean(currentUserProfile?.is_premium) ||
-      Boolean(userApprovedRequest) ||
-      Boolean(userMatchedProfile?.is_premium) ||
-      localStorage.getItem('nikah_circle_user_is_premium') === 'true'
-    );
-  }, [isUserPremium, currentUserProfile, userApprovedRequest, userMatchedProfile]);
-
-  const effectivePlanName = useMemo(() => {
-    if (userApprovedRequest?.plan_name) return userApprovedRequest.plan_name;
-    if (userMatchedProfile?.premium_plan) return userMatchedProfile.premium_plan;
-    if (userPlanName && userPlanName !== 'Free Plan') return userPlanName;
-    return effectiveIsPremium ? 'Premium Plan' : 'Free Plan';
-  }, [userApprovedRequest, userMatchedProfile, userPlanName, effectiveIsPremium]);
-
-  // Admin approval workflow removed: accounts are immediately active upon setup
-  const isAdminApproved = useMemo(() => {
-    if (userMatchedProfile) {
-      return userMatchedProfile.profile_status !== 'REJECTED';
-    }
-    return Boolean(currentUserProfile || currentUser);
-  }, [userMatchedProfile, currentUserProfile, currentUser]);
-
-  const isUserApproved = isAdminApproved;
-
-  // Track if user has completed candidate biodata details
-  const hasUserBiodata = useMemo(() => {
-    return hasCompletedBiodata(currentUserProfile) || hasCompletedBiodata(userMatchedProfile);
-  }, [currentUserProfile, userMatchedProfile]);
-
   const effectiveMemberId = useMemo(() => {
     const checkValid = (id?: string | null) => {
       if (!id) return null;
       const num = extractMemberIdNumber(id);
-      return num && num >= 1001 ? `NCSM${num}` : null;
+      return num && num >= 1003 ? `NCSM${num}` : null;
     };
 
     if (checkValid(currentUserProfile?.member_id)) return checkValid(currentUserProfile?.member_id)!;
@@ -333,6 +302,54 @@ export default function App() {
 
     return '';
   }, [currentUserProfile, currentUser, userMatchedProfile, profiles]);
+
+  // Referral Reward System: 3 successful referrals = 1 Week (7 Days) Free Premium Access
+  const referralStatus = useMemo(() => {
+    return getReferralStatus(effectiveMemberId || currentUserProfile?.member_id);
+  }, [effectiveMemberId, currentUserProfile?.member_id, profiles]);
+
+  const effectiveIsPremium = useMemo(() => {
+    try {
+      const adminStatus = localStorage.getItem('nikah_circle_premium_admin_status');
+      if (adminStatus === 'ADMIN_OFF' || adminStatus === 'EXPIRED') return false;
+    } catch {}
+    return (
+      isUserPremium ||
+      Boolean(currentUserProfile?.is_premium) ||
+      Boolean(userApprovedRequest) ||
+      Boolean(userMatchedProfile?.is_premium) ||
+      referralStatus.isRewardActive ||
+      localStorage.getItem('nikah_circle_user_is_premium') === 'true'
+    );
+  }, [isUserPremium, currentUserProfile, userApprovedRequest, userMatchedProfile, referralStatus.isRewardActive]);
+
+  const effectivePlanName = useMemo(() => {
+    if (userApprovedRequest?.plan_name) return userApprovedRequest.plan_name;
+    if (userMatchedProfile?.premium_plan) return userMatchedProfile.premium_plan;
+    if (referralStatus.isRewardActive) return `1 Week Free Premium (${referralStatus.daysRemaining}d left)`;
+    if (userPlanName && userPlanName !== 'Free Plan') return userPlanName;
+    return effectiveIsPremium ? 'Premium Plan' : 'Free Plan';
+  }, [userApprovedRequest, userMatchedProfile, userPlanName, effectiveIsPremium, referralStatus]);
+
+  // Admin approval workflow removed: accounts are immediately active upon setup
+  const isAdminApproved = useMemo(() => {
+    if (userMatchedProfile) {
+      return userMatchedProfile.profile_status !== 'REJECTED';
+    }
+    return Boolean(currentUserProfile || currentUser);
+  }, [userMatchedProfile, currentUserProfile, currentUser]);
+
+  const isUserApproved = isAdminApproved;
+
+  // Track if user has completed candidate biodata details
+  const hasUserBiodata = useMemo(() => {
+    return hasCompletedBiodata(currentUserProfile) || hasCompletedBiodata(userMatchedProfile);
+  }, [currentUserProfile, userMatchedProfile]);
+
+  // Capture incoming referral link (?ref=CODE) on app load
+  useEffect(() => {
+    checkAndCaptureUrlReferral();
+  }, []);
 
   // Auto-sync currentUserProfile from userMatchedProfile if available to ensure correct member_id, mobile, and id binding
   useEffect(() => {
@@ -1156,7 +1173,7 @@ export default function App() {
     const getValidCandidateId = (rawId?: string | null) => {
       if (!rawId) return null;
       const num = extractMemberIdNumber(rawId);
-      if (!num || num < 1001) return null;
+      if (!num || num < 1003) return null;
       const isConflict = profiles.some((p, idx) => {
         if (idx === existingIndex) return false;
         if (p.member_id !== `NCSM${num}`) return false;
@@ -1288,6 +1305,17 @@ export default function App() {
 
     setIsCreateAccountOpen(false);
     setIsEditingProfile(false);
+
+    // Record referral if this is a newly registered member referred via link
+    try {
+      const wasReferralRecorded = recordReferralSignup(memberId, data.full_name);
+      if (wasReferralRecorded) {
+        console.log('Referral signup recorded successfully for referee:', memberId);
+      }
+    } catch (refErr) {
+      console.warn('Error recording referral signup', refErr);
+    }
+
     showToast('Profile account saved successfully!');
     confetti({
       particleCount: 60,
@@ -2539,6 +2567,10 @@ export default function App() {
             memberId={effectiveMemberId}
             isUserPremium={effectiveIsPremium}
             totalMembersCount={profiles.length}
+            referralStatus={referralStatus}
+            isLoggedIn={Boolean(currentUserProfile || currentUser)}
+            onOpenCreateProfile={handleOpenCreateProfile}
+            onToast={showToast}
           />
 
           <main id="featured-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12 flex-1">
@@ -3475,7 +3507,7 @@ export default function App() {
         onClose={() => setIsRegisterOpen(false)}
         onSubmit={async (newProfile) => {
           await handleSaveProfile(newProfile);
-          showToast('Profile submitted for admin approval!');
+          showToast('Profile created successfully! Your account is active on the Free Plan.');
         }}
         isUserPremium={effectiveIsPremium || isAdmin}
         onOpenPremium={() => {

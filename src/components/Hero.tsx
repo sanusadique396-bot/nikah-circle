@@ -1,5 +1,7 @@
 import React from 'react';
 import { ShieldCheck, Lock, Heart, Users, CheckCircle2, ArrowRight } from 'lucide-react';
+import { ReferralWidget } from './ReferralWidget';
+import { ReferralStatus } from '../lib/referral';
 
 interface Props {
   onBrowseClick: () => void;
@@ -8,6 +10,10 @@ interface Props {
   memberId?: string;
   isUserPremium?: boolean;
   totalMembersCount?: number;
+  referralStatus?: ReferralStatus;
+  isLoggedIn?: boolean;
+  onOpenCreateProfile?: () => void;
+  onToast?: (msg: string) => void;
 }
 
 export const Hero: React.FC<Props> = ({
@@ -17,6 +23,10 @@ export const Hero: React.FC<Props> = ({
   memberId,
   isUserPremium = false,
   totalMembersCount = 0,
+  referralStatus,
+  isLoggedIn = false,
+  onOpenCreateProfile,
+  onToast,
 }) => {
   // Increment cleanly in steps of 100: 1,500+, 1,600+, 1,700+...
   const memberIncrement = Math.floor(totalMembersCount / 100) * 100;
@@ -102,9 +112,10 @@ export const Hero: React.FC<Props> = ({
           </div>
 
           {/* Right Column: Hero Visual Card with Official Logo Asset */}
-          <div className="lg:col-span-5 relative flex items-center justify-center">
+          {/* Right Column: Hero Visual Card with Official Logo Asset & Referral Reward Section */}
+          <div className="lg:col-span-5 relative flex flex-col items-center justify-center space-y-6">
             {/* Background Halo */}
-            <div className="w-72 h-72 sm:w-84 sm:h-84 rounded-full bg-gradient-to-tr from-[#f7dce8] to-[#fff6fa] border border-[#eadfe4] absolute -z-0 shadow-inner" />
+            <div className="w-72 h-72 sm:w-84 sm:h-84 rounded-full bg-gradient-to-tr from-[#f7dce8] to-[#fff6fa] border border-[#eadfe4] absolute top-6 -z-0 shadow-inner pointer-events-none" />
 
             {/* Main Showcase Card Container with Prominent Top-Left Member ID and Top-Right Admin Verified */}
             <div className="relative z-10 w-full max-w-sm">
@@ -181,6 +192,18 @@ export const Hero: React.FC<Props> = ({
                 </button>
               </div>
             </div>
+
+            {/* Prominent Referral Reward Widget Placed Right Beneath the Main Showcase Card */}
+            {referralStatus && (
+              <div className="relative z-10 w-full max-w-sm">
+                <ReferralWidget
+                  referralStatus={referralStatus}
+                  isLoggedIn={isLoggedIn}
+                  onOpenCreateProfile={onOpenCreateProfile || onRegisterClick}
+                  onToast={onToast}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

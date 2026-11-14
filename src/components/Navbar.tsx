@@ -157,21 +157,15 @@ export const Navbar: React.FC<Props> = ({
               )}
             </button>
 
-            {/* Static Non-Clickable Plan Display Badge: Strictly Premium Plan for premium users, Free Plan for free users */}
-            <div
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold select-none pointer-events-none shadow-2xs ${
-                isUserPremium
-                  ? 'bg-gradient-to-r from-amber-500 via-[#c9973e] to-amber-600 text-white border border-amber-300'
-                  : 'bg-stone-100 text-stone-700 border border-stone-200'
-              }`}
-            >
-              {isUserPremium ? (
+            {/* Static Non-Clickable Plan Display Badge: Strictly displayed ONLY for active Premium users */}
+            {isUserPremium && (
+              <div
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold select-none pointer-events-none shadow-2xs bg-gradient-to-r from-amber-500 via-[#c9973e] to-amber-600 text-white border border-amber-300"
+              >
                 <Sparkles className="w-3.5 h-3.5 text-white" />
-              ) : (
-                <span className="w-2 h-2 rounded-full bg-stone-400" />
-              )}
-              <span>{isUserPremium ? 'Premium Plan' : 'Free Plan'}</span>
-            </div>
+                <span>Premium Plan</span>
+              </div>
+            )}
           </nav>
 
           {/* Zone 3: Profile Avatar & Quick Actions */}
@@ -241,17 +235,13 @@ export const Navbar: React.FC<Props> = ({
               </button>
             )}
 
-            {/* Mobile / Tablet Static Plan Badge (Non-clickable) */}
-            <div
-              className={`md:hidden flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold select-none pointer-events-none ${
-                isUserPremium
-                  ? 'bg-gradient-to-r from-amber-500 to-[#c9973e] text-white'
-                  : 'bg-stone-100 text-stone-700 border border-stone-200'
-              }`}
-            >
-              <Sparkles className="w-3 h-3 text-[#c9973e]" />
-              <span>{isUserPremium ? 'Premium Plan' : 'Free Plan'}</span>
-            </div>
+            {/* Mobile / Tablet Static Plan Badge (Only shown for active Premium) */}
+            {isUserPremium && (
+              <div className="md:hidden flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold select-none pointer-events-none bg-gradient-to-r from-amber-500 to-[#c9973e] text-white shadow-2xs">
+                <Sparkles className="w-3 h-3 text-amber-200" />
+                <span>Premium Plan</span>
+              </div>
+            )}
 
             {/* Mobile Nav Toggle */}
             <button
@@ -317,22 +307,14 @@ export const Navbar: React.FC<Props> = ({
               </span>
             )}
           </button>
-          <div
-            className={`w-full px-3 py-2 text-sm font-bold rounded-lg flex items-center justify-between select-none ${
-              isUserPremium
-                ? 'bg-[#fff6fa] text-[#946b17] border border-[#eadfe4]'
-                : 'bg-stone-50 text-stone-700 border border-stone-200'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              {isUserPremium ? (
+          {isUserPremium && (
+            <div className="w-full px-3 py-2 text-sm font-bold rounded-lg flex items-center justify-between select-none bg-[#fff6fa] text-[#946b17] border border-[#eadfe4]">
+              <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-[#c9973e]" />
-              ) : (
-                <span className="w-2 h-2 rounded-full bg-stone-400" />
-              )}
-              <span>Plan: {isUserPremium ? 'Premium Plan' : 'Free Plan'}</span>
+                <span>Plan: Premium Plan</span>
+              </div>
             </div>
-          </div>
+          )}
 
           {!userProfile && (
             <button

@@ -85,7 +85,7 @@ export function deduplicateProfiles(inputProfiles: Profile[]): Profile[] {
 
       const nExisting = extractMemberIdNumber(existing.member_id);
       const nProf = extractMemberIdNumber(prof.member_id);
-      const bestMemberId = nProf && nProf >= 1001 ? prof.member_id : (nExisting && nExisting >= 1001 ? existing.member_id : (prof.member_id || existing.member_id));
+      const bestMemberId = nProf && nProf >= 1003 ? prof.member_id : (nExisting && nExisting >= 1003 ? existing.member_id : (prof.member_id || existing.member_id));
 
       const isPrem = Boolean(existing.is_premium || prof.is_premium);
       const isApproved = existing.profile_status === 'APPROVED' || prof.profile_status === 'APPROVED';
@@ -126,9 +126,9 @@ export function ensureUniqueSequentialMemberIds(profiles: Profile[]): Profile[] 
   if (!Array.isArray(profiles) || profiles.length === 0) return [];
 
   const assigned = new Map<string, string>(); // member_id -> unique profile key
-  let maxNumber = 1000;
+  let maxNumber = 1002;
 
-  // Step 1: Retain valid unique IDs >= 1001
+  // Step 1: Retain valid unique IDs >= 1003
   const processed = profiles.map((p) => {
     let currentId = p.member_id || '';
     if (!currentId && p.about) {
@@ -139,8 +139,8 @@ export function ensureUniqueSequentialMemberIds(profiles: Profile[]): Profile[] 
     }
 
     const num = extractMemberIdNumber(currentId);
-    // If it has a valid number >= 1001 that hasn't been claimed yet
-    if (num && num >= 1001 && !assigned.has(`NCSM${num}`)) {
+    // If it has a valid number >= 1003 that hasn't been claimed yet
+    if (num && num >= 1003 && !assigned.has(`NCSM${num}`)) {
       assigned.set(`NCSM${num}`, p.id || p.email || p.mobile || p.full_name);
       if (num > maxNumber) maxNumber = num;
       return { ...p, member_id: `NCSM${num}` };
@@ -150,8 +150,8 @@ export function ensureUniqueSequentialMemberIds(profiles: Profile[]): Profile[] 
     return { ...p, member_id: '' };
   });
 
-  // Step 2: Assign sequential unique IDs starting from NCSM1001 to any profiles needing one
-  let nextSeq = 1001;
+  // Step 2: Assign sequential unique IDs starting from NCSM1003 to any profiles needing one
+  let nextSeq = 1003;
   const finalized = processed.map((p) => {
     if (p.member_id && assigned.has(p.member_id)) {
       return p;
@@ -168,7 +168,7 @@ export function ensureUniqueSequentialMemberIds(profiles: Profile[]): Profile[] 
 
   // Step 3: Persist the highest sequence counter into localStorage
   try {
-    localStorage.setItem(MEMBER_ID_SEQ_KEY, Math.max(1000, maxNumber).toString());
+    localStorage.setItem(MEMBER_ID_SEQ_KEY, Math.max(1002, maxNumber).toString());
   } catch {}
 
   return finalized;
@@ -320,15 +320,15 @@ export function markReferralCodeUsed(code: string) {
   }
 }
 
-// Sequential Auto-Increment Member ID System: NCSM1001, NCSM1002, NCSM1003...
-export const MEMBER_ID_SEQ_KEY = 'nikah_circle_member_id_seq_v7';
+// Sequential Auto-Increment Member ID System: NCSM1003, NCSM1004, NCSM1005...
+export const MEMBER_ID_SEQ_KEY = 'nikah_circle_member_id_seq_v9';
 
 export function extractMemberIdNumber(idStr?: string | null): number | null {
   if (!idStr || typeof idStr !== 'string') return null;
   const match = idStr.match(/NCSM(\d+)/i);
   if (match && match[1]) {
     const num = parseInt(match[1], 10);
-    if (!isNaN(num) && num >= 1001) return num;
+    if (!isNaN(num) && num >= 1003) return num;
   }
   return null;
 }
@@ -336,8 +336,8 @@ export function extractMemberIdNumber(idStr?: string | null): number | null {
 export function getHighestExistingMemberNumber(
   existingProfiles?: Array<{ member_id?: string | null; id?: string | null; about?: string | null }>
 ): number {
-  // Baseline is 1000 so the first registered user gets NCSM1001
-  let highest = 1000;
+  // Baseline is 1002 so the first newly registered user starts strictly from NCSM1003
+  let highest = 1002;
 
   // 1. Check passed profiles
   if (Array.isArray(existingProfiles)) {
@@ -392,6 +392,8 @@ export function getHighestExistingMemberNumber(
   try {
     const seqRaw =
       localStorage.getItem(MEMBER_ID_SEQ_KEY) ||
+      localStorage.getItem('nikah_circle_member_id_seq_v8') ||
+      localStorage.getItem('nikah_circle_member_id_seq_v7') ||
       localStorage.getItem('nikah_circle_member_id_seq_v6') ||
       localStorage.getItem('nikah_circle_member_id_seq_v5') ||
       localStorage.getItem('nikah_circle_member_id_seq_v4');
@@ -409,13 +411,13 @@ export function getNextMemberId(
 ): string {
   try {
     const highest = getHighestExistingMemberNumber(existingProfiles);
-    const next = Math.max(1001, highest + 1);
+    const next = Math.max(1003, highest + 1);
     try {
       localStorage.setItem(MEMBER_ID_SEQ_KEY, next.toString());
     } catch {}
     return `NCSM${next}`;
   } catch {
-    return 'NCSM1001';
+    return 'NCSM1003';
   }
 }
 
@@ -539,10 +541,10 @@ export function parseSupabaseProfile(p: any, defaultIndex?: number): Profile {
     extractMemberIdNumber(p.id);
 
   let memberId = '';
-  if (parsedNum && parsedNum >= 1001) {
+  if (parsedNum && parsedNum >= 1003) {
     memberId = `NCSM${parsedNum}`;
   } else if (typeof defaultIndex === 'number') {
-    memberId = `NCSM${1001 + defaultIndex}`;
+    memberId = `NCSM${1003 + defaultIndex}`;
   } else {
     memberId = '';
   }
@@ -586,7 +588,7 @@ export function parseSupabaseProfile(p: any, defaultIndex?: number): Profile {
 }
 
 // Full Fresh Database and User Reset System
-const CLEAN_RESET_KEY = 'nikah_circle_clean_reset_v8000';
+const CLEAN_RESET_KEY = 'nikah_circle_clean_reset_v9000';
 
 export function performInitialResetIfRequired() {
   try {
@@ -615,9 +617,11 @@ export function performInitialResetIfRequired() {
       localStorage.removeItem('nikah_circle_member_id_seq_v5');
       localStorage.removeItem('nikah_circle_member_id_seq_v6');
       localStorage.removeItem('nikah_circle_member_id_seq_v7');
+      localStorage.removeItem('nikah_circle_member_id_seq_v8');
+      localStorage.removeItem('nikah_circle_member_id_seq_v9');
 
-      // Set baseline sequence counter to 1000 so next new registration starts cleanly at NCSM1001
-      localStorage.setItem(MEMBER_ID_SEQ_KEY, '1000');
+      // Set baseline sequence counter to 1002 so first newly registered user starts strictly from NCSM1003
+      localStorage.setItem(MEMBER_ID_SEQ_KEY, '1002');
       localStorage.setItem(CLEAN_RESET_KEY, 'true');
     }
   } catch (e) {

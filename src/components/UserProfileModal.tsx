@@ -348,66 +348,9 @@ export const UserProfileModal: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* If user is editing but pending admin approval: show clean waiting message */}
-        {isEditing && !approved ? (
-          <div className="p-6 sm:p-8 space-y-6 text-center">
-            <div className="w-16 h-16 rounded-3xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto shadow-inner text-2xl font-bold">
-              ⏳
-            </div>
-            <div className="space-y-2">
-              <span className="inline-block text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
-                Waiting for Admin Approval
-              </span>
-              <h3 className="font-serif text-xl sm:text-2xl font-bold text-stone-900">
-                Profile Verification in Progress
-              </h3>
-              <p className="text-xs sm:text-sm text-stone-600 max-w-md mx-auto leading-relaxed">
-                Assalamu Alaikum <strong>{formData.full_name || 'Member'}</strong>. Your profile details have been submitted and are currently awaiting review and official verification by our administration team.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 text-left text-xs text-amber-950 space-y-2 max-w-md mx-auto">
-              <div className="font-bold flex items-center gap-2 text-amber-900">
-                <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
-                <span>Verification Policy</span>
-              </div>
-              <p className="text-[11px] text-amber-800/90 leading-normal">
-                To uphold family modesty, privacy, and authentic matrimonial profiles, editing profile details, matrimonial biodata document uploads, and sending proposal interests will be unlocked immediately once an administrator officially approves your profile.
-              </p>
-              {formData.member_id && (
-                <div className="pt-1 text-[11px] font-mono text-stone-600">
-                  Unique Member ID: <strong className="text-stone-900">{formData.member_id}</strong>
-                </div>
-              )}
-            </div>
-
-            <div className="pt-2 flex flex-col items-center gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-6 py-2.5 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold transition-colors cursor-pointer shadow-sm"
-              >
-                Close & Return
-              </button>
-              {onSwitchToLogin && (
-                <p className="text-xs text-stone-600">
-                  Already registered?{' '}
-                  <button
-                    type="button"
-                    onClick={onSwitchToLogin}
-                    className="font-bold text-[#4b001f] hover:text-[#c9973e] hover:underline cursor-pointer inline-flex items-center gap-1 transition-colors"
-                  >
-                    <LogIn className="w-3.5 h-3.5" />
-                    <span>Sign In</span>
-                  </button>
-                </p>
-              )}
-            </div>
-          </div>
-        ) : (
-          /* Form Body */
-          <form onSubmit={handleSubmit} className="p-5 sm:p-6 overflow-y-auto space-y-6 text-xs sm:text-sm text-stone-800">
-            {/* Post-Premium Biodata Upload Notice */}
+        {/* Form Body - Immediate Active Access */}
+        <form onSubmit={handleSubmit} className="p-5 sm:p-6 overflow-y-auto space-y-6 text-xs sm:text-sm text-stone-800">
+          {/* Post-Premium Biodata Upload Notice */}
             {isPostPremium && approved && (
               <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500 via-[#c9973e] to-amber-600 text-white shadow-sm flex items-start gap-3">
                 <Sparkles className="w-5 h-5 text-white shrink-0 mt-0.5 animate-pulse" />
@@ -904,7 +847,6 @@ export const UserProfileModal: React.FC<Props> = ({
             )}
           </div>
         </form>
-        )}
       </div>
     </div>
   );
