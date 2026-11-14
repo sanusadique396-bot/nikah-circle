@@ -150,7 +150,7 @@ export const AdminPortal: React.FC<Props> = ({
   // Helper to distinguish Admin-Added Profiles from self-registered user accounts
   const isAdminAdded = (p: Profile): boolean => {
     if (p.registration_type === 'CASH_ADMIN') return true;
-    if (p.member_id && ['NCSM1004', 'NCSM1005', 'NCSM1006'].includes(p.member_id)) return true;
+    if (p.member_id && ['NCSM1004', 'NCSM1005', 'NCSM1006', 'NCSM1007'].includes(p.member_id)) return true;
     if (!p.email && !p.auth_user_id) return true;
     return false;
   };
@@ -1067,7 +1067,7 @@ export const AdminPortal: React.FC<Props> = ({
                           : `No ${adminProposalStatusFilter} Proposals Found`}
                       </h4>
                       <p className="text-xs text-stone-500 max-w-md mx-auto leading-relaxed">
-                        When platform users view admin-added profiles (like NCSM1004, NCSM1005, NCSM1006) and express proposal interest, they appear here. The admin can accept or reject each proposal. Accepting instantly unlocks the guardian contact for the requesting family.
+                        When platform users view admin-added profiles (like NCSM1004, NCSM1005, NCSM1006, NCSM1007) and express proposal interest, they appear here. The admin can accept or reject each proposal. Accepting instantly unlocks the guardian contact for the requesting family.
                       </p>
                     </div>
                   ) : (
