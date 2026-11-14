@@ -56,7 +56,8 @@ export const DEFAULT_PROFILES: Profile[] = [
     marriage_expectations: "Looking for a bride from a religious family (ദീനിയായ കുടുംബത്തിൽ നിന്നും ഒരു കുട്ടി).",
     partner_preferences: "Looking for a bride from a religious family (ദീനിയായ കുടുംബത്തിൽ നിന്നും ഒരു കുട്ടി).",
     profile_photo: "/profiles/ncsm1004.jpg",
-    registration_type: "ONLINE",
+    registration_type: "CASH_ADMIN",
+    source: "admin",
     profile_status: "APPROVED",
     is_verified: true,
     is_premium: true,
@@ -99,7 +100,8 @@ export const DEFAULT_PROFILES: Profile[] = [
     marriage_expectations: "Looking for a religious-minded girl (ദീനി ബോധമുള്ള പെൺകുട്ടി). Willingness to allow her to study and work (പഠിക്കാനും ജോലിക്ക് പോകാനും സമ്മതമാണ്).",
     partner_preferences: "Looking for a religious-minded girl (ദീനി ബോധമുള്ള പെൺകുട്ടി). Willingness to allow her to study and work (പഠിക്കാനും ജോലിക്ക് പോകാനും സമ്മതമാണ്).",
     profile_photo: "/profiles/ncsm1005.jpg",
-    registration_type: "ONLINE",
+    registration_type: "CASH_ADMIN",
+    source: "admin",
     profile_status: "APPROVED",
     is_verified: true,
     is_premium: true,
@@ -143,7 +145,8 @@ export const DEFAULT_PROFILES: Profile[] = [
     partner_preferences: "Looking for a religious, understanding bride from a good Muslim family (ദീനിയായ സുന്നി കുടുംബത്തിൽ നിന്നുള്ള കുട്ടി).",
     other_interests: "No physical disabilities or ailments.",
     profile_photo: "/profiles/ncsm1006.jpg",
-    registration_type: "ONLINE",
+    registration_type: "CASH_ADMIN",
+    source: "admin",
     profile_status: "APPROVED",
     is_verified: true,
     is_premium: true,
@@ -187,7 +190,8 @@ export const DEFAULT_PROFILES: Profile[] = [
     passport_visa_status: "UAE Resident Visa (Valid)",
     other_interests: "Reading, Islamic lectures, Family gatherings",
     profile_photo: "/profiles/ncsm1007.jpg",
-    registration_type: "ONLINE",
+    registration_type: "CASH_ADMIN",
+    source: "admin",
     profile_status: "APPROVED",
     is_verified: true,
     is_premium: true,
@@ -229,7 +233,8 @@ export const DEFAULT_PROFILES: Profile[] = [
     partner_preferences: "Educated, religious Sunni groom up to 30 years old from Palakkad, Malappuram, or Thrissur.",
     other_interests: "No physical disabilities or ailments.",
     profile_photo: "/profiles/ncsm1008.jpg",
-    registration_type: "ONLINE",
+    registration_type: "CASH_ADMIN",
+    source: "admin",
     profile_status: "APPROVED",
     is_verified: true,
     is_premium: true,
@@ -273,7 +278,8 @@ export const DEFAULT_PROFILES: Profile[] = [
     partner_preferences: "Religious Sunni bride from Malappuram, Kozhikode, or neighboring districts.",
     other_interests: "No physical disabilities or ailments. No liabilities (ബാധ്യതകൾ ഇല്ല).",
     profile_photo: "/profiles/ncsm1009.jpg",
-    registration_type: "ONLINE",
+    registration_type: "CASH_ADMIN",
+    source: "admin",
     profile_status: "APPROVED",
     is_verified: true,
     is_premium: true,
@@ -455,10 +461,20 @@ export function getStoredProfiles(): Profile[] {
         const combined = [...DEFAULT_PROFILES];
         parsed.forEach((p) => {
           const idx = combined.findIndex(
-            (c) => c.member_id === p.member_id || (c.mobile && p.mobile && c.mobile === p.mobile) || c.id === p.id
+            (c) => (p.member_id && c.member_id && p.member_id.toUpperCase() === c.member_id.toUpperCase()) ||
+                   (c.mobile && p.mobile && c.mobile.replace(/\D/g, '').slice(-8) === p.mobile.replace(/\D/g, '').slice(-8)) ||
+                   c.id === p.id
           );
           if (idx >= 0) {
-            combined[idx] = { ...combined[idx], ...p };
+            combined[idx] = {
+              ...p,
+              ...combined[idx],
+              biodata_uploaded: true,
+              is_verified: true,
+              is_premium: true,
+              registration_type: 'CASH_ADMIN',
+              source: 'admin',
+            };
           } else {
             combined.push(p);
           }
@@ -771,6 +787,8 @@ export function prepareSupabaseProfilePayload(profile: Partial<Profile>): any {
     blood_group: profile.blood_group,
     passport_visa_status: profile.passport_visa_status,
     other_interests: profile.other_interests,
+    source: profile.source || (profile.registration_type === 'CASH_ADMIN' ? 'admin' : undefined),
+    created_by: profile.created_by || undefined,
   };
 
   const encodedAbout = encodeProfileMetadata(profile.about, meta);
@@ -863,10 +881,12 @@ export function parseSupabaseProfile(p: any, defaultIndex?: number): Profile {
     blood_group: meta.blood_group || (p as any).blood_group || null,
     passport_visa_status: meta.passport_visa_status || (p as any).passport_visa_status || null,
     other_interests: meta.other_interests || (p as any).other_interests || null,
-    registration_type: p.registration_type || 'ONLINE',
+    registration_type: p.registration_type || (meta.source === 'admin' ? 'CASH_ADMIN' : 'ONLINE'),
+    source: meta.source || (p.registration_type === 'CASH_ADMIN' ? 'admin' : 'user'),
+    created_by: meta.created_by || (p.registration_type === 'CASH_ADMIN' ? 'admin' : null),
     profile_status: p.profile_status || 'APPROVED',
     is_verified: p.is_verified ?? true,
-    is_premium: p.is_premium ?? false,
+    is_premium: p.is_premium ?? (meta.source === 'admin' || p.registration_type === 'CASH_ADMIN'),
   });
 }
 

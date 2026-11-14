@@ -28,6 +28,8 @@ export interface Profile {
   family_details?: string | null;
   profile_photo?: string | null;
   registration_type: 'ONLINE' | 'CASH_ADMIN';
+  source?: 'admin' | 'user' | string | null;
+  created_by?: string | null;
   profile_status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'INACTIVE';
   is_verified: boolean;
   is_premium: boolean;

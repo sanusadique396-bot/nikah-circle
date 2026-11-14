@@ -15,6 +15,7 @@ import { OfflineBanner } from './components/OfflineBanner';
 import { Profile, Payment, SearchFilters, PremiumRequest, IncomingInterest } from './types';
 import {
   supabase,
+  DEFAULT_PROFILES,
   getStoredProfiles,
   saveStoredProfiles,
   getStoredPayments,
@@ -666,47 +667,96 @@ export default function App() {
       const deleted = getDeletedRecords();
 
       let merged: Profile[] = [];
-      if (!profileErr && dbProfiles) {
+      const combinedMap = new Map<string, Profile>();
+
+      // A. Populate from Supabase profiles table
+      if (!profileErr && dbProfiles && Array.isArray(dbProfiles)) {
         const parsedDb: Profile[] = dbProfiles.map((p: any, idx: number) => parseSupabaseProfile(p, idx));
-
-        // Create fast lookup map for localProfiles to preserve newly updated biodata & subscription fields
-        const localMap = new Map<string, Profile>();
-        localProfiles.forEach((lp) => {
-          if (lp.id) localMap.set(lp.id, lp);
-          if (lp.email) localMap.set(lp.email.toLowerCase(), lp);
-          if (lp.mobile) localMap.set(lp.mobile.replace(/\D/g, '').slice(-8), lp);
+        parsedDb.forEach((dp) => {
+          if (dp.id) combinedMap.set(dp.id, dp);
         });
-
-        const mergedDb = parsedDb.map((dp) => {
-          const phoneKey = dp.mobile ? dp.mobile.replace(/\D/g, '').slice(-8) : '';
-          const emailKey = dp.email ? dp.email.toLowerCase() : '';
-          const localMatch = localMap.get(dp.id) || (emailKey && localMap.get(emailKey)) || (phoneKey && localMap.get(phoneKey));
-          if (localMatch) {
-            return {
-              ...dp,
-              member_id: dp.member_id || localMatch.member_id,
-              biodata_uploaded: localMatch.biodata_uploaded || dp.biodata_uploaded,
-              biodata_document_name: localMatch.biodata_document_name || dp.biodata_document_name,
-              biodata_document_url: localMatch.biodata_document_url || dp.biodata_document_url,
-              is_premium: localMatch.is_premium || dp.is_premium,
-              premium_plan: localMatch.premium_plan || dp.premium_plan,
-              premium_start: localMatch.premium_start || dp.premium_start,
-              premium_end: localMatch.premium_end || dp.premium_end,
-              place: localMatch.place || dp.place,
-              district: localMatch.district || dp.district,
-              gender: normalizeGender(localMatch.gender || dp.gender),
-              hobbies: localMatch.hobbies || dp.hobbies,
-              interests: localMatch.interests || dp.interests,
-            };
-          }
-          return dp;
-        });
-
-        // Only keep profiles that exist and are not deleted
-        merged = mergedDb.filter((p) => !isProfileDeleted(p, deleted));
-      } else {
-        merged = localProfiles.filter((p) => !isProfileDeleted(p, deleted));
       }
+
+      // B. ALWAYS guarantee all DEFAULT_PROFILES (core verified candidate profiles NCSM1004-NCSM1009)
+      DEFAULT_PROFILES.forEach((def) => {
+        const defPhone = def.mobile ? def.mobile.replace(/\D/g, '').slice(-8) : '';
+        const existingKey = Array.from(combinedMap.keys()).find((k) => {
+          const item = combinedMap.get(k)!;
+          return (
+            item.id === def.id ||
+            (def.member_id && item.member_id && def.member_id.toUpperCase() === item.member_id.toUpperCase()) ||
+            (defPhone && item.mobile && defPhone === item.mobile.replace(/\D/g, '').slice(-8))
+          );
+        });
+
+        if (existingKey) {
+          const existing = combinedMap.get(existingKey)!;
+          combinedMap.set(existingKey, {
+            ...def,
+            ...existing,
+            member_id: def.member_id || existing.member_id,
+            profile_photo: existing.profile_photo || def.profile_photo,
+            biodata_uploaded: true,
+            is_verified: true,
+            is_premium: true,
+            registration_type: 'CASH_ADMIN',
+            source: 'admin',
+          });
+        } else {
+          combinedMap.set(def.id, {
+            ...def,
+            registration_type: 'CASH_ADMIN',
+            source: 'admin',
+          });
+        }
+      });
+
+      // C. ALWAYS preserve all localProfiles (admin-added manual profiles, offline created profiles)
+      localProfiles.forEach((lp) => {
+        if (!lp) return;
+        const lpPhone = lp.mobile ? lp.mobile.replace(/\D/g, '').slice(-8) : '';
+        const lpEmail = lp.email ? lp.email.toLowerCase().trim() : '';
+
+        const existingKey = Array.from(combinedMap.keys()).find((k) => {
+          const item = combinedMap.get(k)!;
+          return (
+            (lp.id && item.id && lp.id === item.id) ||
+            (lp.member_id && item.member_id && lp.member_id.toUpperCase() === item.member_id.toUpperCase()) ||
+            (lpPhone && item.mobile && lpPhone === item.mobile.replace(/\D/g, '').slice(-8)) ||
+            (lpEmail && item.email && lpEmail === item.email.toLowerCase().trim())
+          );
+        });
+
+        if (existingKey) {
+          const existing = combinedMap.get(existingKey)!;
+          combinedMap.set(existingKey, {
+            ...existing,
+            ...lp,
+            member_id: lp.member_id || existing.member_id,
+            biodata_uploaded: lp.biodata_uploaded ?? existing.biodata_uploaded,
+            biodata_document_name: lp.biodata_document_name || existing.biodata_document_name,
+            biodata_document_url: lp.biodata_document_url || existing.biodata_document_url,
+            is_premium: lp.is_premium ?? existing.is_premium,
+            premium_plan: lp.premium_plan || existing.premium_plan,
+            premium_start: lp.premium_start || existing.premium_start,
+            premium_end: lp.premium_end || existing.premium_end,
+            place: lp.place || existing.place,
+            district: lp.district || existing.district,
+            gender: normalizeGender(lp.gender || existing.gender),
+            hobbies: lp.hobbies || existing.hobbies,
+            interests: lp.interests || existing.interests,
+            registration_type: lp.registration_type || existing.registration_type || 'ONLINE',
+            source: lp.source || existing.source || (lp.registration_type === 'CASH_ADMIN' ? 'admin' : undefined),
+            profile_status: lp.profile_status || existing.profile_status || 'APPROVED',
+            is_verified: lp.is_verified ?? existing.is_verified ?? true,
+          });
+        } else {
+          combinedMap.set(lp.id || `local-${Date.now()}-${Math.random()}`, lp);
+        }
+      });
+
+      // Filter out explicitly deleted profiles
+      merged = Array.from(combinedMap.values()).filter((p) => !isProfileDeleted(p, deleted));
 
       // First deduplication pass on raw merged profiles
       merged = deduplicateProfiles(merged);
@@ -2028,10 +2078,12 @@ export default function App() {
         profession: profileData.profession || 'Professional',
         guardian_name: profileData.guardian_name || 'Father (Guardian)',
         guardian_mobile: profileData.guardian_mobile || '',
-        registration_type: profileData.registration_type || 'ONLINE',
+        registration_type: profileData.registration_type || (isAdmin ? 'CASH_ADMIN' : 'ONLINE'),
+        source: profileData.source || (isAdmin ? 'admin' : 'user'),
         profile_status: profileData.profile_status || 'APPROVED',
         is_verified: profileData.is_verified ?? true,
-        is_premium: profileData.is_premium ?? false,
+        is_premium: profileData.is_premium ?? (isAdmin ? true : false),
+        biodata_uploaded: profileData.biodata_uploaded ?? (isAdmin ? true : false),
         created_at: new Date().toISOString(),
         ...profileData,
       } as Profile;

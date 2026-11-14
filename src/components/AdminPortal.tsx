@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { Profile, Payment, PremiumRequest, IncomingInterest, normalizeGender } from '../types';
-import { deduplicateProfiles, ensureUniqueSequentialMemberIds, hasCompletedBiodata } from '../lib/supabase';
+import { deduplicateProfiles, ensureUniqueSequentialMemberIds, hasCompletedBiodata, DEFAULT_PROFILES } from '../lib/supabase';
 import {
   LayoutDashboard,
   Users,
@@ -149,9 +149,16 @@ export const AdminPortal: React.FC<Props> = ({
 
   // Helper to distinguish Admin-Added Profiles from self-registered user accounts
   const isAdminAdded = (p: Profile): boolean => {
+    if (!p) return false;
+    // 1. Explicit admin flags or cash registration
     if (p.registration_type === 'CASH_ADMIN') return true;
+    if ((p as any).source === 'admin' || (p as any).created_by === 'admin') return true;
+    // 2. Default verified profiles
+    if (DEFAULT_PROFILES.some((dp) => dp.id === p.id || (dp.member_id && p.member_id && dp.member_id.toUpperCase() === p.member_id.toUpperCase()))) return true;
+    // 3. Known sequential admin-added profile IDs
     if (p.member_id && ['NCSM1004', 'NCSM1005', 'NCSM1006', 'NCSM1007', 'NCSM1008', 'NCSM1009'].includes(p.member_id)) return true;
-    if (!p.email && !p.auth_user_id) return true;
+    // 4. Missing auth_user_id and no independent user email (or admin email)
+    if (!p.auth_user_id && (!p.email || p.email.toLowerCase().trim() === 'nikahcircle01@gmail.com')) return true;
     return false;
   };
 
@@ -269,14 +276,17 @@ export const AdminPortal: React.FC<Props> = ({
     return matchesSearch && matchesStatus && matchesReg;
   });
 
-  // Dedicated Full Biodata Directory Profiles (Strictly Premium Members with Completed Biodata)
+  // Dedicated Full Biodata Directory Profiles (Strictly Verified Candidates & Premium Members with Completed Biodata)
   const qualifiedBiodataProfiles = useMemo(() => {
     return profiles.filter((p) => {
-      // 1. Strict Premium Plan Requirement (Exclude Free Tier completely)
+      // 1. Admin-added profiles are verified candidate biodatas by default
+      if (isAdminAdded(p)) return true;
+
+      // 2. Strict Premium Plan Requirement for platform users (Exclude Free Tier completely)
       const isPremium = Boolean(p.is_premium) || (Boolean(p.premium_plan) && p.premium_plan !== 'Free Plan');
       if (!isPremium) return false;
 
-      // 2. Strict Biodata Submission Requirement (Must have completed biodata)
+      // 3. Strict Biodata Submission Requirement (Must have completed biodata)
       return hasCompletedBiodata(p);
     });
   }, [profiles]);
@@ -451,6 +461,12 @@ export const AdminPortal: React.FC<Props> = ({
     await onSaveProfile(
       {
         ...formData,
+        source: 'admin',
+        registration_type: 'CASH_ADMIN',
+        biodata_uploaded: true,
+        is_verified: true,
+        is_premium: true,
+        profile_status: 'APPROVED',
         gender: normalizeGender(formData.gender),
         id: editingProfile?.id,
       },
@@ -459,7 +475,7 @@ export const AdminPortal: React.FC<Props> = ({
     );
     alert(editingProfile ? 'Profile updated successfully!' : 'Profile created successfully!');
     setEditingProfile(null);
-    setActiveTab('profiles');
+    setActiveTab('admin_added_profiles');
   };
 
   return (
