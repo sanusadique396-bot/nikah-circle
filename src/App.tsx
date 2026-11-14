@@ -1113,11 +1113,11 @@ export default function App() {
   };
 
   const handleAcceptIncomingInterest = (id: string) => {
-    let acceptedRecipientId = '';
+    let targetProposal: IncomingInterest | undefined;
 
     const updatedAll = allProposals.map((item) => {
       if (item.id === id) {
-        acceptedRecipientId = item.recipient_profile_id || '';
+        targetProposal = item;
         return { ...item, status: 'accepted' as const };
       }
       return item;
@@ -1127,7 +1127,10 @@ export default function App() {
     saveStoredProposals(updatedAll);
 
     // Also update sender's sent interest in all user storage keys to accepted
-    if (acceptedRecipientId) {
+    if (targetProposal) {
+      const recId = targetProposal.recipient_profile_id || '';
+      const recMemberId = targetProposal.recipient_member_id || '';
+
       try {
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
@@ -1135,14 +1138,32 @@ export default function App() {
             const raw = localStorage.getItem(key);
             if (raw) {
               const parsed = JSON.parse(raw);
-              if (parsed[acceptedRecipientId]) {
-                parsed[acceptedRecipientId] = 'accepted';
+              let changed = false;
+              if (recId && parsed[recId]) {
+                parsed[recId] = 'accepted';
+                changed = true;
+              }
+              if (recMemberId && parsed[recMemberId]) {
+                parsed[recMemberId] = 'accepted';
+                changed = true;
+              }
+              if (changed) {
                 localStorage.setItem(key, JSON.stringify(parsed));
               }
             }
           }
         }
       } catch {}
+
+      // Immediately unlock in active session state
+      if (recId || recMemberId) {
+        setInterestsMap((prev) => {
+          const next = { ...prev };
+          if (recId) next[recId] = 'accepted';
+          if (recMemberId) next[recMemberId] = 'accepted';
+          return next;
+        });
+      }
     }
 
     showToast('Proposal accepted! Guardian contact details & biodata are unlocked.');
@@ -1154,11 +1175,56 @@ export default function App() {
   };
 
   const handleDeclineIncomingInterest = (id: string) => {
-    const updatedAll = allProposals.map((item) =>
-      item.id === id ? { ...item, status: 'declined' as const } : item
-    );
+    let targetProposal: IncomingInterest | undefined;
+
+    const updatedAll = allProposals.map((item) => {
+      if (item.id === id) {
+        targetProposal = item;
+        return { ...item, status: 'declined' as const };
+      }
+      return item;
+    });
     setAllProposals(updatedAll);
     saveStoredProposals(updatedAll);
+
+    if (targetProposal) {
+      const recId = targetProposal.recipient_profile_id || '';
+      const recMemberId = targetProposal.recipient_member_id || '';
+
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('nikah_circle_sent_interests_')) {
+            const raw = localStorage.getItem(key);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              let changed = false;
+              if (recId && parsed[recId]) {
+                parsed[recId] = 'declined';
+                changed = true;
+              }
+              if (recMemberId && parsed[recMemberId]) {
+                parsed[recMemberId] = 'declined';
+                changed = true;
+              }
+              if (changed) {
+                localStorage.setItem(key, JSON.stringify(parsed));
+              }
+            }
+          }
+        }
+      } catch {}
+
+      if (recId || recMemberId) {
+        setInterestsMap((prev) => {
+          const next = { ...prev };
+          if (recId) next[recId] = 'declined';
+          if (recMemberId) next[recMemberId] = 'declined';
+          return next;
+        });
+      }
+    }
+
     showToast('Proposal politely declined.');
   };
 
@@ -2382,6 +2448,9 @@ export default function App() {
           profiles={profiles}
           payments={payments}
           premiumRequests={premiumRequests}
+          proposals={allProposals}
+          onAcceptProposal={handleAcceptIncomingInterest}
+          onDeclineProposal={handleDeclineIncomingInterest}
           onSaveProfile={handleSaveProfile}
           onDeleteProfile={handleDeleteProfile}
           onResetAllData={handleResetAllData}

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { Profile, Payment, PremiumRequest, normalizeGender } from '../types';
+import { Profile, Payment, PremiumRequest, IncomingInterest, normalizeGender } from '../types';
 import { deduplicateProfiles, ensureUniqueSequentialMemberIds, hasCompletedBiodata } from '../lib/supabase';
 import {
   LayoutDashboard,
@@ -38,12 +38,22 @@ import {
   MapPin,
   RotateCw,
   MessageCircle,
+  Heart,
+  Send,
+  ArrowRight,
+  MessageSquare,
+  Lock,
+  Unlock,
+  Inbox,
 } from 'lucide-react';
 
 interface Props {
   profiles: Profile[];
   payments: Payment[];
   premiumRequests: PremiumRequest[];
+  proposals?: IncomingInterest[];
+  onAcceptProposal?: (id: string) => void;
+  onDeclineProposal?: (id: string) => void;
   onSaveProfile: (profile: Partial<Profile>, paymentAmount?: number, paymentMethod?: string) => Promise<void>;
   onDeleteProfile: (id: string) => Promise<void>;
   onResetAllData?: () => Promise<void>;
@@ -60,6 +70,7 @@ interface Props {
 
 type TabType =
   | 'dashboard'
+  | 'admin_added_profiles'
   | 'biodata_directory'
   | 'user_accounts'
   | 'premium_requests'
@@ -104,6 +115,9 @@ export const AdminPortal: React.FC<Props> = ({
   profiles: rawProfiles,
   payments,
   premiumRequests = [],
+  proposals = [],
+  onAcceptProposal,
+  onDeclineProposal,
   onSaveProfile,
   onDeleteProfile,
   onResetAllData,
@@ -128,6 +142,48 @@ export const AdminPortal: React.FC<Props> = ({
   const [premiumTabFilter, setPremiumTabFilter] = useState<'ALL' | 'PENDING' | 'UPI_QR' | 'CASH_OFFICE' | 'FREE_REQUEST'>('ALL');
   const [profileToDelete, setProfileToDelete] = useState<Profile | null>(null);
   const [isDeletingProfile, setIsDeletingProfile] = useState(false);
+
+  // Admin-Added Profiles Sub-Navigation & Filters
+  const [adminProfileSubTab, setAdminProfileSubTab] = useState<'proposals' | 'directory'>('proposals');
+  const [adminProposalStatusFilter, setAdminProposalStatusFilter] = useState<'all' | 'pending' | 'accepted' | 'declined'>('all');
+
+  // Helper to distinguish Admin-Added Profiles from self-registered user accounts
+  const isAdminAdded = (p: Profile): boolean => {
+    if (p.registration_type === 'CASH_ADMIN') return true;
+    if (p.member_id && ['NCSM1004', 'NCSM1005', 'NCSM1006'].includes(p.member_id)) return true;
+    if (!p.email && !p.auth_user_id) return true;
+    return false;
+  };
+
+  const adminAddedProfiles = useMemo(() => {
+    return profiles.filter(isAdminAdded);
+  }, [profiles]);
+
+  const selfRegisteredProfiles = useMemo(() => {
+    return profiles.filter((p) => !isAdminAdded(p));
+  }, [profiles]);
+
+  // Incoming Proposals targeted specifically at Admin-Added profiles
+  const adminProfilesProposals = useMemo(() => {
+    if (!proposals || proposals.length === 0) return [];
+    return proposals.filter((prop) => {
+      return adminAddedProfiles.some((ap) => {
+        return (
+          (prop.recipient_profile_id && ap.id === prop.recipient_profile_id) ||
+          (prop.recipient_member_id && ap.member_id === prop.recipient_member_id) ||
+          (prop.recipient_mobile && ap.mobile && prop.recipient_mobile.replace(/\D/g, '').slice(-8) === ap.mobile.replace(/\D/g, '').slice(-8))
+        );
+      });
+    });
+  }, [proposals, adminAddedProfiles]);
+
+  const pendingAdminProposalsCount = useMemo(() => {
+    return adminProfilesProposals.filter((p) => p.status === 'pending').length;
+  }, [adminProfilesProposals]);
+
+  const acceptedAdminProposalsCount = useMemo(() => {
+    return adminProfilesProposals.filter((p) => p.status === 'accepted').length;
+  }, [adminProfilesProposals]);
 
   // User Accounts Tab state
   const [userSearchQuery, setUserSearchQuery] = useState('');
@@ -458,6 +514,31 @@ export const AdminPortal: React.FC<Props> = ({
               </span>
             </button>
 
+            {/* DEDICATED: Admin-Added Profiles & Proposal Management */}
+            <button
+              onClick={() => setActiveTab('admin_added_profiles')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-colors cursor-pointer text-left ${
+                activeTab === 'admin_added_profiles'
+                  ? 'bg-[#4b001f] text-white shadow-xs font-bold'
+                  : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="w-4 h-4 text-[#c9973e]" />
+                <span>Admin-Added Profiles</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="px-1.5 py-0.5 rounded text-[10px] bg-purple-100 text-purple-900 border border-purple-200 font-bold">
+                  {adminAddedProfiles.length}
+                </span>
+                {pendingAdminProposalsCount > 0 && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-500 text-white font-bold animate-pulse" title={`${pendingAdminProposalsCount} pending proposals`}>
+                    {pendingAdminProposalsCount}
+                  </span>
+                )}
+              </div>
+            </button>
+
             {/* NEW: User Registered Accounts */}
             <button
               onClick={() => setActiveTab('user_accounts')}
@@ -598,6 +679,7 @@ export const AdminPortal: React.FC<Props> = ({
           <div>
             <h2 className="font-serif text-2xl font-bold text-[#4b001f]">
               {activeTab === 'dashboard' && 'Dashboard Overview'}
+              {activeTab === 'admin_added_profiles' && 'Admin-Added Profiles & Proposal Management'}
               {activeTab === 'biodata_directory' && 'Full Biodata Directory'}
               {activeTab === 'user_accounts' && 'User Accounts & Registrations'}
               {activeTab === 'premium_requests' && 'Premium & Payment Requests'}
@@ -855,6 +937,490 @@ export const AdminPortal: React.FC<Props> = ({
           </div>
         )}
 
+        {/* TAB: ADMIN-ADDED PROFILES & PROPOSAL MANAGEMENT */}
+        {activeTab === 'admin_added_profiles' && (() => {
+          const filteredAdminProposals = adminProfilesProposals.filter((p) => {
+            if (adminProposalStatusFilter === 'all') return true;
+            return p.status === adminProposalStatusFilter;
+          });
+
+          return (
+            <div className="space-y-6">
+              {/* Header Cards with Stats */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+                <div className="p-4 rounded-2xl bg-white border border-purple-200 shadow-xs">
+                  <div className="flex items-center justify-between text-xs font-semibold text-purple-700">
+                    <span>Admin Profiles</span>
+                    <ShieldCheck className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div className="font-serif text-3xl font-bold text-[#4b001f] mt-1 tabular-nums">
+                    {adminAddedProfiles.length}
+                  </div>
+                  <span className="text-[11px] text-stone-500">Manually seeded candidates</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white border border-stone-200 shadow-xs">
+                  <div className="flex items-center justify-between text-xs font-semibold text-stone-600">
+                    <span>Proposals Received</span>
+                    <Heart className="w-4 h-4 text-rose-500" />
+                  </div>
+                  <div className="font-serif text-3xl font-bold text-[#4b001f] mt-1 tabular-nums">
+                    {adminProfilesProposals.length}
+                  </div>
+                  <span className="text-[11px] text-stone-500">From registered users</span>
+                </div>
+
+                <div className={`p-4 rounded-2xl bg-white border shadow-xs ${pendingAdminProposalsCount > 0 ? 'border-amber-400 bg-amber-50/40 ring-2 ring-amber-200' : 'border-stone-200'}`}>
+                  <div className="flex items-center justify-between text-xs font-semibold text-amber-800">
+                    <span>Pending Decisions</span>
+                    <Clock className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <div className="font-serif text-3xl font-bold text-amber-700 mt-1 tabular-nums flex items-center gap-2">
+                    <span>{pendingAdminProposalsCount}</span>
+                    {pendingAdminProposalsCount > 0 && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500 text-white font-sans font-bold animate-pulse">Action needed</span>
+                    )}
+                  </div>
+                  <span className="text-[11px] text-stone-500">Waiting for Accept / Reject</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white border border-emerald-200 shadow-xs">
+                  <div className="flex items-center justify-between text-xs font-semibold text-emerald-700">
+                    <span>Accepted & Unlocked</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div className="font-serif text-3xl font-bold text-emerald-700 mt-1 tabular-nums">
+                    {acceptedAdminProposalsCount}
+                  </div>
+                  <span className="text-[11px] text-stone-500">Guardian contacts revealed</span>
+                </div>
+              </div>
+
+              {/* Sub-Navigation & Controls */}
+              <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2 p-1 bg-stone-100 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setAdminProfileSubTab('proposals')}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      adminProfileSubTab === 'proposals'
+                        ? 'bg-white text-[#4b001f] shadow-xs'
+                        : 'text-stone-600 hover:text-stone-900'
+                    }`}
+                  >
+                    <Send className="w-3.5 h-3.5 text-[#c9973e]" />
+                    <span>Incoming Proposals</span>
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-purple-100 text-purple-900 font-bold">
+                      {adminProfilesProposals.length}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAdminProfileSubTab('directory')}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      adminProfileSubTab === 'directory'
+                        ? 'bg-white text-[#4b001f] shadow-xs'
+                        : 'text-stone-600 hover:text-stone-900'
+                    }`}
+                  >
+                    <Users className="w-3.5 h-3.5 text-purple-600" />
+                    <span>Admin Candidates Directory</span>
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-stone-200 text-stone-800 font-bold">
+                      {adminAddedProfiles.length}
+                    </span>
+                  </button>
+                </div>
+
+                {adminProfileSubTab === 'proposals' && (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs text-stone-500 font-medium">Status:</span>
+                    {(['all', 'pending', 'accepted', 'declined'] as const).map((st) => (
+                      <button
+                        key={st}
+                        type="button"
+                        onClick={() => setAdminProposalStatusFilter(st)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold capitalize transition-all cursor-pointer ${
+                          adminProposalStatusFilter === st
+                            ? 'bg-[#4b001f] text-white shadow-2xs font-bold'
+                            : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                        }`}
+                      >
+                        {st}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Sub-Tab 1: Incoming Proposals */}
+              {adminProfileSubTab === 'proposals' && (
+                <div className="space-y-4">
+                  {filteredAdminProposals.length === 0 ? (
+                    <div className="bg-white p-12 rounded-3xl border border-stone-200 text-center space-y-3">
+                      <div className="w-14 h-14 mx-auto rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center">
+                        <Heart className="w-7 h-7 text-purple-600" />
+                      </div>
+                      <h4 className="font-serif text-lg font-bold text-stone-800">
+                        {adminProposalStatusFilter === 'all'
+                          ? 'No Proposals Received for Admin Profiles Yet'
+                          : `No ${adminProposalStatusFilter} Proposals Found`}
+                      </h4>
+                      <p className="text-xs text-stone-500 max-w-md mx-auto leading-relaxed">
+                        When platform users view admin-added profiles (like NCSM1004, NCSM1005, NCSM1006) and express proposal interest, they appear here. The admin can accept or reject each proposal. Accepting instantly unlocks the guardian contact for the requesting family.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-4">
+                      {filteredAdminProposals.map((prop) => {
+                        const targetCandidate = adminAddedProfiles.find((ap) => {
+                          return (
+                            (prop.recipient_profile_id && ap.id === prop.recipient_profile_id) ||
+                            (prop.recipient_member_id && ap.member_id === prop.recipient_member_id) ||
+                            (prop.recipient_mobile && ap.mobile && prop.recipient_mobile.replace(/\D/g, '').slice(-8) === ap.mobile.replace(/\D/g, '').slice(-8))
+                          );
+                        });
+
+                        return (
+                          <div
+                            key={prop.id}
+                            className={`bg-white rounded-3xl p-5 sm:p-6 border shadow-xs space-y-4 transition-all ${
+                              prop.status === 'pending'
+                                ? 'border-amber-300 ring-2 ring-amber-100'
+                                : prop.status === 'accepted'
+                                ? 'border-emerald-300 bg-emerald-50/10'
+                                : 'border-stone-200 opacity-80'
+                            }`}
+                          >
+                            {/* Card Top: Status & Date */}
+                            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-stone-100">
+                              <div className="flex items-center gap-2">
+                                {prop.status === 'pending' ? (
+                                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                                    <Clock className="w-3.5 h-3.5 text-amber-700" />
+                                    <span>Pending Admin Decision</span>
+                                  </span>
+                                ) : prop.status === 'accepted' ? (
+                                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-900 border border-emerald-300">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
+                                    <span>Accepted · Guardian Contact Unlocked for Sender</span>
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-stone-100 text-stone-700 border border-stone-300">
+                                    <XCircle className="w-3.5 h-3.5 text-stone-500" />
+                                    <span>Declined by Admin</span>
+                                  </span>
+                                )}
+                              </div>
+
+                              <span className="text-xs text-stone-500 font-mono">
+                                Received: {prop.received_at || 'Recently'}
+                              </span>
+                            </div>
+
+                            {/* Matchmaking Exchange Details: Sender <--> Target Candidate */}
+                            <div className="grid grid-cols-1 md:grid-cols-11 gap-4 items-center">
+                              {/* Left: Requesting Platform User */}
+                              <div className="md:col-span-5 p-4 rounded-2xl bg-[#fff8fb] border border-[#eadfe4] space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#4b001f] bg-[#f7dce8] px-2 py-0.5 rounded">
+                                    Requesting User (Sender)
+                                  </span>
+                                  <span className="font-mono text-xs font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                                    {prop.sender_member_id || 'User'}
+                                  </span>
+                                </div>
+
+                                <div className="pt-1">
+                                  <h4 className="font-serif text-base font-bold text-[#4b001f]">
+                                    {prop.sender_name}
+                                  </h4>
+                                  <p className="text-xs text-stone-600">
+                                    {prop.sender_age} yrs · {prop.sender_gender} · {prop.sender_education}
+                                  </p>
+                                  <p className="text-xs text-stone-600 font-medium">
+                                    {prop.sender_profession} · {prop.sender_location}
+                                  </p>
+                                </div>
+
+                                <div className="pt-2 border-t border-stone-200/70 text-xs space-y-1">
+                                  <div className="flex items-center gap-1.5 text-stone-700">
+                                    <Phone className="w-3.5 h-3.5 text-stone-400" />
+                                    <span className="font-semibold">Guardian:</span>
+                                    <span>{prop.guardian_name} ({prop.guardian_mobile})</span>
+                                  </div>
+                                  {prop.sender_email && (
+                                    <div className="flex items-center gap-1.5 text-stone-500 truncate">
+                                      <Mail className="w-3.5 h-3.5 text-stone-400" />
+                                      <span className="truncate">{prop.sender_email}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Center: Matchmaking Direction Indicator */}
+                              <div className="md:col-span-1 flex md:flex-col items-center justify-center gap-1 py-2 text-stone-400">
+                                <ArrowRight className="w-6 h-6 text-[#c9973e] rotate-90 md:rotate-0" />
+                                <span className="text-[10px] font-bold text-[#c9973e] uppercase">Sent To</span>
+                              </div>
+
+                              {/* Right: Target Admin-Added Candidate */}
+                              <div className="md:col-span-5 p-4 rounded-2xl bg-purple-50/40 border border-purple-200 space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-purple-900 bg-purple-100 px-2 py-0.5 rounded flex items-center gap-1">
+                                    <ShieldCheck className="w-3 h-3 text-purple-700" />
+                                    Admin-Added Candidate
+                                  </span>
+                                  <span className="font-mono text-xs font-bold text-purple-900 bg-purple-200 px-2 py-0.5 rounded">
+                                    {targetCandidate?.member_id || prop.recipient_member_id || 'Candidate'}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-3 pt-1">
+                                  {targetCandidate?.profile_photo ? (
+                                    <img
+                                      src={targetCandidate.profile_photo}
+                                      alt={targetCandidate.full_name}
+                                      className="w-12 h-12 rounded-xl object-cover border border-purple-200 shrink-0"
+                                    />
+                                  ) : (
+                                    <div className="w-12 h-12 rounded-xl bg-purple-200 text-purple-900 font-serif font-bold text-lg flex items-center justify-center shrink-0">
+                                      {(targetCandidate?.full_name || 'C').charAt(0).toUpperCase()}
+                                    </div>
+                                  )}
+                                  <div>
+                                    <h4 className="font-serif text-base font-bold text-[#4b001f]">
+                                      {targetCandidate?.full_name || prop.recipient_name}
+                                    </h4>
+                                    <p className="text-xs text-stone-600">
+                                      {targetCandidate?.age || 26} yrs · {targetCandidate?.profession || 'Professional'}
+                                    </p>
+                                    <p className="text-xs text-stone-500">
+                                      {targetCandidate?.location || 'Kerala'}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="pt-2 border-t border-purple-100 text-xs">
+                                  <div className="flex items-center gap-1.5 text-stone-700">
+                                    <Phone className="w-3.5 h-3.5 text-purple-600" />
+                                    <span className="font-semibold">Candidate Guardian:</span>
+                                    <span>{targetCandidate?.guardian_mobile || prop.recipient_mobile || '-'}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Proposal Notes / Message */}
+                            {prop.notes && (
+                              <div className="p-3 rounded-xl bg-stone-50 border border-stone-200 text-xs text-stone-700 flex items-start gap-2">
+                                <MessageSquare className="w-4 h-4 text-[#c9973e] shrink-0 mt-0.5" />
+                                <p className="leading-relaxed">{prop.notes}</p>
+                              </div>
+                            )}
+
+                            {/* Action Buttons for Admin */}
+                            <div className="pt-3 border-t border-stone-100 flex flex-wrap items-center justify-between gap-3">
+                              <div className="text-xs text-stone-500">
+                                {prop.status === 'accepted' ? (
+                                  <span className="text-emerald-700 font-semibold flex items-center gap-1.5">
+                                    <Unlock className="w-4 h-4 text-emerald-600" />
+                                    Guardian contact is unlocked and visible on the sender's dashboard.
+                                  </span>
+                                ) : prop.status === 'declined' ? (
+                                  <span className="text-stone-500">This proposal was politely rejected.</span>
+                                ) : (
+                                  <span className="text-amber-800 font-medium flex items-center gap-1.5">
+                                    <Lock className="w-4 h-4 text-amber-600" />
+                                    Guardian contact remains hidden until accepted.
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                {prop.status === 'pending' && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => onDeclineProposal?.(prop.id)}
+                                      className="px-4 py-2 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                                    >
+                                      <X className="w-4 h-4 text-red-600" />
+                                      <span>Reject</span>
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => onAcceptProposal?.(prop.id)}
+                                      className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                                    >
+                                      <Check className="w-4 h-4 text-white" />
+                                      <span>Accept & Unlock Guardian Contact</span>
+                                    </button>
+                                  </>
+                                )}
+
+                                {prop.status === 'accepted' && (
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    {targetCandidate?.guardian_mobile && (
+                                      <a
+                                        href={`https://wa.me/91${targetCandidate.guardian_mobile.replace(/\D/g, '').slice(-10)}?text=${encodeURIComponent(`Assalamu Alaikum. Proposal interest accepted between ${prop.sender_name} (${prop.sender_member_id}) and ${targetCandidate.full_name} (${targetCandidate.member_id}) on Nikah Circle.`)}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-3.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                                      >
+                                        <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                                        <span>WhatsApp Candidate Guardian</span>
+                                      </a>
+                                    )}
+
+                                    {prop.guardian_mobile && (
+                                      <a
+                                        href={`https://wa.me/91${prop.guardian_mobile.replace(/\D/g, '').slice(-10)}?text=${encodeURIComponent(`Assalamu Alaikum. Your proposal interest for ${targetCandidate?.full_name || prop.recipient_name} (${targetCandidate?.member_id || prop.recipient_member_id}) has been accepted on Nikah Circle.`)}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-3.5 py-1.5 rounded-xl bg-[#fff8fb] text-[#4b001f] border border-[#eadfe4] hover:bg-[#f7dce8] text-xs font-bold flex items-center gap-1.5 transition-colors"
+                                      >
+                                        <MessageCircle className="w-3.5 h-3.5 text-[#4b001f]" />
+                                        <span>WhatsApp Sender Family</span>
+                                      </a>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Sub-Tab 2: Admin Candidates Directory */}
+              {adminProfileSubTab === 'directory' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {adminAddedProfiles.map((p) => {
+                      const candidateProposals = adminProfilesProposals.filter((prop) => {
+                        return (
+                          (prop.recipient_profile_id && p.id === prop.recipient_profile_id) ||
+                          (prop.recipient_member_id && p.member_id === prop.recipient_member_id) ||
+                          (prop.recipient_mobile && p.mobile && prop.recipient_mobile.replace(/\D/g, '').slice(-8) === p.mobile.replace(/\D/g, '').slice(-8))
+                        );
+                      });
+                      const pendingCount = candidateProposals.filter((pr) => pr.status === 'pending').length;
+
+                      return (
+                        <div
+                          key={p.id}
+                          className="bg-white rounded-3xl p-5 border border-purple-200/80 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow relative overflow-hidden"
+                        >
+                          <div className="space-y-3">
+                            {/* Card Header: Member ID & Badge */}
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-mono text-xs font-bold bg-[#4b001f] text-amber-200 px-2.5 py-1 rounded-lg">
+                                {p.member_id || 'NCSM100X'}
+                              </span>
+
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-200">
+                                <ShieldCheck className="w-3 h-3 text-purple-700" />
+                                <span>Admin-Added</span>
+                              </span>
+                            </div>
+
+                            {/* Candidate Photo & Basic Info */}
+                            <div className="flex items-center gap-3">
+                              {p.profile_photo ? (
+                                <img
+                                  src={p.profile_photo}
+                                  alt={p.full_name}
+                                  className="w-14 h-14 rounded-2xl object-cover border border-purple-200 shrink-0"
+                                />
+                              ) : (
+                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#f7dce8] to-[#fff6fa] text-[#4b001f] font-serif font-bold text-xl flex items-center justify-center shrink-0">
+                                  {(p.full_name || 'C').charAt(0).toUpperCase()}
+                                </div>
+                              )}
+
+                              <div className="truncate">
+                                <h4 className="font-serif text-base font-bold text-[#4b001f] truncate">
+                                  {p.full_name}
+                                </h4>
+                                <p className="text-xs text-stone-600 truncate">
+                                  {p.age || 26} yrs · {normalizeGender(p.gender)}
+                                </p>
+                                <p className="text-xs text-stone-500 truncate">
+                                  {p.location || 'Kerala'}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Candidate Specifics */}
+                            <div className="text-xs text-stone-600 space-y-1 pt-1">
+                              <div className="truncate font-medium text-stone-800">
+                                {p.profession || 'Professional'}
+                              </div>
+                              <div className="truncate text-stone-500">
+                                {p.education || 'Graduate'}
+                              </div>
+                              <div className="flex items-center gap-1 text-[11px] text-stone-500 truncate pt-1">
+                                <Phone className="w-3 h-3 text-stone-400" />
+                                <span>Guardian: {p.guardian_mobile || p.mobile || '-'}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Footer: Proposals Count & Action Buttons */}
+                          <div className="pt-3 border-t border-stone-100 space-y-2.5">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-stone-500">Received Proposals:</span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-[#4b001f]">{candidateProposals.length}</span>
+                                {pendingCount > 0 && (
+                                  <span className="px-1.5 py-0.2 rounded text-[10px] bg-amber-100 text-amber-900 font-bold border border-amber-300">
+                                    {pendingCount} Pending
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setViewingProfile(p)}
+                                className="flex-1 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-900 text-xs font-bold transition-colors cursor-pointer text-center"
+                              >
+                                View Biodata
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleEditClick(p)}
+                                className="px-3 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold transition-colors cursor-pointer"
+                                title="Edit Candidate"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => onDeleteProfile(p.id)}
+                                className="px-3 py-2 rounded-xl bg-stone-100 hover:bg-red-50 text-stone-500 hover:text-red-700 text-xs font-bold transition-colors cursor-pointer"
+                                title="Delete Candidate"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         {/* TAB: FULL BIODATA DIRECTORY */}
         {activeTab === 'biodata_directory' && (() => {
           const totalQualifiedCount = qualifiedBiodataProfiles.length;
@@ -1082,6 +1648,15 @@ export const AdminPortal: React.FC<Props> = ({
                                         {displayMemberId}
                                       </span>
                                       <span className="font-bold text-stone-900 group-hover:text-[#4b001f] transition-colors">{p.full_name}</span>
+                                      {isAdminAdded(p) ? (
+                                        <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-100 text-purple-900 border border-purple-200">
+                                          Admin-Added
+                                        </span>
+                                      ) : (
+                                        <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                                          User Registered
+                                        </span>
+                                      )}
                                     </div>
                                     <div className="flex items-center gap-1.5 mt-0.5">
                                       {hasFile ? (
@@ -2043,9 +2618,20 @@ export const AdminPortal: React.FC<Props> = ({
                     {filteredProfiles.map((p) => (
                       <tr key={p.id} className="hover:bg-stone-50">
                         <td className="p-3.5 font-semibold text-stone-900">
-                          {p.full_name} ({normalizeGender(p.gender)})
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span>{p.full_name} ({normalizeGender(p.gender)})</span>
+                            {isAdminAdded(p) ? (
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-100 text-purple-900 border border-purple-200">
+                                Admin-Added
+                              </span>
+                            ) : (
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                                User Registered
+                              </span>
+                            )}
+                          </div>
                           <span className="block text-[11px] text-stone-400 font-normal">
-                            {p.education} · {p.profession}
+                            {p.member_id || 'NCSM'} · {p.education} · {p.profession}
                           </span>
                         </td>
                         <td className="p-3.5">
