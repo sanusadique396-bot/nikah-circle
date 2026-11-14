@@ -25,10 +25,8 @@ export function hasCompletedBiodata(p?: Partial<Profile> | null): boolean {
   if (!p) return false;
   // 1. Explicitly attached biodata document file
   if (Boolean(p.biodata_document_name || p.biodata_document_url)) return true;
-  // 2. Canonical admin profile with completed biodata
-  if (p.email && p.email.toLowerCase().trim() === 'nikahcircle01@gmail.com' && p.biodata_uploaded) return true;
 
-  // 3. Multi-stage wizard completed:
+  // 2. Multi-stage wizard completed:
   // Must have biodata_uploaded === true AND must have filled actual wizard details
   // Wizard-only fields: family background, family members, marriage expectations, or religious education with physical details
   const hasWizardFlag = p.biodata_uploaded === true;
@@ -87,14 +85,7 @@ export function deduplicateProfiles(inputProfiles: Profile[]): Profile[] {
 
       const nExisting = extractMemberIdNumber(existing.member_id);
       const nProf = extractMemberIdNumber(prof.member_id);
-      let bestMemberId = nProf && nProf >= 1003 ? prof.member_id : (nExisting && nExisting >= 1003 ? existing.member_id : (prof.member_id || existing.member_id));
-      if (pEmail === 'nikahcircle01@gmail.com' || (pMobile && pMobile.endsWith('44905093'))) {
-        bestMemberId = 'NCSM1002';
-      } else if (pEmail === 'sanusadique396@gmail.com' || (pMobile && pMobile.endsWith('43549396'))) {
-        bestMemberId = 'NCSM1001';
-      } else if (bestMemberId === 'NCSM1001' || bestMemberId === 'NCSM1002') {
-        bestMemberId = '';
-      }
+      const bestMemberId = nProf && nProf >= 1001 ? prof.member_id : (nExisting && nExisting >= 1001 ? existing.member_id : (prof.member_id || existing.member_id));
 
       const isPrem = Boolean(existing.is_premium || prof.is_premium);
       const isApproved = existing.profile_status === 'APPROVED' || prof.profile_status === 'APPROVED';
@@ -135,41 +126,22 @@ export function ensureUniqueSequentialMemberIds(profiles: Profile[]): Profile[] 
   if (!Array.isArray(profiles) || profiles.length === 0) return [];
 
   const assigned = new Map<string, string>(); // member_id -> unique profile key
-  let maxNumber = 1002;
+  let maxNumber = 1000;
 
-  // Step 1: Permanently bind canonical accounts & retain valid unique IDs >= 1003
+  // Step 1: Retain valid unique IDs >= 1001
   const processed = profiles.map((p) => {
-    const email = (p.email || '').toLowerCase().trim();
-    const phone = (p.mobile || '').replace(/\D/g, '').slice(-8);
-
-    const isNoushida = email === 'sanusadique396@gmail.com' || (phone.length >= 7 && phone.endsWith('43549396'));
-    const isSadiq = email === 'nikahcircle01@gmail.com' || (phone.length >= 7 && phone.endsWith('44905093'));
-
-    if (isNoushida) {
-      assigned.set('NCSM1001', p.id || email);
-      return { ...p, member_id: 'NCSM1001' };
-    }
-    if (isSadiq) {
-      assigned.set('NCSM1002', p.id || email);
-      return { ...p, member_id: 'NCSM1002' };
-    }
-
-    // For any other profile: if it mistakenly has NCSM1001 or NCSM1002, CLEAR IT!
     let currentId = p.member_id || '';
-    if (currentId === 'NCSM1001' || currentId === 'NCSM1002') {
-      currentId = '';
-    }
     if (!currentId && p.about) {
       const { meta } = decodeProfileMetadata(p.about);
-      if (meta?.member_id && meta.member_id !== 'NCSM1001' && meta.member_id !== 'NCSM1002') {
+      if (meta?.member_id) {
         currentId = meta.member_id;
       }
     }
 
     const num = extractMemberIdNumber(currentId);
-    // If it has a valid number >= 1003 that hasn't been claimed yet
-    if (num && num >= 1003 && !assigned.has(`NCSM${num}`)) {
-      assigned.set(`NCSM${num}`, p.id || email || phone || p.full_name);
+    // If it has a valid number >= 1001 that hasn't been claimed yet
+    if (num && num >= 1001 && !assigned.has(`NCSM${num}`)) {
+      assigned.set(`NCSM${num}`, p.id || p.email || p.mobile || p.full_name);
       if (num > maxNumber) maxNumber = num;
       return { ...p, member_id: `NCSM${num}` };
     }
@@ -178,8 +150,8 @@ export function ensureUniqueSequentialMemberIds(profiles: Profile[]): Profile[] 
     return { ...p, member_id: '' };
   });
 
-  // Step 2: Assign sequential unique IDs starting from NCSM1003 to any profiles needing one
-  let nextSeq = 1003;
+  // Step 2: Assign sequential unique IDs starting from NCSM1001 to any profiles needing one
+  let nextSeq = 1001;
   const finalized = processed.map((p) => {
     if (p.member_id && assigned.has(p.member_id)) {
       return p;
@@ -196,7 +168,7 @@ export function ensureUniqueSequentialMemberIds(profiles: Profile[]): Profile[] 
 
   // Step 3: Persist the highest sequence counter into localStorage
   try {
-    localStorage.setItem(MEMBER_ID_SEQ_KEY, Math.max(1002, maxNumber).toString());
+    localStorage.setItem(MEMBER_ID_SEQ_KEY, Math.max(1000, maxNumber).toString());
   } catch {}
 
   return finalized;
@@ -319,7 +291,7 @@ export function getStoredUsedReferralCodes(): string[] {
     const raw = localStorage.getItem(USED_REFERRAL_CODES_KEY);
     if (raw) return JSON.parse(raw);
   } catch {}
-  return ["WELCOME2025"]; // Sample code already used
+  return [];
 }
 
 export function saveStoredUsedReferralCodes(codes: string[]) {
@@ -349,7 +321,7 @@ export function markReferralCodeUsed(code: string) {
 }
 
 // Sequential Auto-Increment Member ID System: NCSM1001, NCSM1002, NCSM1003...
-export const MEMBER_ID_SEQ_KEY = 'nikah_circle_member_id_seq_v5';
+export const MEMBER_ID_SEQ_KEY = 'nikah_circle_member_id_seq_v7';
 
 export function extractMemberIdNumber(idStr?: string | null): number | null {
   if (!idStr || typeof idStr !== 'string') return null;
@@ -364,9 +336,8 @@ export function extractMemberIdNumber(idStr?: string | null): number | null {
 export function getHighestExistingMemberNumber(
   existingProfiles?: Array<{ member_id?: string | null; id?: string | null; about?: string | null }>
 ): number {
-  // Baseline is 1002 (NCSM1001: Noushida, NCSM1002: Sadiq / Admin).
-  // All new registrations must start strictly from NCSM1003 onwards.
-  let highest = 1002;
+  // Baseline is 1000 so the first registered user gets NCSM1001
+  let highest = 1000;
 
   // 1. Check passed profiles
   if (Array.isArray(existingProfiles)) {
@@ -421,6 +392,8 @@ export function getHighestExistingMemberNumber(
   try {
     const seqRaw =
       localStorage.getItem(MEMBER_ID_SEQ_KEY) ||
+      localStorage.getItem('nikah_circle_member_id_seq_v6') ||
+      localStorage.getItem('nikah_circle_member_id_seq_v5') ||
       localStorage.getItem('nikah_circle_member_id_seq_v4');
     if (seqRaw) {
       const num = parseInt(seqRaw, 10);
@@ -436,13 +409,13 @@ export function getNextMemberId(
 ): string {
   try {
     const highest = getHighestExistingMemberNumber(existingProfiles);
-    const next = Math.max(1003, highest + 1);
+    const next = Math.max(1001, highest + 1);
     try {
       localStorage.setItem(MEMBER_ID_SEQ_KEY, next.toString());
     } catch {}
     return `NCSM${next}`;
   } catch {
-    return 'NCSM1003';
+    return 'NCSM1001';
   }
 }
 
@@ -565,19 +538,11 @@ export function parseSupabaseProfile(p: any, defaultIndex?: number): Profile {
     extractMemberIdNumber(p.member_id) ||
     extractMemberIdNumber(p.id);
 
-  // Permanent canonical binding for established accounts
-  const emailNorm = (p.email || '').toLowerCase().trim();
-  const phoneNorm = p.mobile ? p.mobile.replace(/\D/g, '').slice(-8) : '';
   let memberId = '';
-
-  if (emailNorm === 'nikahcircle01@gmail.com' || phoneNorm.endsWith('44905093')) {
-    memberId = 'NCSM1002';
-  } else if (emailNorm === 'sanusadique396@gmail.com' || phoneNorm.endsWith('43549396')) {
-    memberId = 'NCSM1001';
-  } else if (parsedNum && parsedNum >= 1003) {
+  if (parsedNum && parsedNum >= 1001) {
     memberId = `NCSM${parsedNum}`;
   } else if (typeof defaultIndex === 'number') {
-    memberId = `NCSM${1003 + defaultIndex}`;
+    memberId = `NCSM${1001 + defaultIndex}`;
   } else {
     memberId = '';
   }
@@ -621,20 +586,36 @@ export function parseSupabaseProfile(p: any, defaultIndex?: number): Profile {
 }
 
 // Full Fresh Database and User Reset System
-const CLEAN_RESET_KEY = 'nikah_circle_clean_reset_v6005';
+const CLEAN_RESET_KEY = 'nikah_circle_clean_reset_v7000';
 
 export function performInitialResetIfRequired() {
   try {
     if (typeof localStorage === 'undefined') return;
     if (localStorage.getItem(CLEAN_RESET_KEY) !== 'true') {
-      // Clear legacy deleted records and cached profiles
+      // Clear all user sessions and cached data
+      localStorage.removeItem('nikah_circle_user_profile');
+      localStorage.removeItem('nikah_circle_user');
+      localStorage.removeItem('nikah_circle_user_is_premium');
+      localStorage.removeItem('nikah_circle_is_admin');
       localStorage.removeItem('nikah_circle_deleted_records_v2');
       localStorage.removeItem('nikah_circle_profiles_v2');
+      localStorage.removeItem('nikah_circle_payments_v2');
+      localStorage.removeItem('nikah_circle_bookmarks_v2');
+      localStorage.removeItem('nikah_circle_incoming_interests_v2');
+      localStorage.removeItem('nikah_circle_incoming_interests');
+      localStorage.removeItem('nikah_circle_interests_map_v3');
+      localStorage.removeItem('nikah_circle_interests_map_v2');
+      localStorage.removeItem('nikah_circle_proposals_registry_v3');
+      localStorage.removeItem('nikah_circle_proposals_registry_v2');
+      localStorage.removeItem('nikah_circle_premium_requests_v1');
+      localStorage.removeItem('nikah_circle_used_referral_codes_v1');
       localStorage.removeItem('nikah_circle_member_id_seq_v4');
       localStorage.removeItem('nikah_circle_member_id_seq_v5');
+      localStorage.removeItem('nikah_circle_member_id_seq_v6');
+      localStorage.removeItem('nikah_circle_member_id_seq_v7');
 
-      // Set baseline sequence counter to 1002 so next new registration starts at NCSM1003
-      localStorage.setItem(MEMBER_ID_SEQ_KEY, '1002');
+      // Set baseline sequence counter to 1000 so next new registration starts cleanly at NCSM1001
+      localStorage.setItem(MEMBER_ID_SEQ_KEY, '1000');
       localStorage.setItem(CLEAN_RESET_KEY, 'true');
     }
   } catch (e) {

@@ -146,22 +146,8 @@ export function isProfileDeleted(
   profile: Partial<Profile>,
   deleted = getDeletedRecords()
 ): boolean {
-  // NEVER delete established permanent accounts!
-  const email = (profile.email || '').toLowerCase().trim();
-  const phone = profile.mobile ? profile.mobile.replace(/\D/g, '').slice(-8) : '';
-  const memberId = (profile.member_id || '').toUpperCase();
-  if (
-    email === 'nikahcircle01@gmail.com' ||
-    email === 'sanusadique396@gmail.com' ||
-    memberId === 'NCSM1001' ||
-    memberId === 'NCSM1002' ||
-    phone.endsWith('44905093') ||
-    phone.endsWith('43549396')
-  ) {
-    return false;
-  }
-
   if (profile.id && deleted.ids.includes(profile.id)) return true;
+  const phone = profile.mobile ? profile.mobile.replace(/\D/g, '').slice(-8) : '';
   const gPhone = profile.guardian_mobile ? profile.guardian_mobile.replace(/\D/g, '').slice(-8) : '';
   const name = (profile.full_name || '').toLowerCase().trim();
   if (phone && deleted.phones.some((dp) => dp && dp.length >= 6 && (phone.includes(dp) || dp.includes(phone)))) return true;
@@ -324,21 +310,10 @@ export default function App() {
   }, [currentUserProfile, userMatchedProfile]);
 
   const effectiveMemberId = useMemo(() => {
-    const uEmail = (currentUser?.email || currentUserProfile?.email || '').toLowerCase().trim();
-    const uPhone = (currentUserProfile?.mobile || '').replace(/\D/g, '').slice(-8);
-
-    if (uEmail === 'nikahcircle01@gmail.com' || (uPhone.length >= 7 && uPhone.endsWith('44905093'))) {
-      return 'NCSM1002';
-    }
-    if (uEmail === 'sanusadique396@gmail.com' || (uPhone.length >= 7 && uPhone.endsWith('43549396'))) {
-      return 'NCSM1001';
-    }
-
     const checkValid = (id?: string | null) => {
       if (!id) return null;
-      if (id === 'NCSM1001' || id === 'NCSM1002') return null; // reserved for canonical users
       const num = extractMemberIdNumber(id);
-      return num && num >= 1003 ? `NCSM${num}` : null;
+      return num && num >= 1001 ? `NCSM${num}` : null;
     };
 
     if (checkValid(currentUserProfile?.member_id)) return checkValid(currentUserProfile?.member_id)!;
@@ -1175,35 +1150,28 @@ export default function App() {
       (p) => (p.mobile && p.mobile === data.mobile) || (p.email && p.email === data.email)
     );
 
-    // Canonical binding for established accounts & auto-generate sequential Member ID
+    // Auto-generate sequential Member ID
     const emailNorm = (data.email || '').toLowerCase().trim();
     const phoneNorm = data.mobile ? data.mobile.replace(/\D/g, '').slice(-8) : '';
-    let memberId: string;
-    if (emailNorm === 'nikahcircle01@gmail.com' || phoneNorm.endsWith('44905093')) {
-      memberId = 'NCSM1002';
-    } else if (emailNorm === 'sanusadique396@gmail.com' || phoneNorm.endsWith('43549396')) {
-      memberId = 'NCSM1001';
-    } else {
-      const getValidCandidateId = (rawId?: string | null) => {
-        if (!rawId || rawId === 'NCSM1001' || rawId === 'NCSM1002') return null;
-        const num = extractMemberIdNumber(rawId);
-        if (!num || num < 1003) return null;
-        const isConflict = profiles.some((p, idx) => {
-          if (idx === existingIndex) return false;
-          if (p.member_id !== `NCSM${num}`) return false;
-          const pEmail = (p.email || '').toLowerCase().trim();
-          const pPhone = p.mobile ? p.mobile.replace(/\D/g, '').slice(-8) : '';
-          return pEmail !== emailNorm && (!phoneNorm || !pPhone || pPhone !== phoneNorm);
-        });
-        return isConflict ? null : `NCSM${num}`;
-      };
+    const getValidCandidateId = (rawId?: string | null) => {
+      if (!rawId) return null;
+      const num = extractMemberIdNumber(rawId);
+      if (!num || num < 1001) return null;
+      const isConflict = profiles.some((p, idx) => {
+        if (idx === existingIndex) return false;
+        if (p.member_id !== `NCSM${num}`) return false;
+        const pEmail = (p.email || '').toLowerCase().trim();
+        const pPhone = p.mobile ? p.mobile.replace(/\D/g, '').slice(-8) : '';
+        return pEmail !== emailNorm && (!phoneNorm || !pPhone || pPhone !== phoneNorm);
+      });
+      return isConflict ? null : `NCSM${num}`;
+    };
 
-      memberId =
-        getValidCandidateId(data.member_id) ||
-        getValidCandidateId(currentUserProfile?.member_id) ||
-        (existingIndex >= 0 ? getValidCandidateId(profiles[existingIndex].member_id) : null) ||
-        getNextMemberId(profiles);
-    }
+    const memberId: string =
+      getValidCandidateId(data.member_id) ||
+      getValidCandidateId(currentUserProfile?.member_id) ||
+      (existingIndex >= 0 ? getValidCandidateId(profiles[existingIndex].member_id) : null) ||
+      getNextMemberId(profiles);
 
     const normalizedGender = normalizeGender(data.gender);
 
@@ -2013,74 +1981,19 @@ export default function App() {
   };
 
   const handleResetAllData = async () => {
-    // 1. Established canonical accounts (NCSM1001: Noushida, NCSM1002: Sadiq / Admin)
-    const baseSadiq: Profile = {
-      id: '177a3731-5de2-4bbf-82d4-e4ea33cb25ed',
-      member_id: 'NCSM1002',
-      full_name: 'Sadiq',
-      email: 'nikahcircle01@gmail.com',
-      mobile: '9744905093',
-      gender: 'Female',
-      date_of_birth: '2002-03-13',
-      location: 'majeri, Malappuram',
-      district: 'Malappuram',
-      place: 'majeri',
-      education: 'Graduate',
-      profession: 'dm',
-      guardian_name: 'Guardian',
-      guardian_mobile: '9744905093',
-      guardian_relation: 'Parent (Guardian)',
-      marital_status: 'Never Married',
-      biodata_uploaded: true,
-      registration_type: 'ONLINE',
-      profile_status: 'APPROVED',
-      is_verified: true,
-      is_premium: true,
-      premium_plan: 'Premium Free (Girls & Other)',
-      premium_start: '2026-11-12',
-      premium_end: '2027-02-10',
-      created_at: '2026-11-12T13:37:23.773Z',
-      about: '<!--NC_META:{"member_id":"NCSM1002","place":"majeri","state":"Kerala","biodata_uploaded":true,"biodata_document_name":null,"biodata_document_url":null,"hobbies":[],"interests":[]}-->',
-    };
-
-    const baseNoushida: Profile = {
-      id: 'e2b7b16b-9545-4eda-bef7-17069eeffdaa',
-      member_id: 'NCSM1001',
-      full_name: 'NOUSHIDA',
-      email: 'sanusadique396@gmail.com',
-      mobile: '8943549396',
-      gender: 'Female',
-      date_of_birth: '1998-05-15',
-      location: 'Malappuram, Malappuram',
-      district: 'Malappuram',
-      place: 'Malappuram',
-      education: 'Graduate',
-      profession: 'Professional',
-      guardian_name: 'Family Guardian',
-      guardian_mobile: '8943549396',
-      guardian_relation: 'Parent (Guardian)',
-      marital_status: 'Never Married',
-      biodata_uploaded: false,
-      registration_type: 'ONLINE',
-      profile_status: 'APPROVED',
-      is_verified: true,
-      is_premium: false,
-      premium_plan: null,
-      created_at: '2026-11-12T13:37:37.211Z',
-      about: '<!--NC_META:{"member_id":"NCSM1001","place":"Malappuram","state":"Kerala","biodata_uploaded":false,"biodata_document_name":null,"biodata_document_url":null,"hobbies":[],"interests":[]}-->',
-    };
-
-    const cleanProfiles = [baseSadiq, baseNoushida];
-
-    // 2. Set clean state
-    setProfiles(cleanProfiles);
-    saveStoredProfiles(cleanProfiles);
+    // 1. Set clean state
+    setProfiles([]);
+    saveStoredProfiles([]);
     setPayments([]);
     setPremiumRequests([]);
     setBookmarks([]);
     setInterestsMap({});
 
-    // 3. Clear storage keys
+    // 2. Clear storage keys
+    localStorage.removeItem('nikah_circle_user_profile');
+    localStorage.removeItem('nikah_circle_user');
+    localStorage.removeItem('nikah_circle_user_is_premium');
+    localStorage.removeItem('nikah_circle_is_admin');
     localStorage.removeItem('nikah_circle_payments_v2');
     localStorage.removeItem('nikah_circle_bookmarks_v2');
     localStorage.removeItem('nikah_circle_premium_requests_v1');
@@ -2091,24 +2004,16 @@ export default function App() {
     localStorage.removeItem('nikah_circle_proposals_registry_v2');
     localStorage.removeItem('nikah_circle_proposals_registry_v3');
     localStorage.removeItem('nikah_circle_deleted_records_v2');
+    localStorage.removeItem('nikah_circle_used_referral_codes_v1');
 
-    // 4. Reset sequence counter to 1002 so the next newly registered user starts strictly from NCSM1003
-    localStorage.setItem(MEMBER_ID_SEQ_KEY, '1002');
+    // 3. Reset sequence counter to 1000 so the next newly registered user starts strictly from NCSM1001
+    localStorage.setItem(MEMBER_ID_SEQ_KEY, '1000');
 
-    // 5. Delete test candidate records from Supabase (preserving Sadiq and Noushida)
+    // 4. Delete all candidate records from Supabase
     try {
-      const { data: allDbProfiles } = await supabase.from('profiles').select('id, email, mobile');
+      const { data: allDbProfiles } = await supabase.from('profiles').select('id');
       if (allDbProfiles && allDbProfiles.length > 0) {
-        const idsToDelete = allDbProfiles
-          .filter((p: any) => {
-            const email = (p.email || '').toLowerCase().trim();
-            const mobile = (p.mobile || '').replace(/\D/g, '');
-            const isSadiq = email === 'nikahcircle01@gmail.com' || mobile.endsWith('44905093');
-            const isNoushida = email === 'sanusadique396@gmail.com' || mobile.endsWith('43549396');
-            return !isSadiq && !isNoushida;
-          })
-          .map((p: any) => p.id);
-
+        const idsToDelete = allDbProfiles.map((p: any) => p.id);
         for (let i = 0; i < idsToDelete.length; i += 50) {
           const chunk = idsToDelete.slice(i, i + 50);
           await supabase.from('profiles').delete().in('id', chunk);
@@ -2120,7 +2025,7 @@ export default function App() {
       console.warn('Supabase wipe error', e);
     }
 
-    showToast('Reset completed! Preserved NCSM1001 & NCSM1002. Next registration starts at NCSM1003.');
+    showToast('All candidate profiles, plans and biodatas cleared! First registration starts at NCSM1001.');
   };
 
   const handleApproveProfile = async (id: string) => {
@@ -2581,18 +2486,18 @@ export default function App() {
                 <div className="bg-white rounded-3xl border border-[#eadfe4] p-10 text-center space-y-3 max-w-xl mx-auto shadow-xs">
                   <Sparkles className="w-10 h-10 text-[#c9973e] mx-auto" />
                   <h3 className="font-serif text-xl font-bold text-[#4b001f]">
-                    Premium Profiles Sanctuary
+                    Verified Profiles Sanctuary
                   </h3>
                   <p className="text-xs text-stone-500 leading-relaxed">
-                    Only verified candidates with active Premium Plans are publicly featured and discoverable. Free plan accounts remain hidden from public listings until upgraded.
+                    No verified profiles published yet. Be the first to register and upload your biodata! Only verified candidates with active Premium Plans and completed biodata are featured here.
                   </p>
                   <button
                     type="button"
-                    onClick={handleOpenPremium}
+                    onClick={handleOpenCreateProfile}
                     className="px-6 py-2.5 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold transition-colors cursor-pointer inline-flex items-center gap-2 shadow-2xs"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-[#c9973e]" />
-                    <span>Explore Premium Packages</span>
+                    <span>Create Your Profile</span>
                   </button>
                 </div>
               ) : (
