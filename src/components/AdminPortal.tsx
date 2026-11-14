@@ -156,7 +156,7 @@ export const AdminPortal: React.FC<Props> = ({
     // 2. Default verified profiles
     if (DEFAULT_PROFILES.some((dp) => dp.id === p.id || (dp.member_id && p.member_id && dp.member_id.toUpperCase() === p.member_id.toUpperCase()))) return true;
     // 3. Known sequential admin-added profile IDs
-    if (p.member_id && ['NCSM1004', 'NCSM1005', 'NCSM1006', 'NCSM1007', 'NCSM1008', 'NCSM1009', 'NCSM1010'].includes(p.member_id)) return true;
+    if (p.member_id && ['NCSM1004', 'NCSM1005', 'NCSM1006', 'NCSM1007', 'NCSM1008', 'NCSM1009', 'NCSM1010', 'NCSM1011'].includes(p.member_id)) return true;
     // 4. Missing auth_user_id and no independent user email (or admin email)
     if (!p.auth_user_id && (!p.email || p.email.toLowerCase().trim() === 'nikahcircle01@gmail.com')) return true;
     return false;
@@ -1083,7 +1083,7 @@ export const AdminPortal: React.FC<Props> = ({
                           : `No ${adminProposalStatusFilter} Proposals Found`}
                       </h4>
                       <p className="text-xs text-stone-500 max-w-md mx-auto leading-relaxed">
-                        When platform users view admin-added profiles (like NCSM1004, NCSM1005, NCSM1006, NCSM1007, NCSM1008, NCSM1009, NCSM1010) and express proposal interest, they appear here. The admin can accept or reject each proposal. Accepting instantly unlocks the guardian contact for the requesting family.
+                        When platform users view admin-added profiles (like NCSM1004, NCSM1005, NCSM1006, NCSM1007, NCSM1008, NCSM1009, NCSM1010, NCSM1011) and express proposal interest, they appear here. The admin can accept or reject each proposal. Accepting instantly unlocks the guardian contact for the requesting family.
                       </p>
                     </div>
                   ) : (
