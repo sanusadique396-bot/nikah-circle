@@ -89,7 +89,8 @@ export const ProfileModal: React.FC<Props> = ({
                   src={profile.profile_photo}
                   alt={profile.full_name}
                   referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover"
+                  style={{ objectFit: 'cover', objectPosition: '50% 15%' }}
+                  className="w-full h-full object-cover object-top"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-3xl font-serif text-[#4b001f]">

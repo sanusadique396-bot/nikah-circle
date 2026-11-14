@@ -1181,7 +1181,8 @@ export const AdminPortal: React.FC<Props> = ({
                                     <img
                                       src={targetCandidate.profile_photo}
                                       alt={targetCandidate.full_name}
-                                      className="w-12 h-12 rounded-xl object-cover border border-purple-200 shrink-0"
+                                      style={{ objectFit: 'cover', objectPosition: '50% 15%' }}
+                                      className="w-12 h-12 rounded-xl object-cover object-top border border-purple-200 shrink-0"
                                     />
                                   ) : (
                                     <div className="w-12 h-12 rounded-xl bg-purple-200 text-purple-900 font-serif font-bold text-lg flex items-center justify-center shrink-0">
@@ -1335,7 +1336,8 @@ export const AdminPortal: React.FC<Props> = ({
                                 <img
                                   src={p.profile_photo}
                                   alt={p.full_name}
-                                  className="w-14 h-14 rounded-2xl object-cover border border-purple-200 shrink-0"
+                                  style={{ objectFit: 'cover', objectPosition: '50% 15%' }}
+                                  className="w-14 h-14 rounded-2xl object-cover object-top border border-purple-200 shrink-0"
                                 />
                               ) : (
                                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#f7dce8] to-[#fff6fa] text-[#4b001f] font-serif font-bold text-xl flex items-center justify-center shrink-0">
@@ -1635,7 +1637,7 @@ export const AdminPortal: React.FC<Props> = ({
                                 <div className="flex items-center gap-2.5">
                                   <div className="w-10 h-10 rounded-xl overflow-hidden bg-stone-100 border border-stone-200 shrink-0 shadow-2xs group-hover:scale-105 transition-transform flex items-center justify-center font-bold text-[#4b001f] text-sm">
                                     {p.profile_photo ? (
-                                      <img src={p.profile_photo} alt={p.full_name} className="w-full h-full object-cover" />
+                                      <img src={p.profile_photo} alt={p.full_name} style={{ objectFit: 'cover', objectPosition: '50% 15%' }} className="w-full h-full object-cover object-top" />
                                     ) : (
                                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#fff0f5] to-[#fce7f3] text-[#4b001f]">
                                         {(p.full_name || 'C').charAt(0).toUpperCase()}
@@ -2036,7 +2038,7 @@ export const AdminPortal: React.FC<Props> = ({
                                 <div className="flex items-center gap-3">
                                   <div className="w-10 h-10 rounded-xl overflow-hidden bg-stone-100 border border-stone-200 shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
                                     {p.profile_photo ? (
-                                      <img src={p.profile_photo} alt={p.full_name} className="w-full h-full object-cover" />
+                                      <img src={p.profile_photo} alt={p.full_name} style={{ objectFit: 'cover', objectPosition: '50% 15%' }} className="w-full h-full object-cover object-top" />
                                     ) : (
                                       <div className="w-full h-full flex items-center justify-center font-bold text-[#4b001f] text-sm bg-gradient-to-br from-[#fff0f5] to-[#fce7f3]">
                                         {(p.full_name || 'U').charAt(0).toUpperCase()}
@@ -2885,7 +2887,8 @@ export const AdminPortal: React.FC<Props> = ({
                       <img
                         src={formData.profile_photo}
                         alt="Preview"
-                        className="w-7 h-7 rounded-lg object-cover border border-stone-200"
+                        style={{ objectFit: 'cover', objectPosition: '50% 15%' }}
+                        className="w-7 h-7 rounded-lg object-cover object-top border border-stone-200"
                       />
                       <span>✓ Photo ready</span>
                       <button
@@ -3142,7 +3145,7 @@ export const AdminPortal: React.FC<Props> = ({
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 rounded-2xl overflow-hidden bg-stone-100 border border-stone-200 shrink-0 shadow-xs flex items-center justify-center font-bold text-[#4b001f] text-xl">
                     {viewingProfile.profile_photo ? (
-                      <img src={viewingProfile.profile_photo} alt={viewingProfile.full_name} className="w-full h-full object-cover" />
+                      <img src={viewingProfile.profile_photo} alt={viewingProfile.full_name} style={{ objectFit: 'cover', objectPosition: '50% 15%' }} className="w-full h-full object-cover object-top" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#fff0f5] to-[#fce7f3] text-[#4b001f]">
                         {(viewingProfile.full_name || 'U').charAt(0).toUpperCase()}

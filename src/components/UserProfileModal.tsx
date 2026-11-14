@@ -399,7 +399,8 @@ export const UserProfileModal: React.FC<Props> = ({
                 <img
                   src={formData.profile_photo}
                   alt="Profile"
-                  className="w-full h-full object-cover"
+                  style={{ objectFit: 'cover', objectPosition: '50% 15%' }}
+                  className="w-full h-full object-cover object-top"
                 />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center bg-stone-100 text-[#4b001f]">

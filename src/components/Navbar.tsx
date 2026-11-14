@@ -184,7 +184,8 @@ export const Navbar: React.FC<Props> = ({
                       <img
                         src={userProfile.profile_photo}
                         alt={userProfile.full_name || 'User'}
-                        className="w-full h-full object-cover"
+                        style={{ objectFit: 'cover', objectPosition: '50% 15%' }}
+                        className="w-full h-full object-cover object-top"
                       />
                     ) : (
                       <span>{(userProfile.full_name || 'U').charAt(0).toUpperCase()}</span>

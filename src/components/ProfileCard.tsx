@@ -85,7 +85,8 @@ export const ProfileCard: React.FC<Props> = ({
             src={profile.profile_photo}
             alt={profile.full_name}
             referrerPolicy="no-referrer"
-            className={`w-full h-full object-cover transition-all duration-300 ${
+            style={{ objectFit: 'cover', objectPosition: '50% 15%' }}
+            className={`w-full h-full object-cover object-top transition-all duration-300 ${
               photoBlurred ? 'blur-md scale-105' : 'blur-none'
             }`}
           />
