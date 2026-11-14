@@ -8,10 +8,151 @@ export const SUPABASE_URL =
 export const SUPABASE_KEY = 
   (typeof import.meta !== 'undefined' && import.meta?.env?.VITE_SUPABASE_ANON_KEY) || "sb_publishable_fHxx0xpO65_m7WCrMRX6DQ_fShiZpoI";
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: true },
+  global: {
+    fetch: (url, options = {}) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      return fetch(url, {
+        ...options,
+        signal: options.signal || controller.signal,
+      }).finally(() => clearTimeout(timeoutId));
+    },
+  },
+});
 
-// Empty default profiles & mock data for fresh system start
-export const DEFAULT_PROFILES: Profile[] = [];
+// Verified candidate groom profiles
+export const DEFAULT_PROFILES: Profile[] = [
+  {
+    id: "8be9cc9a-ff7e-47c7-9767-d44d052ba55a",
+    member_id: "NCSM1004",
+    full_name: "Muhammed",
+    gender: "Male",
+    age: 28,
+    date_of_birth: "1998-05-15",
+    marital_status: "Never Married",
+    religion: "Islam",
+    sect: "Sunni",
+    religious_ideation: "Sunni (സുന്നി)",
+    height: "173 cm",
+    education: "Plus Two, ITI",
+    bouthika_education: "Plus Two, ITI",
+    religious_education: "10th Level (മതപഠനം)",
+    profession: "AC Mechanic",
+    job_location: "Qatar",
+    financial_status: "Middle Class",
+    place: "Melattur",
+    district: "Malappuram",
+    state: "Kerala",
+    location: "Melattur, Malappuram",
+    preferred_districts: "Malappuram, Palakkad, Kozhikode",
+    mobile: "9562399019",
+    guardian_mobile: "9562399019",
+    guardian_name: "Family Guardian",
+    guardian_relation: "Parent (Guardian)",
+    family_members_details: "Father, Mother, Siblings",
+    family_background: "Reputed religious Sunni Muslim family based in Melattur, Malappuram.",
+    marriage_expectations: "Looking for a bride from a religious family (ദീനിയായ കുടുംബത്തിൽ നിന്നും ഒരു കുട്ടി).",
+    partner_preferences: "Looking for a bride from a religious family (ദീനിയായ കുടുംബത്തിൽ നിന്നും ഒരു കുട്ടി).",
+    profile_photo: "/profiles/ncsm1004.jpg",
+    registration_type: "ONLINE",
+    profile_status: "APPROVED",
+    is_verified: true,
+    is_premium: true,
+    premium_plan: "Active Premium",
+    biodata_uploaded: true,
+    created_at: "2026-11-14T06:17:17.033Z",
+    updated_at: "2026-11-14T06:17:17.033Z",
+  },
+  {
+    id: "02b5b897-46d5-44ee-ba6b-6e8c32dd8086",
+    member_id: "NCSM1005",
+    full_name: "Muhammed Rafeek",
+    gender: "Male",
+    age: 26,
+    date_of_birth: "2000-06-15",
+    marital_status: "Never Married",
+    religion: "Islam",
+    sect: "Sunni",
+    religious_ideation: "Sunni (സുന്നി)",
+    height: "165 cm",
+    complexion: "Fair to Medium",
+    physical_build: "Weight: 60 kg, Normal",
+    education: "Plus Two",
+    bouthika_education: "Plus Two",
+    religious_education: "Plus Two Level (മതപഠനം)",
+    profession: "Supervisor, Lulu Hypermarket",
+    job_location: "Muscat, Oman",
+    financial_status: "Middle Class Family",
+    place: "Pattambi",
+    district: "Palakkad",
+    state: "Kerala",
+    location: "Pattambi, Palakkad",
+    preferred_districts: "Palakkad, Malappuram, Kozhikode",
+    mobile: "9645494921",
+    guardian_mobile: "9048808174",
+    guardian_name: "Father (Guardian)",
+    guardian_relation: "Father (Driver)",
+    family_members_details: "Father (Driver), Mother (Housewife), 1 Brother (Married), 2 Sisters (Married)",
+    family_background: "Father is a Driver, Mother is a Housewife. One brother and two sisters - all married.",
+    marriage_expectations: "Looking for a religious-minded girl (ദീനി ബോധമുള്ള പെൺകുട്ടി). Willingness to allow her to study and work (പഠിക്കാനും ജോലിക്ക് പോകാനും സമ്മതമാണ്).",
+    partner_preferences: "Looking for a religious-minded girl (ദീനി ബോധമുള്ള പെൺകുട്ടി). Willingness to allow her to study and work (പഠിക്കാനും ജോലിക്ക് പോകാനും സമ്മതമാണ്).",
+    profile_photo: "/profiles/ncsm1005.jpg",
+    registration_type: "ONLINE",
+    profile_status: "APPROVED",
+    is_verified: true,
+    is_premium: true,
+    premium_plan: "Active Premium",
+    biodata_uploaded: true,
+    created_at: "2026-11-14T06:19:00.000Z",
+    updated_at: "2026-11-14T06:19:00.000Z",
+  },
+  {
+    id: "ncsm1006-mohammed-shabeel",
+    member_id: "NCSM1006",
+    full_name: "Mohammed Shabeel",
+    gender: "Male",
+    age: 24,
+    date_of_birth: "2002-04-10",
+    marital_status: "Never Married",
+    religion: "Islam",
+    sect: "Sunni",
+    religious_ideation: "Sunni (സുന്നി)",
+    height: "6 ft (183 cm)",
+    complexion: "Fair (വെളുപ്പ്)",
+    physical_build: "Average build, Healthy",
+    education: "Diploma in Mechanical Engineering",
+    bouthika_education: "Diploma in Mechanical Engineering",
+    religious_education: "7th Level (മതപഠനം)",
+    profession: "Oil & Gas Construction Field",
+    job_location: "Abu Dhabi, UAE",
+    financial_status: "Middle Class",
+    place: "Chattipparamba, Chengottur",
+    district: "Malappuram",
+    state: "Kerala",
+    location: "Chattipparamba, Malappuram",
+    preferred_districts: "Malappuram, Kozhikode, Palakkad",
+    mobile: "7510259553",
+    guardian_mobile: "8075608023",
+    guardian_name: "Father (Abroad)",
+    guardian_relation: "Father / Guardian",
+    family_members_details: "Father (Abroad), Mother (Housewife), 1 Sister (+2), 2 Brothers (8th std & UKG)",
+    family_background: "Father works abroad (Mob: 8075608023), Mother is a housewife (Mob: 8075515473). One sister studying in +2, two younger brothers studying in 8th standard and UKG. Residing in Chattipparamba, Chengottur, Malappuram.",
+    marriage_expectations: "Looking for a religious, understanding bride from a good Muslim family (ദീനിയായ സുന്നി കുടുംബത്തിൽ നിന്നുള്ള കുട്ടി).",
+    partner_preferences: "Looking for a religious, understanding bride from a good Muslim family (ദീനിയായ സുന്നി കുടുംബത്തിൽ നിന്നുള്ള കുട്ടി).",
+    other_interests: "No physical disabilities or ailments.",
+    profile_photo: "/profiles/ncsm1006.jpg",
+    registration_type: "ONLINE",
+    profile_status: "APPROVED",
+    is_verified: true,
+    is_premium: true,
+    premium_plan: "Active Premium",
+    biodata_uploaded: true,
+    created_at: "2026-11-14T06:21:00.000Z",
+    updated_at: "2026-11-14T06:21:00.000Z",
+  }
+];
 export const DEFAULT_PAYMENTS: Payment[] = [];
 
 // Offline & Hybrid Data Layer
@@ -179,8 +320,20 @@ export function getStoredProfiles(): Profile[] {
     const raw = localStorage.getItem(PROFILES_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        const cleaned = deduplicateProfiles(parsed.map((p) => autoCorrectMistakenGenders(p)));
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Merge with DEFAULT_PROFILES so default verified candidates are always included
+        const combined = [...DEFAULT_PROFILES];
+        parsed.forEach((p) => {
+          const idx = combined.findIndex(
+            (c) => c.member_id === p.member_id || (c.mobile && p.mobile && c.mobile === p.mobile) || c.id === p.id
+          );
+          if (idx >= 0) {
+            combined[idx] = { ...combined[idx], ...p };
+          } else {
+            combined.push(p);
+          }
+        });
+        const cleaned = deduplicateProfiles(combined.map((p) => autoCorrectMistakenGenders(p)));
         return ensureUniqueSequentialMemberIds(cleaned);
       }
     }
