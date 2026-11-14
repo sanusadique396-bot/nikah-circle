@@ -52,6 +52,7 @@ interface Props {
   onApprovePremiumRequest: (id: string) => Promise<void>;
   onRejectPremiumRequest: (id: string) => Promise<void>;
   onDeactivatePremium?: (profileIdOrPhone: string) => Promise<void>;
+  onClearAllPremiumAccounts?: () => Promise<void>;
   onExitAdmin: () => void;
   adminEmail: string;
   onRefreshData?: () => Promise<void>;
@@ -111,6 +112,7 @@ export const AdminPortal: React.FC<Props> = ({
   onApprovePremiumRequest,
   onRejectPremiumRequest,
   onDeactivatePremium,
+  onClearAllPremiumAccounts,
   onExitAdmin,
   adminEmail,
   onRefreshData,
@@ -2422,9 +2424,26 @@ export const AdminPortal: React.FC<Props> = ({
         {/* TAB 6: PREMIUM USERS */}
         {activeTab === 'premium' && (
           <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-5 space-y-4">
-            <h3 className="font-serif font-bold text-base text-[#4b001f] pb-3 border-b border-stone-200">
-              Premium Active Members
-            </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-200">
+              <div>
+                <h3 className="font-serif font-bold text-base text-[#4b001f]">
+                  Premium Active Members
+                </h3>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  Currently active paid and approved premium memberships.
+                </p>
+              </div>
+              {onClearAllPremiumAccounts && (
+                <button
+                  type="button"
+                  onClick={onClearAllPremiumAccounts}
+                  className="px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-xs font-bold transition-all cursor-pointer shadow-xs flex items-center gap-1.5 self-start sm:self-auto"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Clear All Premium Accounts</span>
+                </button>
+              )}
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-stone-50 text-stone-500 border-b border-stone-200">

@@ -1724,12 +1724,34 @@ export default function App() {
           ? {
               ...p,
               is_premium: false,
+              premium_plan: null,
               premium_end: new Date(Date.now() - 86400000).toISOString().slice(0, 10),
             }
           : p
       );
       setProfiles(updated);
       saveStoredProfiles(updated);
+
+      // Also deactivate or remove from premiumRequests
+      const updatedReqs = premiumRequests.filter(
+        (r) => r.id !== profileIdOrIdentifier && r.phone_number !== profileIdOrIdentifier
+      );
+      setPremiumRequests(updatedReqs);
+      saveStoredPremiumRequests(updatedReqs);
+
+      // Sync deactivation to Supabase
+      try {
+        await supabase
+          .from('profiles')
+          .update({ is_premium: false, premium_plan: null })
+          .or(`id.eq.${profileIdOrIdentifier},mobile.eq.${profileIdOrIdentifier}`);
+        await supabase
+          .from('premium_requests')
+          .delete()
+          .or(`id.eq.${profileIdOrIdentifier},phone_number.eq.${profileIdOrIdentifier}`);
+      } catch (e) {
+        console.warn('Could not sync deactivation to Supabase', e);
+      }
     }
 
     // Trigger required notification and on-screen banner: 'Replan or update your premium plan'
@@ -1738,6 +1760,58 @@ export default function App() {
       status: 'Admin Off',
       message: 'Replan or update your premium plan',
     });
+  };
+
+  // Completely clear and remove ALL premium accounts across the whole system
+  const handleClearAllPremiumAccounts = async () => {
+    // 1. Demote all active profiles from premium to free
+    const updatedProfiles = profiles.map((p) => ({
+      ...p,
+      is_premium: false,
+      premium_plan: null,
+      premium_start: null,
+      premium_end: null,
+    }));
+    setProfiles(updatedProfiles);
+    saveStoredProfiles(updatedProfiles);
+
+    // 2. Clear all premium requests
+    setPremiumRequests([]);
+    saveStoredPremiumRequests([]);
+
+    // 3. Clear all payments
+    setPayments([]);
+    saveStoredPayments([]);
+
+    // 4. Update current user flags
+    setIsUserPremium(false);
+    localStorage.setItem('nikah_circle_user_is_premium', 'false');
+    localStorage.setItem('nikah_circle_premium_admin_status', 'ADMIN_OFF');
+    localStorage.removeItem('nikah_circle_premium_requests_v1');
+    localStorage.removeItem('nikah_circle_payments_v2');
+    setAdminApprovedBanner(null);
+
+    // 5. Update Supabase
+    try {
+      const { data: dbProfs } = await supabase.from('profiles').select('id');
+      if (dbProfs && dbProfs.length > 0) {
+        for (const dp of dbProfs) {
+          await supabase.from('profiles').update({ is_premium: false, premium_plan: null }).eq('id', dp.id);
+        }
+      }
+      const { data: prs } = await supabase.from('premium_requests').select('id');
+      if (prs && prs.length > 0) {
+        await supabase.from('premium_requests').delete().in('id', prs.map((x: any) => x.id));
+      }
+      const { data: pays } = await supabase.from('payments').select('id');
+      if (pays && pays.length > 0) {
+        await supabase.from('payments').delete().in('id', pays.map((x: any) => x.id));
+      }
+    } catch (e) {
+      console.warn('Could not wipe premium from Supabase', e);
+    }
+
+    showToast('All premium accounts and requests cleared successfully.');
   };
 
   // Plan Expiry & Admin Off Monitoring
@@ -2288,6 +2362,7 @@ export default function App() {
           onApprovePremiumRequest={handleApprovePremiumRequest}
           onRejectPremiumRequest={handleRejectPremiumRequest}
           onDeactivatePremium={handleDeactivatePremium}
+          onClearAllPremiumAccounts={handleClearAllPremiumAccounts}
           onExitAdmin={() => setActiveView('home')}
           adminEmail="nikahcircle01@gmail.com"
           onRefreshData={refreshAllData}
