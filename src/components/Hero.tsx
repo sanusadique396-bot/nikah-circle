@@ -34,34 +34,34 @@ export const Hero: React.FC<Props> = ({
   const marriageIncrement = Math.floor(totalMembersCount / 100) * 10;
   const marriagesCount = (100 + marriageIncrement).toLocaleString() + '+';
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-[#fff6fa] via-white to-stone-50 pt-12 pb-20 border-b border-[#eadfe4]">
+    <section className="relative overflow-hidden bg-gradient-to-b from-[#fff6fa] via-white to-stone-50 pt-8 sm:pt-12 pb-16 sm:pb-20 border-b border-[#eadfe4] w-full max-w-full">
       {/* Decorative Islamic Geometric Pattern / Ambient Radial Glow */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#f7dce8]/50 rounded-full blur-3xl pointer-events-none -mr-40 -mt-20" />
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#c9973e]/10 rounded-full blur-3xl pointer-events-none -ml-30" />
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#f7dce8]/50 rounded-full blur-3xl pointer-events-none -mr-40 -mt-20 max-w-full" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#c9973e]/10 rounded-full blur-3xl pointer-events-none -ml-30 max-w-full" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           {/* Left Column: Proposition and Actions */}
-          <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#f7dce8] text-[#4b001f] text-xs font-bold tracking-wide">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#4b001f]" />
-              <span>TRUSTED ISLAMIC MATRIMONY PLATFORM</span>
+          <div className="lg:col-span-7 space-y-5 sm:space-y-6 text-center lg:text-left">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#f7dce8] text-[#4b001f] text-[10px] sm:text-xs font-bold tracking-wide max-w-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#4b001f] shrink-0" />
+              <span className="truncate">TRUSTED ISLAMIC MATRIMONY PLATFORM</span>
             </div>
 
-            <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold text-[#4b001f] leading-[1.1] tracking-tight">
-              Find Your Life Partner <br />
+            <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold text-[#4b001f] leading-[1.15] sm:leading-[1.1] tracking-tight break-words">
+              Find Your Life Partner <br className="hidden xs:inline" />
               <span className="text-[#c9973e] italic">with Trust & Modesty.</span>
             </h1>
 
-            <p className="text-stone-600 text-base sm:text-lg max-w-2xl leading-relaxed">
+            <p className="text-stone-600 text-sm sm:text-lg max-w-2xl leading-relaxed mx-auto lg:mx-0">
               A dignified matrimonial sanctuary built on Islamic values, verified biodata,
               and strict privacy controls. Designed for families and prospective brides and grooms
               in Kerala and the worldwide community.
             </p>
 
             {/* Arabic Quranic Verse Callout */}
-            <div className="py-3 px-4 rounded-xl bg-white/80 border border-[#eadfe4] shadow-xs max-w-xl mx-auto lg:mx-0">
-              <p className="font-arabic text-right text-lg text-[#4b001f] leading-loose">
+            <div className="py-3 px-4 rounded-xl bg-white/80 border border-[#eadfe4] shadow-xs max-w-xl mx-auto lg:mx-0 w-full">
+              <p className="font-arabic text-right text-base sm:text-lg text-[#4b001f] leading-loose">
                 وَخَلَقْنَاكُمْ أَزْوَاجًا
               </p>
               <p className="text-xs text-stone-500 italic mt-0.5">
@@ -70,7 +70,7 @@ export const Hero: React.FC<Props> = ({
             </div>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-2">
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-2 w-full">
               <button
                 onClick={onBrowseClick}
                 className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
@@ -95,17 +95,17 @@ export const Hero: React.FC<Props> = ({
             </div>
 
             {/* Trust Badges */}
-            <div className="pt-4 flex flex-wrap items-center justify-center lg:justify-start gap-6 text-xs text-stone-600 font-medium border-t border-[#eadfe4]/60">
+            <div className="pt-4 flex flex-wrap items-center justify-center lg:justify-start gap-4 sm:gap-6 text-xs text-stone-600 font-medium border-t border-[#eadfe4]/60">
               <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>100% Verified Profiles</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <Lock className="w-4 h-4 text-[#4b001f]" />
+                <Lock className="w-4 h-4 text-[#4b001f] shrink-0" />
                 <span>Modest Photo Privacy</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-[#c9973e]" />
+                <ShieldCheck className="w-4 h-4 text-[#c9973e] shrink-0" />
                 <span>Family & Guardian Facilitated</span>
               </div>
             </div>
@@ -113,42 +113,42 @@ export const Hero: React.FC<Props> = ({
 
           {/* Right Column: Hero Visual Card with Official Logo Asset */}
           {/* Right Column: Hero Visual Card with Official Logo Asset & Referral Reward Section */}
-          <div className="lg:col-span-5 relative flex flex-col items-center justify-center space-y-6">
+          <div className="lg:col-span-5 relative flex flex-col items-center justify-center space-y-6 w-full max-w-full">
             {/* Background Halo */}
-            <div className="w-72 h-72 sm:w-84 sm:h-84 rounded-full bg-gradient-to-tr from-[#f7dce8] to-[#fff6fa] border border-[#eadfe4] absolute top-6 -z-0 shadow-inner pointer-events-none" />
+            <div className="w-64 h-64 sm:w-84 sm:h-84 rounded-full bg-gradient-to-tr from-[#f7dce8] to-[#fff6fa] border border-[#eadfe4] absolute top-6 -z-0 shadow-inner pointer-events-none max-w-full" />
 
             {/* Main Showcase Card Container with Prominent Top-Left Member ID and Top-Right Admin Verified */}
-            <div className="relative z-10 w-full max-w-sm">
+            <div className="relative z-10 w-full max-w-sm px-2 sm:px-0">
               {/* Top-Left: Unique Member ID Badge */}
-              <div className="absolute -top-3.5 left-3 sm:left-4 bg-[#4b001f] text-white py-1.5 px-3.5 rounded-xl border border-amber-400/50 shadow-md text-xs font-mono font-bold flex items-center gap-2 z-20 animate-fade-in tracking-wider">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>{memberId || 'Nikah Circle'}</span>
+              <div className="absolute -top-3.5 left-2 sm:left-4 bg-[#4b001f] text-white py-1 px-2.5 sm:py-1.5 sm:px-3.5 rounded-xl border border-amber-400/50 shadow-md text-[11px] sm:text-xs font-mono font-bold flex items-center gap-1.5 sm:gap-2 z-20 animate-fade-in tracking-wider">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                <span className="truncate max-w-[120px] sm:max-w-none">{memberId || 'Nikah Circle'}</span>
               </div>
 
               {/* Top-Right: Plan Badge (Strictly Free Plan or Premium Plan) */}
-              <div className="absolute -top-3.5 right-3 sm:right-4 bg-white/95 backdrop-blur-xs py-1.5 px-3.5 rounded-xl border border-[#eadfe4] shadow-md text-xs font-bold text-[#4b001f] flex items-center gap-1.5 z-20 animate-fade-in">
+              <div className="absolute -top-3.5 right-2 sm:right-4 bg-white/95 backdrop-blur-xs py-1 px-2.5 sm:py-1.5 sm:px-3.5 rounded-xl border border-[#eadfe4] shadow-md text-[11px] sm:text-xs font-bold text-[#4b001f] flex items-center gap-1.5 z-20 animate-fade-in">
                 {isUserPremium ? (
                   <>
-                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
                     <span>Premium Plan</span>
                   </>
                 ) : (
                   <>
-                    <span className="w-2 h-2 rounded-full bg-stone-400" />
+                    <span className="w-2 h-2 rounded-full bg-stone-400 shrink-0" />
                     <span>Free Plan</span>
                   </>
                 )}
               </div>
 
               {/* Bottom: 100% Privacy & Halal Trust Pill */}
-              <div className="absolute -bottom-3.5 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-xs py-1.5 px-4 rounded-xl border border-[#eadfe4] shadow-md text-xs font-bold text-[#4b001f] flex items-center gap-1.5 z-20 animate-fade-in whitespace-nowrap">
-                <Lock className="w-4 h-4 text-[#c9973e]" />
+              <div className="absolute -bottom-3.5 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-xs py-1 px-3 sm:py-1.5 sm:px-4 rounded-xl border border-[#eadfe4] shadow-md text-[11px] sm:text-xs font-bold text-[#4b001f] flex items-center gap-1.5 z-20 animate-fade-in whitespace-nowrap">
+                <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#c9973e]" />
                 <span>100% Privacy & Halal</span>
               </div>
 
               {/* Main Showcase Card Box */}
-              <div className="w-full bg-white rounded-3xl p-6 pt-7 shadow-xl border border-[#eadfe4] text-center space-y-4">
-                <div className="w-28 h-28 mx-auto rounded-2xl overflow-hidden shadow-md border-2 border-[#f7dce8] p-1 bg-[#4b001f]">
+              <div className="w-full bg-white rounded-3xl p-5 sm:p-6 pt-7 shadow-xl border border-[#eadfe4] text-center space-y-4">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-2xl overflow-hidden shadow-md border-2 border-[#f7dce8] p-1 bg-[#4b001f]">
                   <img
                     src="/assets/aistudio/LOGO-01_fe7effc7.png"
                     alt="Nikah Circle Symbol"

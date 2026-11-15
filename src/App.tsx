@@ -2546,7 +2546,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 flex flex-col font-sans selection:bg-[#f7dce8] selection:text-[#4b001f]">
+    <div className="min-h-screen bg-stone-50 flex flex-col font-sans selection:bg-[#f7dce8] selection:text-[#4b001f] w-full max-w-full overflow-x-hidden">
       {/* Offline Toast */}
       <OfflineBanner />
 
@@ -2855,8 +2855,8 @@ export default function App() {
           VIEW 2: ALL PROFILES PAGE (With Premium Search Gating & Full List)
          ========================================= */}
       {activeView === 'profiles' && (
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 flex-1">
-          <div className="flex items-center justify-between pb-3 border-b border-[#eadfe4]">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 flex-1 w-full max-w-full">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#eadfe4]">
             <div>
               <h2 className="font-serif text-3xl font-bold text-[#4b001f]">
                 All Profiles
@@ -2974,8 +2974,8 @@ export default function App() {
           VIEW 3: SHORTLISTED PROFILES
          ========================================= */}
       {activeView === 'shortlist' && (
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6 flex-1">
-          <div className="flex items-center justify-between pb-4 border-b border-[#eadfe4]">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6 flex-1 w-full max-w-full">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#eadfe4]">
             <div>
               <h2 className="font-serif text-2xl font-bold text-[#4b001f] flex items-center gap-2">
                 <Heart className="w-6 h-6 text-[#c9973e] fill-[#c9973e]" />
@@ -3041,7 +3041,7 @@ export default function App() {
           - Accept Interest is strictly and exclusively on Received profiles
          ========================================= */}
       {activeView === 'interests' && (
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6 flex-1">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6 flex-1 w-full max-w-full">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#eadfe4]">
             <div>
@@ -3066,8 +3066,8 @@ export default function App() {
           </div>
 
           {/* Segmented Toggle Control: Send vs Receive */}
-          <div className="flex justify-center sm:justify-start">
-            <div className="inline-flex p-1.5 rounded-2xl bg-stone-200/80 border border-stone-300 shadow-inner w-full sm:w-auto min-w-[320px]">
+          <div className="flex justify-center sm:justify-start w-full">
+            <div className="inline-flex p-1.5 rounded-2xl bg-stone-200/80 border border-stone-300 shadow-inner w-full sm:w-auto sm:min-w-[320px]">
               {/* Send / Sent Button */}
               <button
                 type="button"

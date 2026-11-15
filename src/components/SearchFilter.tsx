@@ -71,7 +71,7 @@ export const SearchFilter: React.FC<Props> = ({
   onOpenPremium,
 }) => {
   return (
-    <div className="bg-white rounded-2xl border border-[#eadfe4] shadow-sm p-5 space-y-4">
+    <div className="bg-white rounded-2xl border border-[#eadfe4] shadow-sm p-4 sm:p-5 space-y-4 w-full max-w-full overflow-hidden">
       {/* Top Header Strip */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100">
         <div className="flex items-center gap-2">

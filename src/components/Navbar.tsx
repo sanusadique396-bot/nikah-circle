@@ -75,24 +75,24 @@ export const Navbar: React.FC<Props> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#eadfe4]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-18 gap-6">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#eadfe4] w-full max-w-full overflow-x-hidden">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full">
+        <div className="flex items-center justify-between h-16 sm:h-18 gap-2 sm:gap-6 w-full">
           {/* Zone 1: Logo & Brand Wordmark */}
           <button
             onClick={() => onNavigate('home')}
-            className="flex items-center gap-3 text-left group cursor-pointer focus:outline-none shrink-0"
+            className="flex items-center gap-2 sm:gap-3 text-left group cursor-pointer focus:outline-none shrink-0 min-w-0"
           >
             <img
               src="/assets/aistudio/LOGO-01_fe7effc7.png"
               alt="Nikah Circle"
-              className="w-10 h-10 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform"
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform shrink-0"
             />
-            <div className="flex flex-col">
-              <span className="font-serif font-bold text-xl text-[#4b001f] tracking-tight leading-none group-hover:text-[#350016] transition-colors whitespace-nowrap">
+            <div className="flex flex-col min-w-0">
+              <span className="font-serif font-bold text-base sm:text-xl text-[#4b001f] tracking-tight leading-none group-hover:text-[#350016] transition-colors truncate">
                 Nikah Circle
               </span>
-              <span className="text-[10px] uppercase tracking-wider font-semibold text-[#c9973e] mt-0.5">
+              <span className="text-[9px] sm:text-[10px] uppercase tracking-wider font-semibold text-[#c9973e] mt-0.5 truncate">
                 Islamic Matrimony
               </span>
             </div>
@@ -169,17 +169,17 @@ export const Navbar: React.FC<Props> = ({
           </nav>
 
           {/* Zone 3: Profile Avatar & Quick Actions */}
-          <div className="flex items-center gap-2 relative shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 relative shrink-0">
             {/* Top Right Profile Avatar / Icon for Quick Edit */}
             {userProfile ? (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1 sm:gap-1.5">
                 <button
                   type="button"
                   onClick={onEditProfile}
-                  className="flex items-center gap-2 p-1 pl-1.5 pr-2.5 rounded-full border border-[#eadfe4] bg-white hover:bg-[#fff6fa] transition-all cursor-pointer shadow-2xs group"
+                  className="flex items-center gap-1.5 p-1 sm:pl-1.5 sm:pr-2.5 rounded-full border border-[#eadfe4] bg-white hover:bg-[#fff6fa] transition-all cursor-pointer shadow-2xs group shrink-0"
                   title="Click to view & edit your profile"
                 >
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-[#4b001f] text-white flex items-center justify-center font-bold text-xs shrink-0 border border-[#c9973e]/40 shadow-xs">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden bg-[#4b001f] text-white flex items-center justify-center font-bold text-xs shrink-0 border border-[#c9973e]/40 shadow-xs">
                     {userProfile.profile_photo ? (
                       <img
                         src={userProfile.profile_photo}
@@ -205,21 +205,22 @@ export const Navbar: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={onLogout}
-                  className="p-2 rounded-xl text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                  className="p-1.5 sm:p-2 rounded-xl text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer shrink-0"
                   title="Logout"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
               </div>
             ) : (
               <button
                 type="button"
                 onClick={onCreateProfile || onEditProfile}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#fff6fa] border border-[#4b001f]/30 text-[#4b001f] text-xs font-bold hover:bg-[#f7dce8] transition-all cursor-pointer shadow-2xs"
+                className="flex items-center gap-1 px-2.5 sm:px-3.5 py-1.5 rounded-full bg-[#fff6fa] border border-[#4b001f]/30 text-[#4b001f] text-[11px] sm:text-xs font-bold hover:bg-[#f7dce8] transition-all cursor-pointer shadow-2xs shrink-0"
                 title="Create profile"
               >
                 <UserPlus className="w-3.5 h-3.5" />
-                <span>Create Profile</span>
+                <span className="hidden sm:inline">Create Profile</span>
+                <span className="sm:hidden">Join</span>
               </button>
             )}
 
@@ -228,7 +229,7 @@ export const Navbar: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => onNavigate('admin')}
-                className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#4b001f] text-white text-[11px] font-bold shadow-2xs cursor-pointer hover:bg-[#350016]"
+                className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#4b001f] text-white text-[11px] font-bold shadow-2xs cursor-pointer hover:bg-[#350016] shrink-0"
                 title="Open Admin Console"
               >
                 <ShieldCheck className="w-3 h-3 text-[#c9973e]" />
@@ -238,19 +239,22 @@ export const Navbar: React.FC<Props> = ({
 
             {/* Mobile / Tablet Static Plan Badge (Only shown for active Premium) */}
             {isUserPremium && (
-              <div className="md:hidden flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold select-none pointer-events-none bg-gradient-to-r from-amber-500 to-[#c9973e] text-white shadow-2xs">
+              <div
+                className="flex md:hidden items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold select-none pointer-events-none bg-gradient-to-r from-amber-500 to-[#c9973e] text-white shadow-2xs shrink-0"
+                title="Premium Plan Active"
+              >
                 <Sparkles className="w-3 h-3 text-amber-200" />
-                <span>Premium Plan</span>
+                <span className="hidden sm:inline">Premium Plan</span>
               </div>
             )}
 
             {/* Mobile Nav Toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2.5 rounded-xl border border-stone-200 text-stone-700 hover:bg-stone-100 transition-colors"
+              className="md:hidden p-2 rounded-xl border border-stone-200 text-stone-700 hover:bg-stone-100 transition-colors shrink-0"
               aria-label="Toggle Navigation"
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {mobileMenuOpen ? <X className="w-4 h-4 sm:w-5 sm:h-5" /> : <Menu className="w-4 h-4 sm:w-5 sm:h-5" />}
             </button>
           </div>
         </div>
