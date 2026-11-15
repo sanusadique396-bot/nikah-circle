@@ -45,6 +45,8 @@ import {
   Lock,
   Unlock,
   Inbox,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 interface Props {
@@ -133,6 +135,33 @@ export const AdminPortal: React.FC<Props> = ({
 }) => {
   const profiles = useMemo(() => ensureUniqueSequentialMemberIds(deduplicateProfiles(rawProfiles)), [rawProfiles]);
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  const [expandedTab, setExpandedTab] = useState<TabType | null>('dashboard');
+
+  const toggleTab = (tab: TabType, forceOpen = false) => {
+    if (forceOpen) {
+      setActiveTab(tab);
+      setExpandedTab(tab);
+      setTimeout(() => {
+        const el = document.getElementById(`admin-section-${tab}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 60);
+      return;
+    }
+    if (expandedTab === tab) {
+      setExpandedTab(null);
+    } else {
+      setActiveTab(tab);
+      setExpandedTab(tab);
+      setTimeout(() => {
+        const el = document.getElementById(`admin-section-${tab}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 60);
+    }
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [regFilter, setRegFilter] = useState('');
@@ -422,7 +451,7 @@ export const AdminPortal: React.FC<Props> = ({
       pay_method: 'CASH',
       pay_status: 'PAID'
     });
-    setActiveTab('add');
+    toggleTab('add', true);
   };
 
   const handleCreateNewClick = () => {
@@ -453,7 +482,7 @@ export const AdminPortal: React.FC<Props> = ({
       pay_method: 'CASH',
       pay_status: 'PAID'
     });
-    setActiveTab('add');
+    toggleTab('add', true);
   };
 
   const handleSubmitProfile = async (e: React.FormEvent) => {
@@ -481,255 +510,140 @@ export const AdminPortal: React.FC<Props> = ({
     );
     alert(editingProfile ? 'Profile updated successfully!' : 'Profile created successfully!');
     setEditingProfile(null);
-    setActiveTab('admin_added_profiles');
+    toggleTab('admin_added_profiles', true);
   };
 
   return (
-    <div className="h-screen w-full bg-stone-100 flex flex-col md:flex-row text-stone-900 font-sans overflow-hidden">
-      {/* Sidebar: Fixed on Desktop, Non-scrolling with Main Content */}
-      <aside className="w-full md:w-64 bg-white border-r border-stone-200 p-4 flex flex-col justify-between shrink-0 shadow-xs md:h-screen md:sticky md:top-0 overflow-y-auto z-20">
-        <div className="space-y-6">
-          <div className="flex items-center gap-3 pb-4 border-b border-stone-200">
+    <div className="min-h-screen w-full bg-stone-100 flex flex-col text-stone-900 font-sans">
+      {/* Sticky Top Header with Brand & Admin Actions */}
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-stone-200 px-4 sm:px-6 lg:px-8 py-3.5 shadow-xs">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
             <img
               src="/assets/aistudio/LOGO-01_fe7effc7.png"
               alt="Logo"
-              className="w-10 h-10 rounded-xl object-cover shadow-sm"
+              className="w-10 h-10 rounded-xl object-cover shadow-sm shrink-0"
             />
             <div>
-              <h1 className="font-serif font-bold text-lg text-[#4b001f] leading-none">
+              <h1 className="font-serif font-bold text-xl text-[#4b001f] leading-none">
                 Nikah Circle
               </h1>
-              <span className="text-[11px] font-bold text-[#c9973e] uppercase tracking-wider">
+              <span className="text-[10px] sm:text-[11px] font-bold text-[#c9973e] uppercase tracking-wider block mt-0.5">
                 Admin Console
               </span>
             </div>
           </div>
 
-          <nav className="space-y-1 text-xs font-semibold">
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-colors cursor-pointer text-left ${
-                activeTab === 'dashboard'
-                  ? 'bg-[#4b001f] text-white shadow-xs font-bold'
-                  : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
-              }`}
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              <span>Dashboard</span>
-            </button>
-
-            {/* NEW: Full Biodata Directory */}
-            <button
-              onClick={() => setActiveTab('biodata_directory')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-colors cursor-pointer text-left ${
-                activeTab === 'biodata_directory'
-                  ? 'bg-[#4b001f] text-white shadow-xs font-bold'
-                  : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <BookOpen className="w-4 h-4 text-[#c9973e]" />
-                <span>Full Biodata Directory</span>
-              </div>
-              <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-900 border border-amber-300 font-bold">
-                {qualifiedBiodataProfiles.length}
-              </span>
-            </button>
-
-            {/* DEDICATED: Admin-Added Profiles & Proposal Management */}
-            <button
-              onClick={() => setActiveTab('admin_added_profiles')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-colors cursor-pointer text-left ${
-                activeTab === 'admin_added_profiles'
-                  ? 'bg-[#4b001f] text-white shadow-xs font-bold'
-                  : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <ShieldCheck className="w-4 h-4 text-[#c9973e]" />
-                <span>Admin-Added Profiles</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="px-1.5 py-0.5 rounded text-[10px] bg-purple-100 text-purple-900 border border-purple-200 font-bold">
-                  {adminAddedProfiles.length}
-                </span>
-                {pendingAdminProposalsCount > 0 && (
-                  <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-500 text-white font-bold animate-pulse" title={`${pendingAdminProposalsCount} pending proposals`}>
-                    {pendingAdminProposalsCount}
-                  </span>
-                )}
-              </div>
-            </button>
-
-            {/* NEW: User Registered Accounts */}
-            <button
-              onClick={() => setActiveTab('user_accounts')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-colors cursor-pointer text-left ${
-                activeTab === 'user_accounts'
-                  ? 'bg-[#4b001f] text-white shadow-xs font-bold'
-                  : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <UserCheck className="w-4 h-4 text-emerald-600" />
-                <span>User Accounts</span>
-              </div>
-              <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800 font-bold">
-                {profiles.length}
-              </span>
-            </button>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-stone-50 border border-stone-200 text-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span className="font-bold text-stone-800 truncate max-w-[180px]">{adminEmail || 'nikahcircle01@gmail.com'}</span>
+              <span className="text-[10px] text-emerald-700 font-bold uppercase tracking-wider bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">Super Admin</span>
+            </div>
 
             <button
-              onClick={() => setActiveTab('premium_requests')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-colors cursor-pointer text-left ${
-                activeTab === 'premium_requests'
-                  ? 'bg-[#4b001f] text-white shadow-xs font-bold'
-                  : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <Sparkles className="w-4 h-4 text-[#c9973e]" />
-                <span>Premium Requests</span>
-              </div>
-              {pendingPremiumRequests.length > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] bg-[#c9973e] text-[#350016] font-bold">
-                  {pendingPremiumRequests.length}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('requests')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-colors cursor-pointer text-left ${
-                activeTab === 'requests'
-                  ? 'bg-[#4b001f] text-white shadow-xs font-bold'
-                  : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <Clock className="w-4 h-4 text-amber-500" />
-                <span>Profile Approvals</span>
-              </div>
-              {pendingRequests.length > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-400 text-stone-900 font-bold">
-                  {pendingRequests.length}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('profiles')}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-colors cursor-pointer text-left ${
-                activeTab === 'profiles'
-                  ? 'bg-[#4b001f] text-white shadow-xs font-bold'
-                  : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
-              }`}
-            >
-              <Users className="w-4 h-4" />
-              <span>Manage Profiles ({totalProfilesCount})</span>
-            </button>
-
-            <button
+              type="button"
               onClick={handleCreateNewClick}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-colors cursor-pointer text-left ${
-                activeTab === 'add'
-                  ? 'bg-[#4b001f] text-white shadow-xs font-bold'
-                  : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
-              }`}
+              className="px-3.5 py-2 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0"
             >
-              <UserPlus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
               <span>+ Add Profile</span>
             </button>
 
             <button
-              onClick={() => setActiveTab('payments')}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-colors cursor-pointer text-left ${
-                activeTab === 'payments'
-                  ? 'bg-[#4b001f] text-white shadow-xs font-bold'
-                  : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
-              }`}
+              type="button"
+              onClick={onExitAdmin}
+              className="px-3 py-2 rounded-xl border border-stone-300 text-stone-700 hover:bg-stone-50 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
+              title="Return to Public Nikah Circle Website"
             >
-              <IndianRupee className="w-4 h-4" />
-              <span>Payments Ledger</span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Exit to Public Portal</span>
+              <span className="sm:hidden">Exit</span>
             </button>
-
-            <button
-              onClick={() => setActiveTab('premium')}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-colors cursor-pointer text-left ${
-                activeTab === 'premium'
-                  ? 'bg-[#4b001f] text-white shadow-xs font-bold'
-                  : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
-              }`}
-            >
-              <Sparkles className="w-4 h-4" />
-              <span>Premium Users ({activePremiumCount})</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('reports')}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-colors cursor-pointer text-left ${
-                activeTab === 'reports'
-                  ? 'bg-[#4b001f] text-white shadow-xs font-bold'
-                  : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
-              }`}
-            >
-              <BarChart3 className="w-4 h-4" />
-              <span>Analytics & Reports</span>
-            </button>
-          </nav>
-        </div>
-
-        <div className="pt-4 border-t border-stone-200 space-y-2 shrink-0">
-          <div className="px-3 py-2 rounded-xl bg-stone-50 text-[11px] text-stone-600">
-            <span className="block font-bold text-stone-900 truncate">nikahcircle01@gmail.com</span>
-            <span className="text-emerald-700 font-semibold">Super Admin Authenticated</span>
           </div>
-
-          <button
-            onClick={onExitAdmin}
-            className="w-full py-2 px-3 rounded-xl border border-[#4b001f] text-[#4b001f] hover:bg-[#fff6fa] text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-2"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Exit to Public Portal</span>
-          </button>
         </div>
-      </aside>
+      </header>
 
-      {/* Main Content Area: Only right side is scrollable */}
-      <main className="flex-1 h-full md:h-screen overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-200">
+      {/* Main Container: Inline Accordion Sections */}
+      <main className="max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-3.5 flex-1">
+        {/* Intro Strip */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1 pb-1">
           <div>
-            <h2 className="font-serif text-2xl font-bold text-[#4b001f]">
-              {activeTab === 'dashboard' && 'Dashboard Overview'}
-              {activeTab === 'admin_added_profiles' && 'Admin-Added Profiles & Proposal Management'}
-              {activeTab === 'biodata_directory' && 'Full Biodata Directory'}
-              {activeTab === 'user_accounts' && 'User Accounts & Registrations'}
-              {activeTab === 'premium_requests' && 'Premium & Payment Requests'}
-              {activeTab === 'requests' && 'Pending Profile Approvals'}
-              {activeTab === 'profiles' && 'Profile Management'}
-              {activeTab === 'add' && (editingProfile ? 'Edit Profile' : 'Add Profile')}
-              {activeTab === 'payments' && 'Payment Records'}
-              {activeTab === 'premium' && 'Premium Members'}
-              {activeTab === 'reports' && 'Reports'}
+            <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#4b001f]">
+              Admin Management Hub
             </h2>
-            <p className="text-xs text-stone-500 mt-0.5">
-              Review registrations, approve requests, and manage candidate biodata.
+            <p className="text-xs text-stone-500">
+              Click any section below to toggle and expand its full management tools inline.
             </p>
           </div>
-
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 self-start sm:self-auto text-xs font-semibold">
             <button
-              onClick={handleCreateNewClick}
-              className="px-4 py-2 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold transition-colors cursor-pointer shadow-sm flex items-center gap-1.5"
+              type="button"
+              onClick={() => setExpandedTab(null)}
+              className="px-3 py-1.5 rounded-lg border border-stone-300 text-stone-600 hover:bg-stone-50 transition-colors cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
-              <span>New Profile</span>
+              Collapse All
             </button>
           </div>
         </div>
 
-        {/* TAB 1: DASHBOARD */}
-        {activeTab === 'dashboard' && (
+        {/* ========================================================
+            SECTION 1: DASHBOARD
+           ======================================================== */}
+        <section
+          id="admin-section-dashboard"
+          className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-xs ${
+            expandedTab === 'dashboard'
+              ? 'border-[#4b001f] bg-white ring-2 ring-[#4b001f]/10 shadow-md'
+              : 'border-stone-200 bg-white hover:border-stone-300'
+          }`}
+        >
+          <button
+            type="button"
+            onClick={() => toggleTab('dashboard')}
+            className={`w-full flex items-center justify-between p-3.5 sm:p-4 text-left transition-colors cursor-pointer select-none group ${
+              expandedTab === 'dashboard'
+                ? 'bg-[#4b001f] text-white'
+                : 'bg-white text-stone-800 hover:bg-stone-50'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className={`p-2 rounded-xl transition-colors ${
+                  expandedTab === 'dashboard'
+                    ? 'bg-white/15 text-white'
+                    : 'bg-stone-100 text-stone-700 group-hover:bg-[#f7dce8] group-hover:text-[#4b001f]'
+                }`}
+              >
+                <LayoutDashboard className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="font-serif font-bold text-base sm:text-lg block leading-tight">
+                  Dashboard
+                </span>
+                <span
+                  className={`text-[11px] block mt-0.5 ${
+                    expandedTab === 'dashboard' ? 'text-amber-200' : 'text-stone-500'
+                  }`}
+                >
+                  System overview, key statistics & recent transaction ledger
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <ChevronDown
+                className={`w-5 h-5 transition-transform duration-300 ease-in-out shrink-0 ${
+                  expandedTab === 'dashboard'
+                    ? 'rotate-180 text-white'
+                    : 'text-stone-400 group-hover:text-stone-700'
+                }`}
+              />
+            </div>
+          </button>
+
+          {expandedTab === 'dashboard' && (
+            <div className="p-3.5 sm:p-6 border-t border-stone-200 bg-stone-50/50 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="space-y-6">
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
               <div className="p-4 rounded-2xl bg-white border border-stone-200 shadow-xs">
@@ -740,7 +654,7 @@ export const AdminPortal: React.FC<Props> = ({
               </div>
 
               <div
-                onClick={() => setActiveTab('premium_requests')}
+                onClick={() => toggleTab('premium_requests', true)}
                 className="p-4 rounded-2xl bg-white border border-[#c9973e] shadow-xs cursor-pointer hover:bg-[#fffbf0] transition-colors"
               >
                 <div className="flex items-center justify-between">
@@ -757,7 +671,7 @@ export const AdminPortal: React.FC<Props> = ({
               </div>
 
               <div
-                onClick={() => setActiveTab('requests')}
+                onClick={() => toggleTab('requests', true)}
                 className="p-4 rounded-2xl bg-white border border-amber-300 shadow-xs cursor-pointer hover:bg-amber-50/50 transition-colors"
               >
                 <div className="flex items-center justify-between">
@@ -803,7 +717,7 @@ export const AdminPortal: React.FC<Props> = ({
                   </div>
                 </div>
                 <button
-                  onClick={() => setActiveTab('premium_requests')}
+                  onClick={() => toggleTab('premium_requests', true)}
                   className="px-4 py-2 rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white text-xs font-bold transition-colors cursor-pointer shrink-0"
                 >
                   Review Requests
@@ -826,7 +740,7 @@ export const AdminPortal: React.FC<Props> = ({
                   </div>
                 </div>
                 <button
-                  onClick={() => setActiveTab('requests')}
+                  onClick={() => toggleTab('requests', true)}
                   className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors cursor-pointer"
                 >
                   Review
@@ -846,7 +760,7 @@ export const AdminPortal: React.FC<Props> = ({
                   </p>
                 </div>
                 <button
-                  onClick={() => setActiveTab('user_accounts')}
+                  onClick={() => toggleTab('user_accounts', true)}
                   className="text-xs font-semibold text-[#4b001f] hover:underline cursor-pointer flex items-center gap-1"
                 >
                   View All ({profiles.length}) →
@@ -957,10 +871,82 @@ export const AdminPortal: React.FC<Props> = ({
               </div>
             </div>
           </div>
-        )}
+            </div>
+          )}
+        </section>
 
-        {/* TAB: ADMIN-ADDED PROFILES & PROPOSAL MANAGEMENT */}
-        {activeTab === 'admin_added_profiles' && (() => {
+        {/* ========================================================
+            SECTION: ADMIN-ADDED PROFILES & PROPOSAL MANAGEMENT
+           ======================================================== */}
+        <section
+          id="admin-section-admin_added_profiles"
+          className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-xs ${
+            expandedTab === 'admin_added_profiles'
+              ? 'border-[#4b001f] bg-white ring-2 ring-[#4b001f]/10 shadow-md'
+              : 'border-stone-200 bg-white hover:border-stone-300'
+          }`}
+        >
+          <button
+            type="button"
+            onClick={() => toggleTab('admin_added_profiles')}
+            className={`w-full flex items-center justify-between p-3.5 sm:p-4 text-left transition-colors cursor-pointer select-none group ${
+              expandedTab === 'admin_added_profiles'
+                ? 'bg-[#4b001f] text-white'
+                : 'bg-white text-stone-800 hover:bg-stone-50'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className={`p-2 rounded-xl transition-colors ${
+                  expandedTab === 'admin_added_profiles'
+                    ? 'bg-white/15 text-white'
+                    : 'bg-purple-50 text-purple-700 group-hover:bg-purple-100'
+                }`}
+              >
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="font-serif font-bold text-base sm:text-lg block leading-tight">
+                  Admin-Added Profiles
+                </span>
+                <span
+                  className={`text-[11px] block mt-0.5 ${
+                    expandedTab === 'admin_added_profiles' ? 'text-amber-200' : 'text-stone-500'
+                  }`}
+                >
+                  Profiles created by admin with full proposal exchange & acceptance tools
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span
+                className={`px-2 py-0.5 rounded-lg text-xs font-bold ${
+                  expandedTab === 'admin_added_profiles'
+                    ? 'bg-white/20 text-white border border-white/30'
+                    : 'bg-purple-100 text-purple-900 border border-purple-200'
+                }`}
+              >
+                {adminAddedProfiles.length}
+              </span>
+              {pendingAdminProposalsCount > 0 && (
+                <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-500 text-white font-bold animate-pulse">
+                  {pendingAdminProposalsCount}
+                </span>
+              )}
+              <ChevronDown
+                className={`w-5 h-5 transition-transform duration-300 ease-in-out shrink-0 ${
+                  expandedTab === 'admin_added_profiles'
+                    ? 'rotate-180 text-white'
+                    : 'text-stone-400 group-hover:text-stone-700'
+                }`}
+              />
+            </div>
+          </button>
+
+          {expandedTab === 'admin_added_profiles' && (
+            <div className="p-3.5 sm:p-6 border-t border-stone-200 bg-stone-50/50 animate-in fade-in slide-in-from-top-2 duration-200">
+        {(() => {
           const filteredAdminProposals = adminProfilesProposals.filter((p) => {
             if (adminProposalStatusFilter === 'all') return true;
             return p.status === adminProposalStatusFilter;
@@ -1444,9 +1430,77 @@ export const AdminPortal: React.FC<Props> = ({
             </div>
           );
         })()}
+            </div>
+          )}
+        </section>
 
-        {/* TAB: FULL BIODATA DIRECTORY */}
-        {activeTab === 'biodata_directory' && (() => {
+        {/* ========================================================
+            SECTION: FULL BIODATA DIRECTORY
+           ======================================================== */}
+        <section
+          id="admin-section-biodata_directory"
+          className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-xs ${
+            expandedTab === 'biodata_directory'
+              ? 'border-[#4b001f] bg-white ring-2 ring-[#4b001f]/10 shadow-md'
+              : 'border-stone-200 bg-white hover:border-stone-300'
+          }`}
+        >
+          <button
+            type="button"
+            onClick={() => toggleTab('biodata_directory')}
+            className={`w-full flex items-center justify-between p-3.5 sm:p-4 text-left transition-colors cursor-pointer select-none group ${
+              expandedTab === 'biodata_directory'
+                ? 'bg-[#4b001f] text-white'
+                : 'bg-white text-stone-800 hover:bg-stone-50'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className={`p-2 rounded-xl transition-colors ${
+                  expandedTab === 'biodata_directory'
+                    ? 'bg-white/15 text-white'
+                    : 'bg-amber-50 text-[#c9973e] group-hover:bg-[#fff9ea]'
+                }`}
+              >
+                <BookOpen className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="font-serif font-bold text-base sm:text-lg block leading-tight">
+                  Full Biodata Directory
+                </span>
+                <span
+                  className={`text-[11px] block mt-0.5 ${
+                    expandedTab === 'biodata_directory' ? 'text-amber-200' : 'text-stone-500'
+                  }`}
+                >
+                  Candidates with completed 4-step verified matrimonial biodata documents
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span
+                className={`px-2 py-0.5 rounded-lg text-xs font-bold ${
+                  expandedTab === 'biodata_directory'
+                    ? 'bg-white/20 text-white border border-white/30'
+                    : 'bg-amber-100 text-amber-900 border border-amber-300'
+                }`}
+              >
+                {qualifiedBiodataProfiles.length}
+              </span>
+              <ChevronDown
+                className={`w-5 h-5 transition-transform duration-300 ease-in-out shrink-0 ${
+                  expandedTab === 'biodata_directory'
+                    ? 'rotate-180 text-white'
+                    : 'text-stone-400 group-hover:text-stone-700'
+                }`}
+              />
+            </div>
+          </button>
+
+          {expandedTab === 'biodata_directory' && (
+            <div className="p-3.5 sm:p-6 border-t border-stone-200 bg-stone-50/50 animate-in fade-in slide-in-from-top-2 duration-200">
+        {(() => {
           const totalQualifiedCount = qualifiedBiodataProfiles.length;
           const uploadedCount = qualifiedBiodataProfiles.filter((p) => Boolean(p.biodata_document_name || p.biodata_document_url)).length;
           const formCount = totalQualifiedCount - uploadedCount;
@@ -1830,9 +1884,77 @@ export const AdminPortal: React.FC<Props> = ({
             </div>
           );
         })()}
+            </div>
+          )}
+        </section>
 
-        {/* TAB: USER ACCOUNTS */}
-        {activeTab === 'user_accounts' && (() => {
+        {/* ========================================================
+            SECTION: USER ACCOUNTS
+           ======================================================== */}
+        <section
+          id="admin-section-user_accounts"
+          className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-xs ${
+            expandedTab === 'user_accounts'
+              ? 'border-[#4b001f] bg-white ring-2 ring-[#4b001f]/10 shadow-md'
+              : 'border-stone-200 bg-white hover:border-stone-300'
+          }`}
+        >
+          <button
+            type="button"
+            onClick={() => toggleTab('user_accounts')}
+            className={`w-full flex items-center justify-between p-3.5 sm:p-4 text-left transition-colors cursor-pointer select-none group ${
+              expandedTab === 'user_accounts'
+                ? 'bg-[#4b001f] text-white'
+                : 'bg-white text-stone-800 hover:bg-stone-50'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className={`p-2 rounded-xl transition-colors ${
+                  expandedTab === 'user_accounts'
+                    ? 'bg-white/15 text-white'
+                    : 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100'
+                }`}
+              >
+                <UserCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="font-serif font-bold text-base sm:text-lg block leading-tight">
+                  User Accounts
+                </span>
+                <span
+                  className={`text-[11px] block mt-0.5 ${
+                    expandedTab === 'user_accounts' ? 'text-amber-200' : 'text-stone-500'
+                  }`}
+                >
+                  All registered public candidate accounts, contact information & status
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span
+                className={`px-2 py-0.5 rounded-lg text-xs font-bold ${
+                  expandedTab === 'user_accounts'
+                    ? 'bg-white/20 text-white border border-white/30'
+                    : 'bg-emerald-100 text-emerald-800'
+                }`}
+              >
+                {profiles.length}
+              </span>
+              <ChevronDown
+                className={`w-5 h-5 transition-transform duration-300 ease-in-out shrink-0 ${
+                  expandedTab === 'user_accounts'
+                    ? 'rotate-180 text-white'
+                    : 'text-stone-400 group-hover:text-stone-700'
+                }`}
+              />
+            </div>
+          </button>
+
+          {expandedTab === 'user_accounts' && (
+            <div className="p-3.5 sm:p-6 border-t border-stone-200 bg-stone-50/50 animate-in fade-in slide-in-from-top-2 duration-200">
+        {(() => {
           const totalCount = profiles.length;
           const freeCount = profiles.filter((p) => !p.is_premium).length;
           const premiumCount = profiles.filter((p) => p.is_premium).length;
@@ -2201,9 +2323,72 @@ export const AdminPortal: React.FC<Props> = ({
             </div>
           );
         })()}
+            </div>
+          )}
+        </section>
 
-        {/* TAB: PREMIUM & PAYMENT REQUESTS */}
-        {activeTab === 'premium_requests' && (
+        {/* ========================================================
+            SECTION: PREMIUM & PAYMENT REQUESTS
+           ======================================================== */}
+        <section
+          id="admin-section-premium_requests"
+          className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-xs ${
+            expandedTab === 'premium_requests'
+              ? 'border-[#4b001f] bg-white ring-2 ring-[#4b001f]/10 shadow-md'
+              : 'border-stone-200 bg-white hover:border-stone-300'
+          }`}
+        >
+          <button
+            type="button"
+            onClick={() => toggleTab('premium_requests')}
+            className={`w-full flex items-center justify-between p-3.5 sm:p-4 text-left transition-colors cursor-pointer select-none group ${
+              expandedTab === 'premium_requests'
+                ? 'bg-[#4b001f] text-white'
+                : 'bg-white text-stone-800 hover:bg-stone-50'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className={`p-2 rounded-xl transition-colors ${
+                  expandedTab === 'premium_requests'
+                    ? 'bg-white/15 text-white'
+                    : 'bg-amber-50 text-[#c9973e] group-hover:bg-[#fff9ea]'
+                }`}
+              >
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="font-serif font-bold text-base sm:text-lg block leading-tight">
+                  Premium Requests
+                </span>
+                <span
+                  className={`text-[11px] block mt-0.5 ${
+                    expandedTab === 'premium_requests' ? 'text-amber-200' : 'text-stone-500'
+                  }`}
+                >
+                  Review pending UPI/Bank transfer payment proof & approve premium upgrades
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {pendingPremiumRequests.length > 0 && (
+                <span className="px-2.5 py-0.5 rounded-full text-xs bg-[#c9973e] text-[#350016] font-bold animate-pulse">
+                  {pendingPremiumRequests.length} Pending
+                </span>
+              )}
+              <ChevronDown
+                className={`w-5 h-5 transition-transform duration-300 ease-in-out shrink-0 ${
+                  expandedTab === 'premium_requests'
+                    ? 'rotate-180 text-white'
+                    : 'text-stone-400 group-hover:text-stone-700'
+                }`}
+              />
+            </div>
+          </button>
+
+          {expandedTab === 'premium_requests' && (
+            <div className="p-3.5 sm:p-6 border-t border-stone-200 bg-stone-50/50 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="space-y-5">
             <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
@@ -2502,10 +2687,72 @@ export const AdminPortal: React.FC<Props> = ({
               </div>
             )}
           </div>
-        )}
+            </div>
+          )}
+        </section>
 
-        {/* TAB 2: PENDING ADMIN REQUESTS */}
-        {activeTab === 'requests' && (
+        {/* ========================================================
+            SECTION: PROFILE APPROVALS
+           ======================================================== */}
+        <section
+          id="admin-section-requests"
+          className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-xs ${
+            expandedTab === 'requests'
+              ? 'border-[#4b001f] bg-white ring-2 ring-[#4b001f]/10 shadow-md'
+              : 'border-stone-200 bg-white hover:border-stone-300'
+          }`}
+        >
+          <button
+            type="button"
+            onClick={() => toggleTab('requests')}
+            className={`w-full flex items-center justify-between p-3.5 sm:p-4 text-left transition-colors cursor-pointer select-none group ${
+              expandedTab === 'requests'
+                ? 'bg-[#4b001f] text-white'
+                : 'bg-white text-stone-800 hover:bg-stone-50'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className={`p-2 rounded-xl transition-colors ${
+                  expandedTab === 'requests'
+                    ? 'bg-white/15 text-white'
+                    : 'bg-amber-50 text-amber-500 group-hover:bg-amber-100'
+                }`}
+              >
+                <Clock className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="font-serif font-bold text-base sm:text-lg block leading-tight">
+                  Profile Approvals
+                </span>
+                <span
+                  className={`text-[11px] block mt-0.5 ${
+                    expandedTab === 'requests' ? 'text-amber-200' : 'text-stone-500'
+                  }`}
+                >
+                  Review pending public registrations awaiting administrative approval
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {pendingRequests.length > 0 && (
+                <span className="px-2.5 py-0.5 rounded-full text-xs bg-amber-400 text-stone-900 font-bold animate-pulse">
+                  {pendingRequests.length} Pending
+                </span>
+              )}
+              <ChevronDown
+                className={`w-5 h-5 transition-transform duration-300 ease-in-out shrink-0 ${
+                  expandedTab === 'requests'
+                    ? 'rotate-180 text-white'
+                    : 'text-stone-400 group-hover:text-stone-700'
+                }`}
+              />
+            </div>
+          </button>
+
+          {expandedTab === 'requests' && (
+            <div className="p-3.5 sm:p-6 border-t border-stone-200 bg-stone-50/50 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="space-y-4">
             <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs flex items-center justify-between">
               <div>
@@ -2587,10 +2834,76 @@ export const AdminPortal: React.FC<Props> = ({
               </div>
             )}
           </div>
-        )}
+            </div>
+          )}
+        </section>
 
-        {/* TAB 3: ALL PROFILES */}
-        {activeTab === 'profiles' && (
+        {/* ========================================================
+            SECTION: MANAGE PROFILES
+           ======================================================== */}
+        <section
+          id="admin-section-profiles"
+          className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-xs ${
+            expandedTab === 'profiles'
+              ? 'border-[#4b001f] bg-white ring-2 ring-[#4b001f]/10 shadow-md'
+              : 'border-stone-200 bg-white hover:border-stone-300'
+          }`}
+        >
+          <button
+            type="button"
+            onClick={() => toggleTab('profiles')}
+            className={`w-full flex items-center justify-between p-3.5 sm:p-4 text-left transition-colors cursor-pointer select-none group ${
+              expandedTab === 'profiles'
+                ? 'bg-[#4b001f] text-white'
+                : 'bg-white text-stone-800 hover:bg-stone-50'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className={`p-2 rounded-xl transition-colors ${
+                  expandedTab === 'profiles'
+                    ? 'bg-white/15 text-white'
+                    : 'bg-stone-100 text-stone-700 group-hover:bg-[#f7dce8] group-hover:text-[#4b001f]'
+                }`}
+              >
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="font-serif font-bold text-base sm:text-lg block leading-tight">
+                  Manage Profiles ({totalProfilesCount})
+                </span>
+                <span
+                  className={`text-[11px] block mt-0.5 ${
+                    expandedTab === 'profiles' ? 'text-amber-200' : 'text-stone-500'
+                  }`}
+                >
+                  Search, filter, view details, edit biodata, or delete member profiles
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span
+                className={`px-2 py-0.5 rounded-lg text-xs font-bold ${
+                  expandedTab === 'profiles'
+                    ? 'bg-white/20 text-white border border-white/30'
+                    : 'bg-stone-100 text-stone-800'
+                }`}
+              >
+                {totalProfilesCount}
+              </span>
+              <ChevronDown
+                className={`w-5 h-5 transition-transform duration-300 ease-in-out shrink-0 ${
+                  expandedTab === 'profiles'
+                    ? 'rotate-180 text-white'
+                    : 'text-stone-400 group-hover:text-stone-700'
+                }`}
+              />
+            </div>
+          </button>
+
+          {expandedTab === 'profiles' && (
+            <div className="p-3.5 sm:p-6 border-t border-stone-200 bg-stone-50/50 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="space-y-4">
             <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs flex flex-wrap gap-3 items-center justify-between">
               <div className="flex flex-wrap gap-2.5 items-center flex-1">
@@ -2719,10 +3032,72 @@ export const AdminPortal: React.FC<Props> = ({
               </div>
             </div>
           </div>
-        )}
+            </div>
+          )}
+        </section>
 
-        {/* TAB 4: ADD / EDIT PROFILE */}
-        {activeTab === 'add' && (
+        {/* ========================================================
+            SECTION: ADD / EDIT PROFILE
+           ======================================================== */}
+        <section
+          id="admin-section-add"
+          className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-xs ${
+            expandedTab === 'add'
+              ? 'border-[#4b001f] bg-white ring-2 ring-[#4b001f]/10 shadow-md'
+              : 'border-stone-200 bg-white hover:border-stone-300'
+          }`}
+        >
+          <button
+            type="button"
+            onClick={() => toggleTab('add')}
+            className={`w-full flex items-center justify-between p-3.5 sm:p-4 text-left transition-colors cursor-pointer select-none group ${
+              expandedTab === 'add'
+                ? 'bg-[#4b001f] text-white'
+                : 'bg-white text-stone-800 hover:bg-stone-50'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className={`p-2 rounded-xl transition-colors ${
+                  expandedTab === 'add'
+                    ? 'bg-white/15 text-white'
+                    : 'bg-stone-100 text-stone-700 group-hover:bg-[#f7dce8] group-hover:text-[#4b001f]'
+                }`}
+              >
+                <UserPlus className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="font-serif font-bold text-base sm:text-lg block leading-tight">
+                  {editingProfile ? `Edit Profile: ${editingProfile.full_name}` : '+ Add Profile'}
+                </span>
+                <span
+                  className={`text-[11px] block mt-0.5 ${
+                    expandedTab === 'add' ? 'text-amber-200' : 'text-stone-500'
+                  }`}
+                >
+                  {editingProfile ? 'Modify candidate details, photo, or status' : 'Create and publish a verified bride or groom biodata profile'}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {editingProfile && (
+                <span className="px-2 py-0.5 rounded-md text-xs bg-amber-300 text-amber-950 font-bold">
+                  Editing
+                </span>
+              )}
+              <ChevronDown
+                className={`w-5 h-5 transition-transform duration-300 ease-in-out shrink-0 ${
+                  expandedTab === 'add'
+                    ? 'rotate-180 text-white'
+                    : 'text-stone-400 group-hover:text-stone-700'
+                }`}
+              />
+            </div>
+          </button>
+
+          {expandedTab === 'add' && (
+            <div className="p-3.5 sm:p-6 border-t border-stone-200 bg-stone-50/50 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-6 max-w-4xl">
             <h3 className="font-serif font-bold text-xl text-[#4b001f] mb-4">
               {editingProfile ? `Edit Profile: ${editingProfile.full_name}` : 'Create New Matrimony Profile'}
@@ -2981,10 +3356,76 @@ export const AdminPortal: React.FC<Props> = ({
               </div>
             </form>
           </div>
-        )}
+            </div>
+          )}
+        </section>
 
-        {/* TAB 5: PAYMENTS */}
-        {activeTab === 'payments' && (
+        {/* ========================================================
+            SECTION: PAYMENTS LEDGER
+           ======================================================== */}
+        <section
+          id="admin-section-payments"
+          className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-xs ${
+            expandedTab === 'payments'
+              ? 'border-[#4b001f] bg-white ring-2 ring-[#4b001f]/10 shadow-md'
+              : 'border-stone-200 bg-white hover:border-stone-300'
+          }`}
+        >
+          <button
+            type="button"
+            onClick={() => toggleTab('payments')}
+            className={`w-full flex items-center justify-between p-3.5 sm:p-4 text-left transition-colors cursor-pointer select-none group ${
+              expandedTab === 'payments'
+                ? 'bg-[#4b001f] text-white'
+                : 'bg-white text-stone-800 hover:bg-stone-50'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className={`p-2 rounded-xl transition-colors ${
+                  expandedTab === 'payments'
+                    ? 'bg-white/15 text-white'
+                    : 'bg-stone-100 text-stone-700 group-hover:bg-[#f7dce8] group-hover:text-[#4b001f]'
+                }`}
+              >
+                <IndianRupee className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="font-serif font-bold text-base sm:text-lg block leading-tight">
+                  Payments Ledger
+                </span>
+                <span
+                  className={`text-[11px] block mt-0.5 ${
+                    expandedTab === 'payments' ? 'text-amber-200' : 'text-stone-500'
+                  }`}
+                >
+                  All recorded membership transactions, payment methods & receipts
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span
+                className={`px-2 py-0.5 rounded-lg text-xs font-bold ${
+                  expandedTab === 'payments'
+                    ? 'bg-white/20 text-white border border-white/30'
+                    : 'bg-stone-100 text-stone-800'
+                }`}
+              >
+                {payments.length} Records
+              </span>
+              <ChevronDown
+                className={`w-5 h-5 transition-transform duration-300 ease-in-out shrink-0 ${
+                  expandedTab === 'payments'
+                    ? 'rotate-180 text-white'
+                    : 'text-stone-400 group-hover:text-stone-700'
+                }`}
+              />
+            </div>
+          </button>
+
+          {expandedTab === 'payments' && (
+            <div className="p-3.5 sm:p-6 border-t border-stone-200 bg-stone-50/50 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-5 space-y-4">
             <h3 className="font-serif font-bold text-base text-[#4b001f] pb-3 border-b border-stone-200">
               Payment Ledger & Receipts
@@ -3030,10 +3471,76 @@ export const AdminPortal: React.FC<Props> = ({
               </table>
             </div>
           </div>
-        )}
+            </div>
+          )}
+        </section>
 
-        {/* TAB 6: PREMIUM USERS */}
-        {activeTab === 'premium' && (
+        {/* ========================================================
+            SECTION: PREMIUM USERS
+           ======================================================== */}
+        <section
+          id="admin-section-premium"
+          className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-xs ${
+            expandedTab === 'premium'
+              ? 'border-[#4b001f] bg-white ring-2 ring-[#4b001f]/10 shadow-md'
+              : 'border-stone-200 bg-white hover:border-stone-300'
+          }`}
+        >
+          <button
+            type="button"
+            onClick={() => toggleTab('premium')}
+            className={`w-full flex items-center justify-between p-3.5 sm:p-4 text-left transition-colors cursor-pointer select-none group ${
+              expandedTab === 'premium'
+                ? 'bg-[#4b001f] text-white'
+                : 'bg-white text-stone-800 hover:bg-stone-50'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className={`p-2 rounded-xl transition-colors ${
+                  expandedTab === 'premium'
+                    ? 'bg-white/15 text-white'
+                    : 'bg-amber-50 text-[#c9973e] group-hover:bg-[#fff9ea]'
+                }`}
+              >
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="font-serif font-bold text-base sm:text-lg block leading-tight">
+                  Premium Users ({activePremiumCount})
+                </span>
+                <span
+                  className={`text-[11px] block mt-0.5 ${
+                    expandedTab === 'premium' ? 'text-amber-200' : 'text-stone-500'
+                  }`}
+                >
+                  Active paid and approved premium memberships with full privileges
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span
+                className={`px-2 py-0.5 rounded-lg text-xs font-bold ${
+                  expandedTab === 'premium'
+                    ? 'bg-white/20 text-white border border-white/30'
+                    : 'bg-amber-100 text-amber-900 border border-amber-300'
+                }`}
+              >
+                {activePremiumCount}
+              </span>
+              <ChevronDown
+                className={`w-5 h-5 transition-transform duration-300 ease-in-out shrink-0 ${
+                  expandedTab === 'premium'
+                    ? 'rotate-180 text-white'
+                    : 'text-stone-400 group-hover:text-stone-700'
+                }`}
+              />
+            </div>
+          </button>
+
+          {expandedTab === 'premium' && (
+            <div className="p-3.5 sm:p-6 border-t border-stone-200 bg-stone-50/50 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-5 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-200">
               <div>
@@ -3119,10 +3626,67 @@ export const AdminPortal: React.FC<Props> = ({
               </table>
             </div>
           </div>
-        )}
+            </div>
+          )}
+        </section>
 
-        {/* TAB 7: REPORTS */}
-        {activeTab === 'reports' && (
+        {/* ========================================================
+            SECTION: ANALYTICS & REPORTS
+           ======================================================== */}
+        <section
+          id="admin-section-reports"
+          className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-xs ${
+            expandedTab === 'reports'
+              ? 'border-[#4b001f] bg-white ring-2 ring-[#4b001f]/10 shadow-md'
+              : 'border-stone-200 bg-white hover:border-stone-300'
+          }`}
+        >
+          <button
+            type="button"
+            onClick={() => toggleTab('reports')}
+            className={`w-full flex items-center justify-between p-3.5 sm:p-4 text-left transition-colors cursor-pointer select-none group ${
+              expandedTab === 'reports'
+                ? 'bg-[#4b001f] text-white'
+                : 'bg-white text-stone-800 hover:bg-stone-50'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className={`p-2 rounded-xl transition-colors ${
+                  expandedTab === 'reports'
+                    ? 'bg-white/15 text-white'
+                    : 'bg-stone-100 text-stone-700 group-hover:bg-[#f7dce8] group-hover:text-[#4b001f]'
+                }`}
+              >
+                <BarChart3 className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="font-serif font-bold text-base sm:text-lg block leading-tight">
+                  Analytics & Reports
+                </span>
+                <span
+                  className={`text-[11px] block mt-0.5 ${
+                    expandedTab === 'reports' ? 'text-amber-200' : 'text-stone-500'
+                  }`}
+                >
+                  Breakdown by gender, districts, verified status, and platform growth metrics
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <ChevronDown
+                className={`w-5 h-5 transition-transform duration-300 ease-in-out shrink-0 ${
+                  expandedTab === 'reports'
+                    ? 'rotate-180 text-white'
+                    : 'text-stone-400 group-hover:text-stone-700'
+                }`}
+              />
+            </div>
+          </button>
+
+          {expandedTab === 'reports' && (
+            <div className="p-3.5 sm:p-6 border-t border-stone-200 bg-stone-50/50 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="space-y-4">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="p-4 rounded-2xl bg-white border border-stone-200 shadow-xs">
@@ -3151,7 +3715,9 @@ export const AdminPortal: React.FC<Props> = ({
               </div>
             </div>
           </div>
-        )}
+            </div>
+          )}
+        </section>
       </main>
 
       {/* View Full Biodata & Member Details Modal */}
