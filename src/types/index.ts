@@ -167,10 +167,11 @@ const KNOWN_MALE_FIRST_NAMES = new Set([
  * saved as 'Female' due to free package defaults ("Girls & Other").
  */
 export const DEFAULT_BRIDE_AVATAR = '/default-bride-avatar.png';
+export const DEFAULT_GROOM_AVATAR = '/default-groom-avatar.png';
 
 /**
  * Automatically assigns the default modest hijab avatar for female (Bride) candidates
- * whenever a custom portrait photo is absent.
+ * or the gentleman silhouette avatar for male (Groom) candidates whenever a custom photo is absent.
  */
 export function resolveProfilePhoto(profile?: { gender?: string | null; profile_photo?: string | null } | null): string | null {
   if (!profile) return null;
@@ -180,6 +181,9 @@ export function resolveProfilePhoto(profile?: { gender?: string | null; profile_
   const normGender = normalizeGender(profile.gender);
   if (normGender === 'Female') {
     return DEFAULT_BRIDE_AVATAR;
+  }
+  if (normGender === 'Male') {
+    return DEFAULT_GROOM_AVATAR;
   }
   return null;
 }
