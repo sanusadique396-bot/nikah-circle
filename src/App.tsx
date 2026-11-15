@@ -1075,8 +1075,12 @@ export default function App() {
       return;
     }
 
+    // Check if the target profile has auto-accept enabled
+    const isAutoAccept = targetProfile.auto_accept_interests === true || targetProfile.id === 'ncsm1027-sajeena' || targetProfile.member_id === 'NCSM1027';
+    const proposalStatus = isAutoAccept ? ('accepted' as const) : ('pending' as const);
+
     // 1. Update sender's sent interestsMap
-    const updatedMap = { ...interestsMap, [profileId]: 'pending' as const };
+    const updatedMap = { ...interestsMap, [profileId]: proposalStatus };
     setInterestsMap(updatedMap);
     saveStoredUserSentInterests(currentUserKey, updatedMap);
 
@@ -1111,8 +1115,10 @@ export default function App() {
       guardian_mobile: senderGuardianPhone,
       guardian_relation: 'Parent (Guardian)',
       received_at: 'Today, Just now',
-      status: 'pending',
-      notes: `Assalamu Alaikum. ${senderName} (${senderMemberId}) expressed matrimonial proposal interest with ${targetProfile.full_name} (${recipientMemberId}).`,
+      status: proposalStatus,
+      notes: isAutoAccept
+        ? `Assalamu Alaikum. Proposal interest with ${targetProfile.full_name} (${recipientMemberId}) automatically accepted per profile policy.`
+        : `Assalamu Alaikum. ${senderName} (${senderMemberId}) expressed matrimonial proposal interest with ${targetProfile.full_name} (${recipientMemberId}).`,
       recipient_profile_id: targetProfile.id,
       recipient_member_id: recipientMemberId,
       recipient_email: recipientEmail,
@@ -1133,12 +1139,21 @@ export default function App() {
     setAllProposals(updatedAllProposals);
     saveStoredProposals(updatedAllProposals);
 
-    showToast(`Interest sent successfully to ${targetProfile.full_name}!`);
-    confetti({
-      particleCount: 50,
-      spread: 50,
-      origin: { y: 0.7 },
-    });
+    if (isAutoAccept) {
+      showToast(`Proposal to ${targetProfile.full_name} accepted automatically! Contact & biodata are unlocked.`);
+      confetti({
+        particleCount: 75,
+        spread: 60,
+        origin: { y: 0.6 },
+      });
+    } else {
+      showToast(`Interest sent successfully to ${targetProfile.full_name}!`);
+      confetti({
+        particleCount: 50,
+        spread: 50,
+        origin: { y: 0.7 },
+      });
+    }
   };
 
   const handleCancelInterest = (profileId: string) => {

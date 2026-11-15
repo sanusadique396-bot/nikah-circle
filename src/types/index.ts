@@ -54,6 +54,7 @@ export interface Profile {
   blood_group?: string | null;
   passport_visa_status?: string | null;
   other_interests?: string | null;
+  auto_accept_interests?: boolean;
   created_at?: string;
   updated_at?: string;
 }
