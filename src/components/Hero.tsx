@@ -49,7 +49,7 @@ export const Hero: React.FC<Props> = ({
             </div>
 
             <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold text-[#4b001f] leading-[1.15] sm:leading-[1.1] tracking-tight break-words">
-              Islamic Matrimony Kerala <br className="hidden xs:inline" />
+              Nikah Circle Matrimony App <br className="hidden xs:inline" />
               <span className="text-[#c9973e] italic">&amp; Gulf NRI Matchmaking.</span>
             </h1>
 
