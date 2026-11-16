@@ -98,7 +98,7 @@ export const Footer: React.FC<Props> = ({
               </li>
               <li className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-[#c9973e] shrink-0" />
-                <span>Kerala, India & GCC</span>
+                <span>Kerala, India &amp; GCC</span>
               </li>
               <li className="pt-2">
                 <button
@@ -110,6 +110,42 @@ export const Footer: React.FC<Props> = ({
                 </button>
               </li>
             </ul>
+          </div>
+        </div>
+
+        {/* Popular Matrimony Search Regions (SEO Content) */}
+        <div className="py-6 border-b border-white/10 space-y-2 text-[11px] text-stone-400">
+          <span className="font-bold text-stone-300 uppercase tracking-wider block text-xs">
+            Kerala &amp; GCC Islamic Matrimony Searches:
+          </span>
+          <div className="flex flex-wrap gap-2 leading-relaxed">
+            <span className="hover:text-white transition-colors">Kerala Muslim Matrimony</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">Sunni Muslim Matrimony</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">Malappuram Muslim Grooms</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">Kozhikode Muslim Brides</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">Kannur Nikah Circle</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">Thrissur Muslim Matrimony</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">Ernakulam Halal Matrimony</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">Palakkad Muslim Nikah</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">Gulf NRI Malayali Matrimony</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">Dubai UAE Muslim Matrimony</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">Saudi Arabia Malayali Nikah</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">Qatar Muslim Matrimony</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">Oman NRI Nikah</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">Doctor &amp; Professional Muslim Matrimony</span>
           </div>
         </div>
 

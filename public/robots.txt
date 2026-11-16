@@ -1,0 +1,37 @@
+# Nikah Circle - Islamic Matrimony Platform
+# Official Website: https://nikah-circle.vercel.app
+
+User-agent: *
+Allow: /
+Allow: /assets/
+Allow: /profiles/
+Disallow: /admin
+Disallow: /api/
+
+# AI Search & LLM Crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+# Canonical XML Sitemap
+Sitemap: https://nikah-circle.vercel.app/sitemap.xml

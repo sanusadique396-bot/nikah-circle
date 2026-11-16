@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <!-- Home Page -->
+  <url>
+    <loc>https://nikah-circle.vercel.app/</loc>
+    <lastmod>2026-11-15T22:00:00+00:00</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://nikah-circle.vercel.app/assets/aistudio/LOGO-01_fe7effc7.png</image:loc>
+      <image:title>Nikah Circle Islamic Matrimony</image:title>
+      <image:caption>Nikah Circle - Trusted Islamic Matrimony Platform for Kerala &amp; GCC</image:caption>
+    </image:image>
+  </url>
+
+  <!-- Profiles Directory & Search -->
+  <url>
+    <loc>https://nikah-circle.vercel.app/#profiles</loc>
+    <lastmod>2026-11-15T22:00:00+00:00</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <!-- How It Works (Dignified Process & Modesty) -->
+  <url>
+    <loc>https://nikah-circle.vercel.app/#how-it-works</loc>
+    <lastmod>2026-11-15T22:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- Premium Plans & Packages -->
+  <url>
+    <loc>https://nikah-circle.vercel.app/#premium</loc>
+    <lastmod>2026-11-15T22:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <!-- FAQ & Privacy Guidelines -->
+  <url>
+    <loc>https://nikah-circle.vercel.app/#faq</loc>
+    <lastmod>2026-11-15T22:00:00+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+</urlset>

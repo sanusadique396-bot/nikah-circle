@@ -55,8 +55,8 @@ export const Hero: React.FC<Props> = ({
 
             <p className="text-stone-600 text-sm sm:text-lg max-w-2xl leading-relaxed mx-auto lg:mx-0">
               A dignified matrimonial sanctuary built on Islamic values, verified biodata,
-              and strict privacy controls. Designed for families and prospective brides and grooms
-              in Kerala and the worldwide community.
+              and strict privacy controls. Designed for Sunni Muslim families and prospective brides and grooms
+              in Kerala and the worldwide GCC Malayali community.
             </p>
 
             {/* Arabic Quranic Verse Callout */}

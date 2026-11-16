@@ -987,6 +987,53 @@ export default function App() {
     saveStoredPremiumRequests(premiumRequests);
   }, [premiumRequests]);
 
+  // Dynamic On-Page SEO Title & Meta Management
+  useEffect(() => {
+    let title = 'Nikah Circle | Islamic Matrimony in Kerala & GCC | Verified Muslim Brides & Grooms';
+    let desc = 'Nikah Circle is a trusted, verified Islamic matrimony platform for Kerala and GCC Malayali Muslims. Find Sunni brides and grooms with 100% verified biodata, modest photo privacy, and family/guardian facilitation.';
+
+    if (activeView === 'admin') {
+      title = 'Admin Management Console | Nikah Circle Matrimony';
+      desc = 'Super Admin Console for verifying candidate biodata, managing proposals, approving memberships, and overseeing halal matrimonial listings.';
+    } else if (selectedProfile) {
+      const normGen = normalizeGender(selectedProfile.gender);
+      const loc = selectedProfile.district || selectedProfile.location || 'Kerala';
+      const prof = selectedProfile.profession || 'Professional';
+      const memId = selectedProfile.member_id || selectedProfile.id;
+      title = `${selectedProfile.full_name} (${normGen}, ${selectedProfile.age || 25} yrs) - ${prof}, ${loc} [${memId}] | Nikah Circle`;
+      desc = `View verified biodata profile for ${selectedProfile.full_name} (${normGen}, ${selectedProfile.marital_status || 'Muslim'}). Modest photo privacy and verified guardian facilitation on Nikah Circle.`;
+    } else if (activeView === 'profiles') {
+      title = 'Search Muslim Brides & Grooms Directory | Nikah Circle Kerala & GCC';
+      desc = 'Filter and explore 100% verified Sunni Muslim matrimony profiles across Malappuram, Kozhikode, Kannur, Thrissur, Ernakulam, Palakkad, and Gulf countries.';
+    } else if (activeView === 'shortlist') {
+      title = `Shortlisted Candidate Profiles (${bookmarks.length}) | Nikah Circle Matrimony`;
+      desc = 'Review your saved prospective brides and grooms with your family and guardians in a respectful, halal matrimonial sanctuary.';
+    } else if (activeView === 'interests') {
+      title = 'Proposals & Match Interests Hub | Nikah Circle Islamic Matrimony';
+      desc = 'Manage your sent proposals and incoming marriage interest requests respectfully on Nikah Circle.';
+    } else if (isPremiumOpen) {
+      title = 'Premium Membership Plans & Pricing | Nikah Circle Islamic Matrimony';
+      desc = 'Upgrade to Nikah Circle Premium to send formal proposals, unlock verified guardian phone numbers, and feature your biodata.';
+    }
+
+    document.title = title;
+
+    const descMeta = document.querySelector('meta[name="description"]');
+    if (descMeta) descMeta.setAttribute('content', desc);
+
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute('content', title);
+
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    if (ogDesc) ogDesc.setAttribute('content', desc);
+
+    const twTitle = document.querySelector('meta[name="twitter:title"]');
+    if (twTitle) twTitle.setAttribute('content', title);
+
+    const twDesc = document.querySelector('meta[name="twitter:description"]');
+    if (twDesc) twDesc.setAttribute('content', desc);
+  }, [activeView, selectedProfile, isPremiumOpen, bookmarks.length]);
+
   // Handlers
   const handleToggleBookmark = (id: string) => {
     setBookmarks((prev) => {

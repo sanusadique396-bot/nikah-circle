@@ -1,0 +1,25 @@
+# Nikah Circle (Islamic Matrimony Platform)
+
+> Nikah Circle is a verified Islamic matrimony platform designed for Kerala and GCC Malayali Muslims to find compatible life partners in a dignified, halal environment adhering to Islamic values, photo modesty, and guardian (Wali) facilitation.
+
+- Website: https://nikah-circle.vercel.app
+- Location Focus: Kerala, India (Malappuram, Kozhikode, Kannur, Thrissur, Ernakulam, Palakkad, Kollam, Thiruvananthapuram, Kasaragod, Wayanad) & GCC (UAE, Saudi Arabia, Qatar, Oman, Kuwait, Bahrain)
+- Target Audience: Sunni Muslims, practicing Muslim families, prospective brides, and grooms seeking halal nikah.
+- Platform Type: Progressive Web App (PWA) with verified biodata and strict privacy controls.
+
+## Key Pillars & Differentiators
+
+1. **100% Verified Biodata**: Every candidate profile undergoes verification of essential details, education, occupation, and family background.
+2. **Photo Modesty & Purdah Privacy**: Female and male photos can be blurred on demand for modesty. High-resolution photos are protected and cannot be scraped or downloaded.
+3. **Guardian / Wali Facilitation**: Contact details (guardian phone number) are hidden by default and unlocked strictly upon mutual acceptance of formal matrimonial proposals.
+4. **Anti-Harassment & Halal Ethics**: Direct casual dating or unverified messaging is not permitted. All interactions are formal expressions of interest.
+5. **Admin Moderation**: Super admins rigorously review new submissions, verifying documents and identity before publication.
+
+## Subscription Tiers
+
+- **Free Plan**: Free browsing of verified Muslim profiles, account creation, search filters by district, education, age, and profession.
+- **Premium Plan**: Unlocks formal proposal exchange, access to verified guardian phone numbers, featured directory placement, and priority matchmaking support.
+
+## Keywords & Topical Relevance
+
+Kerala Muslim Matrimony, Sunni Muslim Matrimony, Malabar Nikah, Islamic Marriage Bureau Kerala, Calicut Muslim Brides, Malappuram Muslim Grooms, Gulf Malayali Nikah, Halal Matrimony Platform, NRI Kerala Muslim Matrimony.
