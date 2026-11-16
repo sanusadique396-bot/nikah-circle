@@ -45,18 +45,17 @@ export const Hero: React.FC<Props> = ({
           <div className="lg:col-span-7 space-y-5 sm:space-y-6 text-center lg:text-left">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#f7dce8] text-[#4b001f] text-[10px] sm:text-xs font-bold tracking-wide max-w-full">
               <span className="w-1.5 h-1.5 rounded-full bg-[#4b001f] shrink-0" />
-              <span className="truncate">TRUSTED ISLAMIC MATRIMONY PLATFORM</span>
+              <span className="truncate">SAFE ISLAMIC MATCHMAKING &amp; KERALA NIKAH PLATFORM</span>
             </div>
 
             <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold text-[#4b001f] leading-[1.15] sm:leading-[1.1] tracking-tight break-words">
-              Find Your Life Partner <br className="hidden xs:inline" />
-              <span className="text-[#c9973e] italic">with Trust & Modesty.</span>
+              Islamic Matrimony Kerala <br className="hidden xs:inline" />
+              <span className="text-[#c9973e] italic">&amp; Gulf NRI Matchmaking.</span>
             </h1>
 
             <p className="text-stone-600 text-sm sm:text-lg max-w-2xl leading-relaxed mx-auto lg:mx-0">
-              A dignified matrimonial sanctuary built on Islamic values, verified biodata,
-              and strict privacy controls. Designed for Sunni Muslim families and prospective brides and grooms
-              in Kerala and the worldwide GCC Malayali community.
+              A conservative Muslim matrimonial site and verified Muslim marriage bureau for Kerala and Gulf NRI families.
+              Safe Islamic matchmaking in Kozhikode, Muslim matrimony Malappuram, and matrimony in Manjeri, Palakkad, Thrissur &amp; UAE / GCC with 100% verified Islamic biodata, modest photo privacy matrimony, and secure Nikah proposals Kerala.
             </p>
 
             {/* Arabic Quranic Verse Callout */}
@@ -98,15 +97,15 @@ export const Hero: React.FC<Props> = ({
             <div className="pt-4 flex flex-wrap items-center justify-center lg:justify-start gap-4 sm:gap-6 text-xs text-stone-600 font-medium border-t border-[#eadfe4]/60">
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>100% Verified Profiles</span>
+                <span>100% Verified Islamic Biodata</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Lock className="w-4 h-4 text-[#4b001f] shrink-0" />
-                <span>Modest Photo Privacy</span>
+                <span>Modest Photo Privacy Matrimony</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-[#c9973e] shrink-0" />
-                <span>Family & Guardian Facilitated</span>
+                <span>Secure Nikah Proposals Kerala</span>
               </div>
             </div>
           </div>
@@ -157,11 +156,11 @@ export const Hero: React.FC<Props> = ({
                 </div>
 
                 <div>
-                  <h3 className="font-serif text-2xl font-bold text-[#4b001f]">
+                  <h2 className="font-serif text-2xl font-bold text-[#4b001f]">
                     Nikah Circle
-                  </h3>
+                  </h2>
                   <p className="text-xs text-stone-500 mt-1">
-                    Connecting pious hearts across Kerala & GCC
+                    Conservative Muslim Matrimonial Site · Kerala &amp; GCC
                   </p>
                 </div>
 

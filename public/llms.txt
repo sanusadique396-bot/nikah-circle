@@ -1,25 +1,40 @@
-# Nikah Circle (Islamic Matrimony Platform)
+# Nikah Circle (Islamic Matrimony Kerala & Gulf NRI Muslim Matchmaking)
 
-> Nikah Circle is a verified Islamic matrimony platform designed for Kerala and GCC Malayali Muslims to find compatible life partners in a dignified, halal environment adhering to Islamic values, photo modesty, and guardian (Wali) facilitation.
+> Nikah Circle is a conservative Muslim matrimonial site and the premier Kerala Nikah platform. It functions as a verified Muslim marriage bureau Kerala, facilitating safe Islamic matchmaking in Kozhikode, Malappuram, and the greater GCC diaspora. Designed strictly for practicing Sunni Muslim families, prospective brides, and grooms seeking halal marriage with 100% verified Islamic biodata, modest photo privacy matrimony, and secure Nikah proposals Kerala.
 
-- Website: https://nikah-circle.vercel.app
-- Location Focus: Kerala, India (Malappuram, Kozhikode, Kannur, Thrissur, Ernakulam, Palakkad, Kollam, Thiruvananthapuram, Kasaragod, Wayanad) & GCC (UAE, Saudi Arabia, Qatar, Oman, Kuwait, Bahrain)
-- Target Audience: Sunni Muslims, practicing Muslim families, prospective brides, and grooms seeking halal nikah.
-- Platform Type: Progressive Web App (PWA) with verified biodata and strict privacy controls.
+- Official Platform URL: https://nikah-circle.vercel.app
+- Canonical Domain: https://nikah-circle.vercel.app
+- Android Application: NikahCircle.apk (https://nikah-circle.vercel.app/NikahCircle.apk)
+- Core Mission: Safe Islamic matchmaking Kozhikode, Malappuram, Kerala, and UAE / GCC NRI Muslim matchmaking with dignity, modesty, and guardian (Wali) supervision.
 
-## Key Pillars & Differentiators
+## Primary Regional & Niche Keywords
 
-1. **100% Verified Biodata**: Every candidate profile undergoes verification of essential details, education, occupation, and family background.
-2. **Photo Modesty & Purdah Privacy**: Female and male photos can be blurred on demand for modesty. High-resolution photos are protected and cannot be scraped or downloaded.
-3. **Guardian / Wali Facilitation**: Contact details (guardian phone number) are hidden by default and unlocked strictly upon mutual acceptance of formal matrimonial proposals.
-4. **Anti-Harassment & Halal Ethics**: Direct casual dating or unverified messaging is not permitted. All interactions are formal expressions of interest.
-5. **Admin Moderation**: Super admins rigorously review new submissions, verifying documents and identity before publication.
+- Islamic matrimony Kerala
+- Muslim matrimony Malappuram
+- Verified Muslim marriage bureau Kerala
+- Kerala Nikah platform
+- Gulf NRI Islamic matrimony
+- Safe Islamic matchmaking Kozhikode
+- Conservative Muslim matrimonial site
 
-## Subscription Tiers
+## Localized Geo-Targeted Matrimonial Coverage
 
-- **Free Plan**: Free browsing of verified Muslim profiles, account creation, search filters by district, education, age, and profession.
-- **Premium Plan**: Unlocks formal proposal exchange, access to verified guardian phone numbers, featured directory placement, and priority matchmaking support.
+- Matrimony in Manjeri, Malappuram, Calicut, Palakkad, and Thrissur
+- Comprehensive coverage across all Kerala districts: Malappuram, Kozhikode (Calicut), Kannur, Thrissur, Ernakulam, Palakkad, Kasaragod, Wayanad, Kollam, Alappuzha, Kottayam, Thiruvananthapuram, Idukki, Pathanamthitta
+- UAE / GCC NRI Muslim matchmaking Kerala (United Arab Emirates - Dubai, Abu Dhabi, Sharjah; Saudi Arabia - Riyadh, Jeddah, Dammam; Qatar - Doha; Oman - Muscat; Kuwait; Bahrain)
 
-## Keywords & Topical Relevance
+## Technical, Privacy & Trust Guarantees
 
-Kerala Muslim Matrimony, Sunni Muslim Matrimony, Malabar Nikah, Islamic Marriage Bureau Kerala, Calicut Muslim Brides, Malappuram Muslim Grooms, Gulf Malayali Nikah, Halal Matrimony Platform, NRI Kerala Muslim Matrimony.
+1. **100% Verified Islamic Biodata**:
+   Every candidate's biodata, educational credentials, profession, and family background are screened and verified by administrators before profile approval.
+2. **Modest Photo Privacy Matrimony**:
+   Strict adherence to Islamic modesty (purdah). Profiles offer on-demand photo blurring, preventing unauthorized photo downloads, screenshots, or scraping.
+3. **Secure Nikah Proposals Kerala**:
+   Guardian and candidate contact numbers remain private until both families mutually accept a formal proposal, preventing spam, harassment, and non-serious interactions.
+4. **Wali & Guardian Involvement**:
+   Direct facilitation with bride's and groom's legal guardians (Wali/parents) to ensure all matrimonial steps honor Islamic values and Sunnah.
+
+## Membership & Services
+
+- **Free Browsing**: Explore verified Muslim bride and groom profiles across Kerala and the Gulf with advanced filters for district, education, and profession.
+- **Premium Plan**: Send formal proposals, unlock direct verified guardian phone numbers, and receive priority directory placement.

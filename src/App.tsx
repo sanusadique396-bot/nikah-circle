@@ -989,8 +989,8 @@ export default function App() {
 
   // Dynamic On-Page SEO Title & Meta Management
   useEffect(() => {
-    let title = 'Nikah Circle | Islamic Matrimony in Kerala & GCC | Verified Muslim Brides & Grooms';
-    let desc = 'Nikah Circle is a trusted, verified Islamic matrimony platform for Kerala and GCC Malayali Muslims. Find Sunni brides and grooms with 100% verified biodata, modest photo privacy, and family/guardian facilitation.';
+    let title = 'Nikah Circle | Islamic Matrimony Kerala | Verified Muslim Marriage Bureau & Gulf NRI Matrimony';
+    let desc = 'Nikah Circle is a conservative Muslim matrimonial site and Kerala Nikah platform. Safe Islamic matchmaking in Kozhikode, Muslim matrimony Malappuram, Manjeri, Palakkad, Thrissur & UAE / GCC NRI Muslim matchmaking Kerala with 100% verified Islamic biodata, modest photo privacy matrimony, and secure Nikah proposals Kerala.';
 
     if (activeView === 'admin') {
       title = 'Admin Management Console | Nikah Circle Matrimony';
@@ -1001,16 +1001,16 @@ export default function App() {
       const prof = selectedProfile.profession || 'Professional';
       const memId = selectedProfile.member_id || selectedProfile.id;
       title = `${selectedProfile.full_name} (${normGen}, ${selectedProfile.age || 25} yrs) - ${prof}, ${loc} [${memId}] | Nikah Circle`;
-      desc = `View verified biodata profile for ${selectedProfile.full_name} (${normGen}, ${selectedProfile.marital_status || 'Muslim'}). Modest photo privacy and verified guardian facilitation on Nikah Circle.`;
+      desc = `View verified biodata profile for ${selectedProfile.full_name} (${normGen}, ${selectedProfile.marital_status || 'Muslim'}). 100% verified Islamic biodata, modest photo privacy matrimony, and secure Nikah proposals on Nikah Circle Kerala.`;
     } else if (activeView === 'profiles') {
-      title = 'Search Muslim Brides & Grooms Directory | Nikah Circle Kerala & GCC';
-      desc = 'Filter and explore 100% verified Sunni Muslim matrimony profiles across Malappuram, Kozhikode, Kannur, Thrissur, Ernakulam, Palakkad, and Gulf countries.';
+      title = 'Islamic Matrimony Kerala Directory | Verified Muslim Marriage Bureau';
+      desc = 'Filter and explore 100% verified Islamic biodata across Malappuram, Kozhikode, Manjeri, Palakkad, Thrissur, and Gulf NRI Muslim matchmaking with modest photo privacy.';
     } else if (activeView === 'shortlist') {
       title = `Shortlisted Candidate Profiles (${bookmarks.length}) | Nikah Circle Matrimony`;
       desc = 'Review your saved prospective brides and grooms with your family and guardians in a respectful, halal matrimonial sanctuary.';
     } else if (activeView === 'interests') {
-      title = 'Proposals & Match Interests Hub | Nikah Circle Islamic Matrimony';
-      desc = 'Manage your sent proposals and incoming marriage interest requests respectfully on Nikah Circle.';
+      title = 'Secure Nikah Proposals Hub | Nikah Circle Islamic Matrimony';
+      desc = 'Manage secure Nikah proposals Kerala and incoming marriage interest requests respectfully on Nikah Circle.';
     } else if (isPremiumOpen) {
       title = 'Premium Membership Plans & Pricing | Nikah Circle Islamic Matrimony';
       desc = 'Upgrade to Nikah Circle Premium to send formal proposals, unlock verified guardian phone numbers, and feature your biodata.';
@@ -2771,13 +2771,13 @@ export default function App() {
             <div className="space-y-6">
               <div>
                 <span className="text-[11px] uppercase tracking-wider font-bold text-[#c9973e]">
-                  Selected Matches
+                  Verified Muslim Marriage Bureau Kerala
                 </span>
                 <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#4b001f]">
-                  Featured Profiles
+                  Featured Profiles: Islamic Matrimony Kerala &amp; Gulf NRI
                 </h2>
                 <p className="text-xs text-stone-500 mt-0.5">
-                  Verified profiles from Nikah Circle. Full biodata requires mutual interest.
+                  Safe Islamic matchmaking in Kozhikode, Muslim matrimony Malappuram &amp; GCC with 100% verified Islamic biodata and modest photo privacy matrimony.
                 </p>
               </div>
 
@@ -2846,13 +2846,13 @@ export default function App() {
             <section className="pt-8 pb-4 border-t border-[#eadfe4]">
               <div className="text-center max-w-xl mx-auto space-y-2 mb-8">
                 <span className="text-[11px] uppercase font-bold tracking-wider text-[#c9973e]">
-                  Dignified Process
+                  Conservative Muslim Matrimonial Site
                 </span>
                 <h3 className="font-serif text-2xl font-bold text-[#4b001f]">
-                  How Nikah Circle Works
+                  How Our Kerala Nikah Platform Works
                 </h3>
                 <p className="text-xs text-stone-500">
-                  Privacy and family involvement in every single step.
+                  Modest photo privacy matrimony, 100% verified Islamic biodata, and secure Nikah proposals Kerala.
                 </p>
               </div>
 

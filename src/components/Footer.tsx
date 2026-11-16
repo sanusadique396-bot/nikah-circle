@@ -116,34 +116,38 @@ export const Footer: React.FC<Props> = ({
         {/* Popular Matrimony Search Regions (SEO Content) */}
         <div className="py-6 border-b border-white/10 space-y-2 text-[11px] text-stone-400">
           <span className="font-bold text-stone-300 uppercase tracking-wider block text-xs">
-            Kerala &amp; GCC Islamic Matrimony Searches:
+            Trending Islamic Matrimony Searches &amp; Coverage:
           </span>
           <div className="flex flex-wrap gap-2 leading-relaxed">
-            <span className="hover:text-white transition-colors">Kerala Muslim Matrimony</span>
+            <span className="hover:text-white transition-colors">Islamic matrimony Kerala</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">Muslim matrimony Malappuram</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">Verified Muslim marriage bureau Kerala</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">Kerala Nikah platform</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">Gulf NRI Islamic matrimony</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">Safe Islamic matchmaking Kozhikode</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">Conservative Muslim matrimonial site</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">Matrimony in Manjeri, Malappuram, Calicut, Palakkad, and Thrissur</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">UAE / GCC NRI Muslim matchmaking Kerala</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">100% verified Islamic biodata</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">Modest photo privacy matrimony</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors">Secure Nikah proposals Kerala</span>
             <span>·</span>
             <span className="hover:text-white transition-colors">Sunni Muslim Matrimony</span>
             <span>·</span>
-            <span className="hover:text-white transition-colors">Malappuram Muslim Grooms</span>
-            <span>·</span>
-            <span className="hover:text-white transition-colors">Kozhikode Muslim Brides</span>
-            <span>·</span>
             <span className="hover:text-white transition-colors">Kannur Nikah Circle</span>
             <span>·</span>
-            <span className="hover:text-white transition-colors">Thrissur Muslim Matrimony</span>
-            <span>·</span>
             <span className="hover:text-white transition-colors">Ernakulam Halal Matrimony</span>
-            <span>·</span>
-            <span className="hover:text-white transition-colors">Palakkad Muslim Nikah</span>
-            <span>·</span>
-            <span className="hover:text-white transition-colors">Gulf NRI Malayali Matrimony</span>
-            <span>·</span>
-            <span className="hover:text-white transition-colors">Dubai UAE Muslim Matrimony</span>
-            <span>·</span>
-            <span className="hover:text-white transition-colors">Saudi Arabia Malayali Nikah</span>
-            <span>·</span>
-            <span className="hover:text-white transition-colors">Qatar Muslim Matrimony</span>
-            <span>·</span>
-            <span className="hover:text-white transition-colors">Oman NRI Nikah</span>
             <span>·</span>
             <span className="hover:text-white transition-colors">Doctor &amp; Professional Muslim Matrimony</span>
           </div>
