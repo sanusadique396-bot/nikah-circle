@@ -10,21 +10,33 @@ export const PWAInstallPrompt: React.FC<Props> = ({ variant = 'nav' }) => {
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
   const [showIOSModal, setShowIOSModal] = useState(false);
   const [dismissedBanner, setDismissedBanner] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
-  // If already running in standalone PWA mode, don't show prompt
-  if (isInstalled) {
+  // If already running in standalone PWA mode and variant is banner, dismiss banner
+  if (isInstalled && variant === 'banner') {
     return null;
   }
 
-  const handleInstallClick = async () => {
-    if (isInstallable) {
-      await install();
-    } else if (isIOS) {
+  const triggerApkDownload = () => {
+    setDownloading(true);
+    const link = document.createElement('a');
+    link.href = '/NikahCircle.apk';
+    link.download = 'NikahCircle.apk';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => setDownloading(false), 3500);
+  };
+
+  const handleInstallClick = async (e?: React.MouseEvent) => {
+    if (isIOS) {
+      if (e) e.preventDefault();
       setShowIOSModal(true);
-    } else {
-      // General instructions for desktop/Android if beforeinstallprompt not fired yet
-      setShowIOSModal(true);
+      return;
     }
+
+    // Direct APK download for Android & desktop devices
+    triggerApkDownload();
   };
 
   if (variant === 'banner' && !dismissedBanner) {
@@ -41,16 +53,27 @@ export const PWAInstallPrompt: React.FC<Props> = ({ variant = 'nav' }) => {
               </span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={handleInstallClick}
+              <a
+                href="/NikahCircle.apk"
+                download="NikahCircle.apk"
+                onClick={(e) => handleInstallClick(e)}
                 className="bg-[#c9973e] hover:bg-[#dfb25d] text-[#350016] px-3 py-1 rounded-lg font-bold text-xs transition-colors flex items-center gap-1.5 whitespace-nowrap shadow-sm cursor-pointer"
               >
-                <Download className="w-3.5 h-3.5" />
-                <span>Install App</span>
-              </button>
+                {downloading ? (
+                  <>
+                    <CheckCircle className="w-3.5 h-3.5 text-[#350016] animate-pulse" />
+                    <span>Downloading APK...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Install App</span>
+                  </>
+                )}
+              </a>
               <button
                 onClick={() => setDismissedBanner(true)}
-                className="text-stone-300 hover:text-white p-1 rounded-md transition-colors"
+                className="text-stone-300 hover:text-white p-1 rounded-md transition-colors cursor-pointer"
                 aria-label="Dismiss banner"
               >
                 <X className="w-3.5 h-3.5" />
@@ -72,14 +95,25 @@ export const PWAInstallPrompt: React.FC<Props> = ({ variant = 'nav' }) => {
 
   return (
     <>
-      <button
-        onClick={handleInstallClick}
-        title="Install Progressive Web App on your device"
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#f7dce8] text-[#4b001f] hover:bg-[#ead0dd] border border-[#eadfe4] transition-all cursor-pointer whitespace-nowrap shadow-sm"
+      <a
+        href="/NikahCircle.apk"
+        download="NikahCircle.apk"
+        onClick={(e) => handleInstallClick(e)}
+        title="Download Nikah Circle Android APK (146 KB)"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#f7dce8] text-[#4b001f] hover:bg-[#ead0dd] border border-[#eadfe4] transition-all cursor-pointer whitespace-nowrap shadow-sm w-fit"
       >
-        <Download className="w-3.5 h-3.5 text-[#4b001f]" />
-        <span>Install App</span>
-      </button>
+        {downloading ? (
+          <>
+            <CheckCircle className="w-3.5 h-3.5 text-emerald-700 animate-pulse" />
+            <span className="text-emerald-950 font-bold">Downloading APK...</span>
+          </>
+        ) : (
+          <>
+            <Download className="w-3.5 h-3.5 text-[#4b001f]" />
+            <span>Install App</span>
+          </>
+        )}
+      </a>
 
       {showIOSModal && (
         <InstallInstructionsModal
@@ -169,8 +203,8 @@ const InstallInstructionsModal: React.FC<ModalProps> = ({ isIOS, onClose }) => {
                     1
                   </div>
                   <div>
-                    <p className="font-semibold text-stone-900">Open Browser Menu</p>
-                    <p className="text-stone-500 mt-0.5">Tap the three vertical dots (⋮) in Chrome or Edge address bar.</p>
+                    <p className="font-semibold text-stone-900">Download APK</p>
+                    <p className="text-stone-500 mt-0.5">Click below to download the official Nikah Circle Android APK (146 KB).</p>
                   </div>
                 </div>
 
@@ -179,8 +213,8 @@ const InstallInstructionsModal: React.FC<ModalProps> = ({ isIOS, onClose }) => {
                     2
                   </div>
                   <div>
-                    <p className="font-semibold text-stone-900">Select "Install App" or "Add to Home Screen"</p>
-                    <p className="text-stone-500 mt-0.5">Confirm to download the lightweight app without an app store account.</p>
+                    <p className="font-semibold text-stone-900">Tap to Install</p>
+                    <p className="text-stone-500 mt-0.5">Tap the downloaded notification or open your Downloads folder to install.</p>
                   </div>
                 </div>
               </div>
@@ -189,16 +223,27 @@ const InstallInstructionsModal: React.FC<ModalProps> = ({ isIOS, onClose }) => {
 
           <div className="flex items-center gap-2 pt-2 text-[11px] text-stone-500">
             <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Takes under 2MB of storage and updates automatically in the background.</span>
+            <span>Official Nikah Circle Android APK. Safe, verified & fast.</span>
           </div>
         </div>
 
-        <button
-          onClick={onClose}
-          className="w-full rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white py-2.5 text-xs font-bold transition-colors cursor-pointer"
-        >
-          Got it
-        </button>
+        <div className="space-y-2">
+          <a
+            href="/NikahCircle.apk"
+            download="NikahCircle.apk"
+            onClick={onClose}
+            className="w-full rounded-xl bg-[#4b001f] hover:bg-[#350016] text-white py-2.5 text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-2 shadow-sm"
+          >
+            <Download className="w-4 h-4 text-[#dfb25d]" />
+            <span>Download Nikah Circle APK (146 KB)</span>
+          </a>
+          <button
+            onClick={onClose}
+            className="w-full rounded-xl border border-stone-200 hover:bg-stone-50 text-stone-700 py-2 text-xs font-semibold transition-colors cursor-pointer"
+          >
+            Close
+          </button>
+        </div>
       </div>
     </div>
   );
