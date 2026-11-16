@@ -1983,6 +1983,8 @@ export function saveStoredUsedReferralCodes(codes: string[]) {
 export function isReferralCodeUsed(code: string): boolean {
   if (!code) return false;
   const normalized = code.trim().toUpperCase();
+  // Special promo campaign code NCSMREF110022 (16/11/2026 - 24/11/2026) can be used by all incoming users
+  if (normalized === 'NCSMREF110022') return false;
   const list = getStoredUsedReferralCodes();
   if (list.includes(normalized)) return true;
   const existingReqs = getStoredPremiumRequests();
@@ -1994,6 +1996,8 @@ export function isReferralCodeUsed(code: string): boolean {
 export function markReferralCodeUsed(code: string) {
   if (!code) return;
   const normalized = code.trim().toUpperCase();
+  // Special promo code is a multi-user campaign, don't mark as exhausted
+  if (normalized === 'NCSMREF110022') return;
   const list = getStoredUsedReferralCodes();
   if (!list.includes(normalized)) {
     saveStoredUsedReferralCodes([...list, normalized]);

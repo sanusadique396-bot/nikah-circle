@@ -1,7 +1,14 @@
-import React from 'react';
-import { ShieldCheck, Lock, Heart, Users, CheckCircle2, ArrowRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { ShieldCheck, Lock, Heart, Users, CheckCircle2, ArrowRight, Gift, Sparkles, Copy, Check, Tag } from 'lucide-react';
 import { ReferralWidget } from './ReferralWidget';
-import { ReferralStatus } from '../lib/referral';
+import {
+  ReferralStatus,
+  isReferralWidgetOpen,
+  isPromoOfferCardActive,
+  SPECIAL_PROMO_CODE,
+  PROMO_START_DATE,
+  PROMO_END_DATE,
+} from '../lib/referral';
 
 interface Props {
   onBrowseClick: () => void;
@@ -28,6 +35,8 @@ export const Hero: React.FC<Props> = ({
   onOpenCreateProfile,
   onToast,
 }) => {
+  const [copiedPromo, setCopiedPromo] = useState(false);
+
   // Increment cleanly in steps of 100: 1,500+, 1,600+, 1,700+...
   const memberIncrement = Math.floor(totalMembersCount / 100) * 100;
   const verifiedCount = (1500 + memberIncrement).toLocaleString() + '+';
@@ -192,15 +201,92 @@ export const Hero: React.FC<Props> = ({
               </div>
             </div>
 
-            {/* Prominent Referral Reward Widget Placed Right Beneath the Main Showcase Card */}
-            {referralStatus && (
-              <div className="relative z-10 w-full max-w-sm">
+            {/* 1. Time-window 24/11/26 to 30/11/26: Referral Rewards Widget (Per user requirement: 24/11/26 മുതൽ 30/11/26 വരെ മാത്രം open) */}
+            {isReferralWidgetOpen() && referralStatus && (
+              <div className="relative z-10 w-full max-w-sm animate-in fade-in zoom-in-95 duration-200">
                 <ReferralWidget
                   referralStatus={referralStatus}
                   isLoggedIn={isLoggedIn}
                   onOpenCreateProfile={onOpenCreateProfile || onRegisterClick}
                   onToast={onToast}
                 />
+              </div>
+            )}
+
+            {/* 2. Time-window 16/11/26 to 24/11/26: Special Promo Code Offer Card (NCSMREF110022 - 2 Months Free Premium) */}
+            {!isReferralWidgetOpen() && isPromoOfferCardActive() && (
+              <div className="relative z-10 w-full max-w-sm rounded-3xl bg-white/95 backdrop-blur-md border-2 border-[#c9973e]/50 shadow-xl p-5 space-y-3.5 animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase bg-gradient-to-r from-[#4b001f] to-[#731238] text-white shadow-xs">
+                    <Gift className="w-3.5 h-3.5 text-[#c9973e]" />
+                    <span>Special Promo Offer</span>
+                  </span>
+                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                    ✨ 2 Months Free
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  <h3 className="font-serif text-lg font-bold text-[#4b001f] leading-snug">
+                    Get 2 Months Free Premium!
+                  </h3>
+                  <p className="text-xs text-stone-600 leading-relaxed font-sans">
+                    <strong>NCSMREF110022</strong> ഈ റെഫറൽ കോഡ് ഉപയോഗിച്ച് കയറി വരുന്നവർക്കൊക്കെ 2 മാസത്തെ ഫ്രീ പ്രീമിയം സൗജന്യമായി ലഭിക്കുന്നു.
+                  </p>
+                  <p className="text-[11px] font-semibold text-[#8b1538]">
+                    ⏳ Offer Period: 16/11/2026 മുതൽ 24/11/2026 വരെ മാത്രം
+                  </p>
+                </div>
+
+                {/* Promo Code Box */}
+                <div className="bg-[#fff9fc] border border-[#f3d3df] rounded-2xl p-3 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-[#c9973e]" />
+                    <div>
+                      <span className="text-[10px] text-stone-500 uppercase tracking-wider font-semibold block">Referral Promo Code</span>
+                      <span className="font-mono text-sm font-extrabold text-[#4b001f] tracking-wider">
+                        {SPECIAL_PROMO_CODE}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard?.writeText(SPECIAL_PROMO_CODE);
+                      setCopiedPromo(true);
+                      onToast?.('Promo code NCSMREF110022 copied to clipboard!');
+                      setTimeout(() => setCopiedPromo(false), 2000);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-white border border-stone-200 text-stone-700 hover:bg-stone-50 text-[11px] font-bold flex items-center gap-1 shadow-xs cursor-pointer transition-colors"
+                  >
+                    {copiedPromo ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        <span className="text-emerald-700">Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5 text-stone-500" />
+                        <span>Copy</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Claim Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      localStorage.setItem('nikah_circle_pending_referrer', SPECIAL_PROMO_CODE);
+                    } catch {}
+                    onExplorePremium();
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#4b001f] to-[#731238] hover:from-[#380017] hover:to-[#570a28] text-white text-xs font-bold transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4 text-[#c9973e]" />
+                  <span>Claim 2 Months Free Premium</span>
+                </button>
               </div>
             )}
           </div>

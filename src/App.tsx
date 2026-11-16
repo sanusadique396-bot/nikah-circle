@@ -45,6 +45,11 @@ import {
 } from './lib/supabase';
 import {
   checkAndCaptureUrlReferral,
+  getPendingReferrerCode,
+  checkSpecialPromoCode,
+  SPECIAL_PROMO_CODE,
+  isReferralWidgetOpen,
+  isPromoOfferCardActive,
   recordReferralSignup,
   recordReferralPremiumUpgrade,
   syncReferralsWithProfiles,
@@ -404,9 +409,15 @@ export default function App() {
     return hasCompletedBiodata(currentUserProfile) || hasCompletedBiodata(userMatchedProfile);
   }, [currentUserProfile, userMatchedProfile]);
 
-  // Capture incoming referral link (?ref=CODE) on app load
+  // Capture incoming referral link (?ref=CODE) on app load & detect promo offer
   useEffect(() => {
-    checkAndCaptureUrlReferral();
+    const capturedRef = checkAndCaptureUrlReferral();
+    if (capturedRef && capturedRef.toUpperCase() === SPECIAL_PROMO_CODE) {
+      const promo = checkSpecialPromoCode(SPECIAL_PROMO_CODE);
+      if (promo.isValid) {
+        showToast('🎉 Special Promo Offer Active: 2 Months Free Premium with code NCSMREF110022!');
+      }
+    }
   }, []);
 
   // Auto-sync currentUserProfile from userMatchedProfile if available to ensure correct member_id, mobile, and id binding
@@ -1515,6 +1526,28 @@ export default function App() {
       created_at: existingIndex >= 0 ? profiles[existingIndex].created_at : new Date().toISOString(),
     };
 
+    // Special Promo Campaign: Anyone joining via NCSMREF110022 (16/11/2026 to 24/11/2026) gets 2 Months Free Premium automatically
+    const pendingRef = getPendingReferrerCode();
+    if (pendingRef && pendingRef.toUpperCase() === SPECIAL_PROMO_CODE) {
+      const promoCheck = checkSpecialPromoCode(SPECIAL_PROMO_CODE);
+      if (promoCheck.isValid) {
+        const todayDate = new Date().toISOString().slice(0, 10);
+        const expiryDate = new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10);
+        profilePayload.is_premium = true;
+        profilePayload.premium_plan = 'Special Promo: 2 Months Free Premium (NCSMREF110022)';
+        profilePayload.premium_start = todayDate;
+        profilePayload.premium_end = expiryDate;
+        profilePayload.profile_status = 'APPROVED';
+        profilePayload.is_verified = true;
+
+        setIsUserPremium(true);
+        setUserPlanName('Special Promo: 2 Months Free Premium (NCSMREF110022)');
+        localStorage.setItem('nikah_circle_user_is_premium', 'true');
+        localStorage.setItem('nikah_circle_user_plan_name', 'Special Promo: 2 Months Free Premium (NCSMREF110022)');
+        localStorage.setItem('nikah_circle_premium_expiry', expiryDate);
+      }
+    }
+
     let updatedProfiles: Profile[];
     if (existingIndex >= 0) {
       updatedProfiles = profiles.map((p, idx) => (idx === existingIndex ? { ...p, ...profilePayload } : p));
@@ -1656,7 +1689,12 @@ export default function App() {
     let nextProfiles: Profile[];
 
     const todayDate = new Date().toISOString().slice(0, 10);
-    const expiryDate = new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10);
+    const isPromo2Months = req.referral_code?.trim().toUpperCase() === SPECIAL_PROMO_CODE || req.plan_name.includes(SPECIAL_PROMO_CODE);
+    const validityDays = isPromo2Months ? 60 : 90; // 2 Months (60 days) for NCSMREF110022 promo, 90 days for standard plans
+    const expiryDate = new Date(Date.now() + validityDays * 86400000).toISOString().slice(0, 10);
+    try {
+      localStorage.setItem('nikah_circle_premium_expiry', expiryDate);
+    } catch {}
 
     if (existingIdx >= 0) {
       targetProf = {
@@ -1732,7 +1770,11 @@ export default function App() {
     setPayments(nextPayments);
     saveStoredPayments(nextPayments);
 
-    showToast('Alhamdulillah! Premium plan payment recorded!');
+    if (isPromo2Months) {
+      showToast('🎉 Alhamdulillah! 2 Months Free Premium activated with code NCSMREF110022!');
+    } else {
+      showToast('Alhamdulillah! Premium plan payment recorded!');
+    }
     confetti({
       particleCount: 80,
       spread: 70,

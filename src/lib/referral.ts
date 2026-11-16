@@ -48,6 +48,147 @@ const REFERRALS_LIST_KEY = 'nikah_circle_referrals_list_v2';
 const REWARD_STORE_KEY = 'nikah_circle_referral_reward_v2';
 const PENDING_REFERRER_KEY = 'nikah_circle_pending_referrer';
 
+// Special Promo Campaign: NCSMREF110022
+// Validity: 16/11/2026 to 24/11/2026 (Offer period)
+// Reward: 2 MONTHS (60 Days) Free Premium Access
+export const SPECIAL_PROMO_CODE = 'NCSMREF110022';
+export const PROMO_START_DATE = '2026-11-16';
+export const PROMO_END_DATE = '2026-11-24';
+export const PROMO_DURATION_DAYS = 60; // 2 Months Free Premium
+
+// Referral Widget Display Window (Per user request: 24/11/26 മുതൽ 30/11/26 വരെ മാത്രം open)
+export const REFERRAL_WIDGET_START_DATE = '2026-11-24';
+export const REFERRAL_WIDGET_END_DATE = '2026-11-30';
+
+/**
+ * Checks whether the current date (in IST UTC+5:30) falls between startDate and endDate (inclusive)
+ */
+export function isDateInRange(startDateStr: string, endDateStr: string): boolean {
+  try {
+    const now = new Date();
+    const istOffsetMs = 5.5 * 60 * 60 * 1000;
+    const istDate = new Date(now.getTime() + istOffsetMs);
+    const currentDateStr = istDate.toISOString().slice(0, 10);
+    return currentDateStr >= startDateStr && currentDateStr <= endDateStr;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Validates promo code NCSMREF110022 during the active offer window (16/11/2026 to 24/11/2026)
+ */
+export function checkSpecialPromoCode(code?: string | null): {
+  isPromoCode: boolean;
+  isValid: boolean;
+  isExpired: boolean;
+  isNotYetActive: boolean;
+  message: string;
+  durationMonths: number;
+  durationDays: number;
+} {
+  if (!code) {
+    return {
+      isPromoCode: false,
+      isValid: false,
+      isExpired: false,
+      isNotYetActive: false,
+      message: '',
+      durationMonths: 0,
+      durationDays: 0,
+    };
+  }
+
+  const clean = code.trim().toUpperCase();
+  if (clean !== SPECIAL_PROMO_CODE) {
+    return {
+      isPromoCode: false,
+      isValid: false,
+      isExpired: false,
+      isNotYetActive: false,
+      message: '',
+      durationMonths: 0,
+      durationDays: 0,
+    };
+  }
+
+  const now = new Date();
+  const istOffsetMs = 5.5 * 60 * 60 * 1000;
+  const istDate = new Date(now.getTime() + istOffsetMs);
+  const istDateStr = istDate.toISOString().slice(0, 10);
+
+  if (istDateStr < PROMO_START_DATE) {
+    return {
+      isPromoCode: true,
+      isValid: false,
+      isExpired: false,
+      isNotYetActive: true,
+      message: `Offer starts on 16/11/2026. (Offer Period: 16/11/2026 to 24/11/2026).`,
+      durationMonths: 2,
+      durationDays: PROMO_DURATION_DAYS,
+    };
+  }
+
+  if (istDateStr > PROMO_END_DATE) {
+    return {
+      isPromoCode: true,
+      isValid: false,
+      isExpired: true,
+      isNotYetActive: false,
+      message: `Offer expired on 24/11/2026. Code ${SPECIAL_PROMO_CODE} is no longer active.`,
+      durationMonths: 2,
+      durationDays: PROMO_DURATION_DAYS,
+    };
+  }
+
+  return {
+    isPromoCode: true,
+    isValid: true,
+    isExpired: false,
+    isNotYetActive: false,
+    message: `🎉 Offer Active! 2 MONTHS FREE PREMIUM (Valid: 16/11/2026 to 24/11/2026)`,
+    durationMonths: 2,
+    durationDays: PROMO_DURATION_DAYS,
+  };
+}
+
+/**
+ * Checks whether the Referral Rewards Widget ("Share App & Earn Free Premium")
+ * should be visible to users. Per user requirement:
+ * "24/11/26 MUTHAL OPEN CHEITHAAL MATH 30/11/26 VARE MATHRAM OPEN. VIEW EEESAMAYATH MATHI"
+ */
+export function isReferralWidgetOpen(): boolean {
+  try {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('preview_referral') === '1' || params.get('show_referral') === '1') {
+        return true;
+      }
+      if (localStorage.getItem('nikah_circle_is_admin') === 'true') {
+        return true;
+      }
+    }
+  } catch {}
+
+  return isDateInRange(REFERRAL_WIDGET_START_DATE, REFERRAL_WIDGET_END_DATE);
+}
+
+/**
+ * Checks whether the NCSMREF110022 Promo Offer Card should be shown in Hero (16/11/2026 to 24/11/2026)
+ */
+export function isPromoOfferCardActive(): boolean {
+  try {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('preview_promo') === '1') {
+        return true;
+      }
+    }
+  } catch {}
+
+  return isDateInRange(PROMO_START_DATE, PROMO_END_DATE);
+}
+
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 

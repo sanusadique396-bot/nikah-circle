@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { PremiumRequest, normalizeGender } from '../types';
 import { isReferralCodeUsed, markReferralCodeUsed } from '../lib/supabase';
+import { checkSpecialPromoCode, SPECIAL_PROMO_CODE, PROMO_START_DATE, PROMO_END_DATE, PROMO_DURATION_DAYS } from '../lib/referral';
 
 interface Props {
   isOpen: boolean;
@@ -30,6 +31,8 @@ interface Props {
   defaultUserName?: string;
   defaultUserPhone?: string;
   defaultUserGender?: 'Male' | 'Female';
+  initialReferralCode?: string;
+  initialTab?: 'upi_qr' | 'cash_office' | 'free_request';
 }
 
 const PREMIUM_PLANS = [
@@ -66,9 +69,17 @@ export const PremiumModal: React.FC<Props> = ({
   defaultUserName = '',
   defaultUserPhone = '',
   defaultUserGender,
+  initialReferralCode = '',
+  initialTab,
 }) => {
   // Mode: 'upi_qr' | 'cash_office' | 'free_request'
-  const [activeTab, setActiveTab] = useState<'upi_qr' | 'cash_office' | 'free_request'>('upi_qr');
+  const [activeTab, setActiveTab] = useState<'upi_qr' | 'cash_office' | 'free_request'>(() => {
+    if (initialTab) return initialTab;
+    if (initialReferralCode && initialReferralCode.trim().toUpperCase() === SPECIAL_PROMO_CODE) {
+      return 'free_request';
+    }
+    return 'upi_qr';
+  });
   const [selectedPlanId, setSelectedPlanId] = useState('5 Months');
 
   // Form Fields
@@ -80,7 +91,7 @@ export const PremiumModal: React.FC<Props> = ({
   const [utrNumber, setUtrNumber] = useState('');
   const [screenshot, setScreenshot] = useState('');
   const [notes, setNotes] = useState('');
-  const [referralCode, setReferralCode] = useState('');
+  const [referralCode, setReferralCode] = useState(initialReferralCode);
   const [referralError, setReferralError] = useState<string | null>(null);
   const [copiedUpi, setCopiedUpi] = useState(false);
 
@@ -94,7 +105,29 @@ export const PremiumModal: React.FC<Props> = ({
     if (defaultUserName) setName(defaultUserName);
     if (defaultUserPhone) setPhone(defaultUserPhone);
     if (defaultUserGender) setGender(normalizeGender(defaultUserGender));
-  }, [defaultUserName, defaultUserPhone, defaultUserGender, isOpen]);
+
+    // Auto-detect promo or referral code from props or URL cache
+    if (initialReferralCode) {
+      setReferralCode(initialReferralCode.trim().toUpperCase());
+      if (initialReferralCode.trim().toUpperCase() === SPECIAL_PROMO_CODE) {
+        setActiveTab('free_request');
+      }
+    } else {
+      try {
+        const pendingRef = localStorage.getItem('nikah_circle_pending_referrer');
+        if (pendingRef && !referralCode) {
+          const cleanPending = pendingRef.trim().toUpperCase();
+          setReferralCode(cleanPending);
+          if (cleanPending === SPECIAL_PROMO_CODE) {
+            setActiveTab('free_request');
+          }
+        }
+      } catch {}
+    }
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [defaultUserName, defaultUserPhone, defaultUserGender, initialReferralCode, initialTab, isOpen]);
 
   if (!isOpen) return null;
 
@@ -144,6 +177,7 @@ export const PremiumModal: React.FC<Props> = ({
     }
 
     const cleanReferralCode = referralCode.trim().toUpperCase();
+    const promoCheck = checkSpecialPromoCode(cleanReferralCode);
 
     if (activeTab === 'free_request') {
       // Reason or Referral Code - either one is sufficient
@@ -152,8 +186,15 @@ export const PremiumModal: React.FC<Props> = ({
         return;
       }
 
-      // Single-use referral code check
-      if (cleanReferralCode) {
+      // Check special promo code validation (16/11/2026 - 24/11/2026)
+      if (promoCheck.isPromoCode) {
+        if (!promoCheck.isValid) {
+          setReferralError(promoCheck.message);
+          alert(promoCheck.message);
+          return;
+        }
+      } else if (cleanReferralCode) {
+        // Single-use referral code check for regular user codes
         if (isReferralCodeUsed(cleanReferralCode)) {
           setReferralError('This referral code has already been used! Referral codes are single-use only.');
           alert('This referral code has already been used! Referral codes are single-use only.');
@@ -173,12 +214,17 @@ export const PremiumModal: React.FC<Props> = ({
       planName = `${currentPlan.name} (Direct Cash Counter)`;
     } else if (activeTab === 'free_request') {
       planType = 'FREE_REQUEST';
-      planName = 'Premium Free (Girls & Other)';
       amount = 0;
+      if (promoCheck.isValid) {
+        planName = 'Special Promo: 2 Months Free Premium (NCSMREF110022)';
+      } else {
+        planName = 'Premium Free (Girls & Other)';
+      }
     }
 
     setTimeout(() => {
-      if (cleanReferralCode) {
+      // Mark as used only if it is a single-use code (promotional campaign code remains multi-user)
+      if (cleanReferralCode && cleanReferralCode !== SPECIAL_PROMO_CODE) {
         markReferralCodeUsed(cleanReferralCode);
       }
 
@@ -197,7 +243,9 @@ export const PremiumModal: React.FC<Props> = ({
 
       setIsSubmitting(false);
       setSuccessMessage(
-        'Alhamdulillah! Your premium upgrade request has been submitted. It will become active once approved by the Admin.'
+        promoCheck.isValid
+          ? 'Alhamdulillah! 2 Months Free Premium activated successfully with promo code NCSMREF110022! (Valid Nov 16 to Nov 24, 2026)'
+          : 'Alhamdulillah! Your premium upgrade request has been submitted. It will become active once approved by the Admin.'
       );
 
       setTimeout(() => {
@@ -796,12 +844,12 @@ export const PremiumModal: React.FC<Props> = ({
                       </div>
                     </div>
 
-                    {/* Single-Use Referral Code Option */}
+                    {/* Single-Use Referral Code or Promo Code Option */}
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-xs font-bold text-stone-700 flex items-center gap-1.5">
                           <Tag className="w-3.5 h-3.5 text-[#c9973e]" />
-                          <span>Single-Use Referral Code</span>
+                          <span>Referral / Promo Code</span>
                         </label>
                         <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-md">
                           Either reason or referral code is sufficient
@@ -809,6 +857,7 @@ export const PremiumModal: React.FC<Props> = ({
                       </div>
                       <input
                         type="text"
+                        placeholder="Enter Referral Code or NCSMREF110022"
                         value={referralCode}
                         onChange={(e) => {
                           setReferralCode(e.target.value.toUpperCase());
@@ -816,11 +865,41 @@ export const PremiumModal: React.FC<Props> = ({
                         }}
                         className="w-full px-3 py-2 font-mono uppercase tracking-wider rounded-xl border border-stone-300 focus:outline-none focus:border-[#4b001f] bg-white text-xs font-bold text-stone-800"
                       />
+
+                      {/* Dynamic validation for Promo Code NCSMREF110022 */}
+                      {(() => {
+                        const promo = checkSpecialPromoCode(referralCode);
+                        if (promo.isPromoCode && promo.isValid) {
+                          return (
+                            <div className="mt-2 p-2.5 bg-gradient-to-r from-emerald-50 to-amber-50 border border-emerald-300 rounded-xl flex items-start gap-2 animate-in fade-in">
+                              <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                              <div className="text-[11px] text-stone-800 leading-snug">
+                                <p className="font-bold text-emerald-800">
+                                  🎉 Special Promo Verified: 2 MONTHS FREE PREMIUM!
+                                </p>
+                                <p className="text-stone-600 mt-0.5">
+                                  Offer Period: 16/11/2026 – 24/11/2026. Submitting will activate 60 days of full Premium Membership immediately at ₹0!
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        }
+                        if (promo.isPromoCode && !promo.isValid) {
+                          return (
+                            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2 text-[11px] text-red-700">
+                              <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                              <span>{promo.message}</span>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+
                       {referralError && (
                         <p className="text-[11px] text-red-600 mt-1 font-semibold">{referralError}</p>
                       )}
-                      <p className="text-[11px] text-stone-500 mt-1">
-                        🔒 Note: Each referral code can only be used once (Single-Use Only).
+                      <p className="text-[11px] text-stone-500 mt-1.5">
+                        🏷️ Special promo code <strong className="font-mono text-[#4b001f]">NCSMREF110022</strong> gives 2 Months Free (Offer: 16/11/2026 to 24/11/2026). Regular referral codes are single-use.
                       </p>
                     </div>
 
@@ -833,6 +912,8 @@ export const PremiumModal: React.FC<Props> = ({
                       <span>
                         {isSubmitting
                           ? 'Submitting...'
+                          : checkSpecialPromoCode(referralCode).isValid
+                          ? 'CLAIM 2 MONTHS FREE PREMIUM'
                           : 'SUBMIT TO ADMIN'}
                       </span>
                     </button>
