@@ -44,6 +44,8 @@ import {
 import {
   checkAndCaptureUrlReferral,
   recordReferralSignup,
+  recordReferralPremiumUpgrade,
+  syncReferralsWithProfiles,
   getReferralStatus,
 } from './lib/referral';
 import {
@@ -329,7 +331,7 @@ export default function App() {
   const effectivePlanName = useMemo(() => {
     if (userApprovedRequest?.plan_name) return userApprovedRequest.plan_name;
     if (userMatchedProfile?.premium_plan) return userMatchedProfile.premium_plan;
-    if (referralStatus.isRewardActive) return `1 Week Free Premium (${referralStatus.daysRemaining}d left)`;
+    if (referralStatus.isRewardActive) return `Free Premium Reward (${referralStatus.daysRemaining}d left)`;
     if (userPlanName && userPlanName !== 'Free Plan') return userPlanName;
     return effectiveIsPremium ? 'Premium Plan' : 'Free Plan';
   }, [userApprovedRequest, userMatchedProfile, userPlanName, effectiveIsPremium, referralStatus]);
@@ -867,6 +869,7 @@ export default function App() {
 
       setProfiles(finalDeduplicated);
       saveStoredProfiles(finalDeduplicated);
+      syncReferralsWithProfiles(finalDeduplicated);
 
       // Persist any corrected/re-assigned unique member IDs back to Supabase
       if (dbProfiles && dbProfiles.length > 0) {
@@ -1486,9 +1489,9 @@ export default function App() {
     setIsCreateAccountOpen(false);
     setIsEditingProfile(false);
 
-    // Record referral if this is a newly registered member referred via link
+    // Record referral if this is a newly registered member referred via link (1 Signup = 1 Week Free)
     try {
-      const wasReferralRecorded = recordReferralSignup(memberId, data.full_name);
+      const wasReferralRecorded = recordReferralSignup(memberId, data.full_name, data.mobile);
       if (wasReferralRecorded) {
         console.log('Referral signup recorded successfully for referee:', memberId);
       }
@@ -1667,6 +1670,18 @@ export default function App() {
       origin: { y: 0.6 },
     });
 
+    // Record referral premium upgrade for referrer (3 friends taking premium = 1 Month Free)
+    try {
+      recordReferralPremiumUpgrade(
+        targetProf.member_id || targetProf.id,
+        targetProf.full_name,
+        req.phone_number,
+        req.referral_code
+      );
+    } catch (refPremErr) {
+      console.warn('Error recording referral premium upgrade:', refPremErr);
+    }
+
     // Requirement: Multi-Step Biodata Upload Wizard trigger (user can complete or skip anytime)
     if (isAdminApproved) {
       setTimeout(() => {
@@ -1757,6 +1772,18 @@ export default function App() {
     setUserPlanName(target.plan_name);
     localStorage.setItem('nikah_circle_user_is_premium', 'true');
     localStorage.setItem('nikah_circle_user_plan_name', target.plan_name);
+
+    // Record referral premium upgrade for referrer (3 friends taking premium = 1 Month Free)
+    try {
+      recordReferralPremiumUpgrade(
+        target.user_name,
+        target.user_name,
+        target.phone_number,
+        target.referral_code
+      );
+    } catch (refPremErr) {
+      console.warn('Error recording referral premium upgrade:', refPremErr);
+    }
 
     // If candidate has a registered profile, mark it premium & approved; otherwise create it!
     const phoneNorm = target.phone_number ? target.phone_number.replace(/\D/g, '').slice(-8) : '';

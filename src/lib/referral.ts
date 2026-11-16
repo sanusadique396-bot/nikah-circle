@@ -1,30 +1,55 @@
-// Nikah Circle - Referral-Based Temporary Premium Reward System
-// 3 successful new referrals = 1 Week (7 Days) Free Premium Access
+// Nikah Circle - Dual Referral Reward System
+// Rule 1: 1 friend joins via link and creates a profile = 1 Week (7 Days) Free Premium Access
+// Rule 2: 3 friends who joined via link take/upgrade to Premium = 1 Month (30 Days) Free Premium Access
+
+import { Profile } from '../types';
 
 export interface ReferralRecord {
   id: string;
   referrerCode: string;
   refereeMemberId: string;
   refereeName: string;
+  refereePhone?: string;
   timestamp: number;
+  hasCreatedProfile: boolean;
+  hasTakenPremium: boolean;
+  premiumTimestamp?: number;
 }
 
 export interface ReferralStatus {
   referralCode: string;
   referralUrl: string;
+
+  // Tier 1: 1 Referral Signup = 1 Week Free Premium (7 Days)
   totalReferrals: number;
-  currentProgress: number; // 0, 1, or 2 (out of 3)
-  neededForReward: number; // 3 - currentProgress
-  claimedCycles: number;
+  signupRewardsEarned: number;
+
+  // Tier 2: 3 Friends with Premium = 1 Month Free Premium (30 Days)
+  premiumReferralsCount: number;
+  premiumProgress: number; // 0, 1, or 2 (out of 3 for current cycle)
+  premiumNeeded: number; // 3 - premiumProgress
+  premiumRewardsEarned: number; // number of 30-day rewards claimed
+
+  // Active status & expiry
   isRewardActive: boolean;
   rewardExpiresAt: number | null;
   daysRemaining: number;
+  rewardSource?: 'signup' | 'premium' | 'both';
 }
 
-const REFERRALS_LIST_KEY = 'nikah_circle_referrals_list_v1';
-const CLAIMED_CYCLES_KEY = 'nikah_circle_claimed_cycles_v1';
-const REWARD_STORE_KEY = 'nikah_circle_referral_reward_v1';
+interface StoredReward {
+  active: boolean;
+  expiresAt: number;
+  claimedSignupCount?: number;
+  claimedPremiumCycles?: number;
+}
+
+const REFERRALS_LIST_KEY = 'nikah_circle_referrals_list_v2';
+const REWARD_STORE_KEY = 'nikah_circle_referral_reward_v2';
 const PENDING_REFERRER_KEY = 'nikah_circle_pending_referrer';
+
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 // Parse and store pending referrer code from URL (?ref=CODE)
 export function checkAndCaptureUrlReferral(): string | null {
@@ -60,10 +85,24 @@ export function clearPendingReferrerCode(): void {
 export function getStoredReferrals(): ReferralRecord[] {
   try {
     if (typeof localStorage === 'undefined') return [];
-    const raw = localStorage.getItem(REFERRALS_LIST_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
+    // Migrate from v1 if present
+    const rawV2 = localStorage.getItem(REFERRALS_LIST_KEY);
+    if (rawV2) {
+      const parsed = JSON.parse(rawV2);
       if (Array.isArray(parsed)) return parsed;
+    }
+    const rawV1 = localStorage.getItem('nikah_circle_referrals_list_v1');
+    if (rawV1) {
+      const parsed = JSON.parse(rawV1);
+      if (Array.isArray(parsed)) {
+        const migrated: ReferralRecord[] = parsed.map((p) => ({
+          ...p,
+          hasCreatedProfile: true,
+          hasTakenPremium: Boolean((p as any).hasTakenPremium),
+        }));
+        saveStoredReferrals(migrated);
+        return migrated;
+      }
     }
   } catch {}
   return [];
@@ -76,40 +115,31 @@ export function saveStoredReferrals(list: ReferralRecord[]): void {
   } catch {}
 }
 
-function getClaimedCyclesMap(): Record<string, number> {
-  try {
-    if (typeof localStorage === 'undefined') return {};
-    const raw = localStorage.getItem(CLAIMED_CYCLES_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return {};
-}
-
-function saveClaimedCyclesMap(map: Record<string, number>): void {
-  try {
-    if (typeof localStorage === 'undefined') return;
-    localStorage.setItem(CLAIMED_CYCLES_KEY, JSON.stringify(map));
-  } catch {}
-}
-
-function getRewardsMap(): Record<string, { active: boolean; expiresAt: number }> {
+function getRewardsMap(): Record<string, StoredReward> {
   try {
     if (typeof localStorage === 'undefined') return {};
     const raw = localStorage.getItem(REWARD_STORE_KEY);
     if (raw) return JSON.parse(raw);
+    const rawV1 = localStorage.getItem('nikah_circle_referral_reward_v1');
+    if (rawV1) return JSON.parse(rawV1);
   } catch {}
   return {};
 }
 
-function saveRewardsMap(map: Record<string, { active: boolean; expiresAt: number }>): void {
+function saveRewardsMap(map: Record<string, StoredReward>): void {
   try {
     if (typeof localStorage === 'undefined') return;
     localStorage.setItem(REWARD_STORE_KEY, JSON.stringify(map));
   } catch {}
 }
 
-// Record a new sign-up and check if 3 referrals have been reached
-export function recordReferralSignup(refereeMemberId: string, refereeName: string): boolean {
+// Rule 1: Record a new sign-up where the referred friend creates a profile.
+// Automatically awards 1 Week (7 Days) Free Premium immediately!
+export function recordReferralSignup(
+  refereeMemberId: string,
+  refereeName: string,
+  refereePhone?: string
+): boolean {
   try {
     const referrerCode = getPendingReferrerCode();
     if (!referrerCode) return false;
@@ -124,7 +154,9 @@ export function recordReferralSignup(refereeMemberId: string, refereeName: strin
     const list = getStoredReferrals();
     // Prevent duplicate referral counting for the same referee
     const alreadyRecorded = list.some(
-      (r) => r.refereeMemberId && r.refereeMemberId.trim().toUpperCase() === normalizedReferee
+      (r) =>
+        (r.refereeMemberId && r.refereeMemberId.trim().toUpperCase() === normalizedReferee) ||
+        (refereePhone && r.refereePhone && r.refereePhone.replace(/\D/g, '').slice(-8) === refereePhone.replace(/\D/g, '').slice(-8))
     );
     if (alreadyRecorded) {
       clearPendingReferrerCode();
@@ -136,32 +168,31 @@ export function recordReferralSignup(refereeMemberId: string, refereeName: strin
       referrerCode,
       refereeMemberId: normalizedReferee,
       refereeName: refereeName || 'New Member',
+      refereePhone: refereePhone || undefined,
       timestamp: Date.now(),
+      hasCreatedProfile: true,
+      hasTakenPremium: false,
     };
 
     const updatedList = [...list, newRecord];
     saveStoredReferrals(updatedList);
     clearPendingReferrerCode();
 
-    // Check if this newly earned referral completed a batch of 3!
-    const forThisReferrer = updatedList.filter((r) => r.referrerCode === referrerCode);
-    const claimedMap = getClaimedCyclesMap();
-    const claimed = claimedMap[referrerCode] || 0;
-    const progress = forThisReferrer.length - claimed * 3;
+    // RULE 1: AWARD 1 WEEK (7 DAYS) FREE PREMIUM IMMEDIATELY UPON 1 FRIEND'S SIGNUP!
+    const rewards = getRewardsMap();
+    const current = rewards[referrerCode] || {
+      active: false,
+      expiresAt: 0,
+      claimedSignupCount: 0,
+      claimedPremiumCycles: 0,
+    };
 
-    if (progress >= 3) {
-      // Award 7 Days (1 Week) Free Premium Access
-      claimedMap[referrerCode] = claimed + 1;
-      saveClaimedCyclesMap(claimedMap);
-
-      const rewards = getRewardsMap();
-      const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
-      rewards[referrerCode] = {
-        active: true,
-        expiresAt: Date.now() + SEVEN_DAYS_MS,
-      };
-      saveRewardsMap(rewards);
-    }
+    const baseExpiry = current.expiresAt && current.expiresAt > Date.now() ? current.expiresAt : Date.now();
+    current.expiresAt = baseExpiry + SEVEN_DAYS_MS;
+    current.active = true;
+    current.claimedSignupCount = (current.claimedSignupCount || 0) + 1;
+    rewards[referrerCode] = current;
+    saveRewardsMap(rewards);
 
     return true;
   } catch (e) {
@@ -170,40 +201,140 @@ export function recordReferralSignup(refereeMemberId: string, refereeName: strin
   }
 }
 
-// Calculate the full status, progress (0/3), and auto-expiry for a given member
+// Rule 2: When 3 friends who joined through someone's link take/purchase a Premium Plan,
+// automatically awards 1 Month (30 Days) Free Premium!
+export function recordReferralPremiumUpgrade(
+  refereeMemberIdOrPhone: string,
+  refereeName?: string,
+  refereePhone?: string,
+  explicitReferralCode?: string | null
+): boolean {
+  try {
+    const list = getStoredReferrals();
+    const targetNorm = (refereeMemberIdOrPhone || '').trim().toUpperCase();
+    const phoneNorm = refereePhone ? refereePhone.replace(/\D/g, '').slice(-8) : (refereeMemberIdOrPhone ? refereeMemberIdOrPhone.replace(/\D/g, '').slice(-8) : '');
+
+    let matchedRecordIndex = list.findIndex(
+      (r) =>
+        (r.refereeMemberId && r.refereeMemberId.trim().toUpperCase() === targetNorm) ||
+        (phoneNorm && r.refereePhone && r.refereePhone.replace(/\D/g, '').slice(-8) === phoneNorm)
+    );
+
+    let referrerCode = '';
+
+    if (matchedRecordIndex >= 0) {
+      referrerCode = list[matchedRecordIndex].referrerCode;
+      if (!list[matchedRecordIndex].hasTakenPremium) {
+        list[matchedRecordIndex].hasTakenPremium = true;
+        list[matchedRecordIndex].premiumTimestamp = Date.now();
+        saveStoredReferrals(list);
+      }
+    } else if (explicitReferralCode && explicitReferralCode.trim().length >= 3) {
+      // Direct referral code entered at checkout
+      referrerCode = explicitReferralCode.trim().toUpperCase();
+      const newRec: ReferralRecord = {
+        id: `ref-prem-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        referrerCode,
+        refereeMemberId: targetNorm || `MEMBER-${Date.now()}`,
+        refereeName: refereeName || 'Premium Subscriber',
+        refereePhone: refereePhone || phoneNorm,
+        timestamp: Date.now(),
+        hasCreatedProfile: true,
+        hasTakenPremium: true,
+        premiumTimestamp: Date.now(),
+      };
+      list.push(newRec);
+      saveStoredReferrals(list);
+    }
+
+    if (!referrerCode) return false;
+
+    // Check how many premium referees this referrer has
+    const userReferrals = list.filter((r) => r.referrerCode === referrerCode && r.hasTakenPremium);
+    const premiumCount = userReferrals.length;
+
+    const rewards = getRewardsMap();
+    const current = rewards[referrerCode] || {
+      active: false,
+      expiresAt: 0,
+      claimedSignupCount: 0,
+      claimedPremiumCycles: 0,
+    };
+
+    const claimedCycles = current.claimedPremiumCycles || 0;
+    const earnedCycles = Math.floor(premiumCount / 3);
+
+    if (earnedCycles > claimedCycles) {
+      const newCyclesToAward = earnedCycles - claimedCycles;
+      const baseExpiry = current.expiresAt && current.expiresAt > Date.now() ? current.expiresAt : Date.now();
+      current.expiresAt = baseExpiry + newCyclesToAward * THIRTY_DAYS_MS;
+      current.active = true;
+      current.claimedPremiumCycles = earnedCycles;
+      rewards[referrerCode] = current;
+      saveRewardsMap(rewards);
+    }
+
+    return true;
+  } catch (e) {
+    console.warn('Could not record referral premium upgrade', e);
+    return false;
+  }
+}
+
+// Auto-sync referrals against actual profiles to guarantee consistency
+export function syncReferralsWithProfiles(profiles: Profile[]): void {
+  try {
+    if (!profiles || profiles.length === 0) return;
+    const list = getStoredReferrals();
+    let hasChanges = false;
+
+    for (const record of list) {
+      if (record.hasTakenPremium) continue;
+
+      const normId = record.refereeMemberId?.trim().toUpperCase();
+      const normPhone = record.refereePhone ? record.refereePhone.replace(/\D/g, '').slice(-8) : '';
+
+      const matched = profiles.find(
+        (p) =>
+          (p.member_id && p.member_id.trim().toUpperCase() === normId) ||
+          (normPhone && p.mobile && p.mobile.replace(/\D/g, '').slice(-8) === normPhone) ||
+          (normPhone && p.guardian_mobile && p.guardian_mobile.replace(/\D/g, '').slice(-8) === normPhone)
+      );
+
+      if (matched && (matched.is_premium || matched.premium_plan)) {
+        record.hasTakenPremium = true;
+        record.premiumTimestamp = Date.now();
+        hasChanges = true;
+      }
+    }
+
+    if (hasChanges) {
+      saveStoredReferrals(list);
+    }
+  } catch {}
+}
+
+// Calculate the full status, progress (0/1 signup, 0/3 premium), and auto-expiry for a given member
 export function getReferralStatus(memberId?: string | null): ReferralStatus {
   const code = (memberId || 'NCSM1003').trim().toUpperCase();
   const origin = typeof window !== 'undefined' && window.location.origin
     ? window.location.origin
-    : 'https://nikahcircle.com';
+    : 'https://nikah-circle.vercel.app';
   const referralUrl = `${origin}/?ref=${encodeURIComponent(code)}`;
 
   const allReferrals = getStoredReferrals();
   const userReferrals = allReferrals.filter((r) => r.referrerCode === code);
+
+  // 1. Tier 1: Signups
   const totalReferrals = userReferrals.length;
+  const signupRewardsEarned = totalReferrals; // Each 1 signup = 1 week free
 
-  const claimedMap = getClaimedCyclesMap();
-  let claimedCycles = claimedMap[code] || 0;
-
-  // Check if unawarded batch of 3 exists
-  let currentProgress = totalReferrals - claimedCycles * 3;
-  if (currentProgress >= 3) {
-    claimedCycles += 1;
-    claimedMap[code] = claimedCycles;
-    saveClaimedCyclesMap(claimedMap);
-
-    const rewards = getRewardsMap();
-    rewards[code] = {
-      active: true,
-      expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
-    };
-    saveRewardsMap(rewards);
-    currentProgress = totalReferrals - claimedCycles * 3;
-  }
-
-  // Ensure current progress is capped within 0..2
-  currentProgress = Math.max(0, currentProgress);
-  const neededForReward = Math.max(1, 3 - currentProgress);
+  // 2. Tier 2: Premium Upgrades
+  const premiumReferrals = userReferrals.filter((r) => r.hasTakenPremium);
+  const premiumReferralsCount = premiumReferrals.length;
+  const premiumProgress = premiumReferralsCount % 3;
+  const premiumNeeded = premiumProgress === 0 && premiumReferralsCount > 0 ? 3 : (3 - premiumProgress);
+  const premiumRewardsEarned = Math.floor(premiumReferralsCount / 3);
 
   // Check reward active status and auto-expiry
   const rewards = getRewardsMap();
@@ -211,14 +342,20 @@ export function getReferralStatus(memberId?: string | null): ReferralStatus {
   let isRewardActive = false;
   let rewardExpiresAt: number | null = null;
   let daysRemaining = 0;
+  let rewardSource: 'signup' | 'premium' | 'both' | undefined;
 
   if (reward && reward.expiresAt) {
     if (Date.now() < reward.expiresAt) {
       isRewardActive = true;
       rewardExpiresAt = reward.expiresAt;
       daysRemaining = Math.max(1, Math.ceil((reward.expiresAt - Date.now()) / (24 * 60 * 60 * 1000)));
+
+      const hasSignup = (reward.claimedSignupCount || 0) > 0;
+      const hasPrem = (reward.claimedPremiumCycles || 0) > 0;
+      if (hasSignup && hasPrem) rewardSource = 'both';
+      else if (hasPrem) rewardSource = 'premium';
+      else if (hasSignup) rewardSource = 'signup';
     } else {
-      // Auto-expired!
       isRewardActive = false;
       rewardExpiresAt = null;
       daysRemaining = 0;
@@ -234,16 +371,19 @@ export function getReferralStatus(memberId?: string | null): ReferralStatus {
     referralCode: code,
     referralUrl,
     totalReferrals,
-    currentProgress,
-    neededForReward,
-    claimedCycles,
+    signupRewardsEarned,
+    premiumReferralsCount,
+    premiumProgress,
+    premiumNeeded,
+    premiumRewardsEarned,
     isRewardActive,
     rewardExpiresAt,
     daysRemaining,
+    rewardSource,
   };
 }
 
 export function getWhatsAppShareUrl(referralUrl: string, memberId?: string): string {
-  const message = `Assalamu Alaikum! Join me on Nikah Circle — Kerala & GCC's trusted Islamic Matrimony platform. Find pious matches with photo modesty & guardian facilitation:\n\n${referralUrl}`;
+  const message = `Assalamu Alaikum! Join me on Nikah Circle — Kerala & GCC's trusted Islamic Matrimony platform. Find pious Sunni brides & grooms with photo modesty & verified biodata.\n\nRegister free here:\n${referralUrl}`;
   return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
 }
