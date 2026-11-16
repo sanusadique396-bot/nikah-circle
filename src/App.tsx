@@ -38,6 +38,8 @@ import {
   ensureUniqueSequentialMemberIds,
   decodeProfileMetadata,
   hasCompletedBiodata,
+  isAdminAddedProfile,
+  isAdminAddedGroomWithPhone,
   resolveProfilePhoto,
   DEFAULT_BRIDE_AVATAR,
 } from './lib/supabase';
@@ -224,6 +226,57 @@ export default function App() {
   useEffect(() => {
     saveStoredProposals(allProposals);
   }, [allProposals]);
+
+  // Auto-sync & auto-approve existing proposals or sent interests for Admin-Added Grooms with contact numbers
+  useEffect(() => {
+    if (!profiles || profiles.length === 0) return;
+
+    let proposalsChanged = false;
+    const syncedProposals = allProposals.map((prop) => {
+      if (prop.status === 'accepted') return prop;
+      const target = profiles.find(
+        (p) =>
+          p.id === prop.recipient_profile_id ||
+          (p.member_id && prop.recipient_member_id && p.member_id.toUpperCase() === prop.recipient_member_id.toUpperCase())
+      );
+      if (target && isAdminAddedGroomWithPhone(target)) {
+        proposalsChanged = true;
+        return {
+          ...prop,
+          status: 'accepted' as const,
+          notes: prop.notes || `Assalamu Alaikum. Proposal interest with ${target.full_name} (${target.member_id || target.id}) automatically approved.`,
+        };
+      }
+      return prop;
+    });
+
+    if (proposalsChanged) {
+      setAllProposals(syncedProposals);
+      saveStoredProposals(syncedProposals);
+    }
+
+    // Auto-sync interestsMap for the active user
+    let interestsChanged = false;
+    const nextInterests = { ...interestsMap };
+    Object.keys(nextInterests).forEach((profId) => {
+      if (nextInterests[profId] === 'pending') {
+        const target = profiles.find(
+          (p) => p.id === profId || (p.member_id && p.member_id.toUpperCase() === profId.toUpperCase())
+        );
+        if (target && isAdminAddedGroomWithPhone(target)) {
+          nextInterests[profId] = 'accepted';
+          if (target.id) nextInterests[target.id] = 'accepted';
+          if (target.member_id) nextInterests[target.member_id] = 'accepted';
+          interestsChanged = true;
+        }
+      }
+    });
+
+    if (interestsChanged) {
+      setInterestsMap(nextInterests);
+      saveStoredUserSentInterests(currentUserKey, nextInterests);
+    }
+  }, [profiles, currentUserKey]);
 
 
 
@@ -1125,12 +1178,22 @@ export default function App() {
       return;
     }
 
-    // Check if the target profile has auto-accept enabled
-    const isAutoAccept = targetProfile.auto_accept_interests === true || targetProfile.id === 'ncsm1027-sajeena' || targetProfile.member_id === 'NCSM1027';
+    // Check if the target profile has auto-accept enabled or is an admin-added groom with contact number
+    const isAdminGroomAutoAccept = isAdminAddedGroomWithPhone(targetProfile);
+    const isAutoAccept =
+      targetProfile.auto_accept_interests === true ||
+      targetProfile.id === 'ncsm1027-sajeena' ||
+      targetProfile.member_id === 'NCSM1027' ||
+      isAdminGroomAutoAccept;
     const proposalStatus = isAutoAccept ? ('accepted' as const) : ('pending' as const);
 
     // 1. Update sender's sent interestsMap
-    const updatedMap = { ...interestsMap, [profileId]: proposalStatus };
+    const updatedMap = {
+      ...interestsMap,
+      [profileId]: proposalStatus,
+      ...(targetProfile.id ? { [targetProfile.id]: proposalStatus } : {}),
+      ...(targetProfile.member_id ? { [targetProfile.member_id]: proposalStatus } : {}),
+    };
     setInterestsMap(updatedMap);
     saveStoredUserSentInterests(currentUserKey, updatedMap);
 
@@ -1167,7 +1230,9 @@ export default function App() {
       received_at: 'Today, Just now',
       status: proposalStatus,
       notes: isAutoAccept
-        ? `Assalamu Alaikum. Proposal interest with ${targetProfile.full_name} (${recipientMemberId}) automatically accepted per profile policy.`
+        ? isAdminGroomAutoAccept
+          ? `Assalamu Alaikum. Proposal interest with ${targetProfile.full_name} (${recipientMemberId}) automatically approved.`
+          : `Assalamu Alaikum. Proposal interest with ${targetProfile.full_name} (${recipientMemberId}) automatically accepted per profile policy.`
         : `Assalamu Alaikum. ${senderName} (${senderMemberId}) expressed matrimonial proposal interest with ${targetProfile.full_name} (${recipientMemberId}).`,
       recipient_profile_id: targetProfile.id,
       recipient_member_id: recipientMemberId,
@@ -1190,7 +1255,11 @@ export default function App() {
     saveStoredProposals(updatedAllProposals);
 
     if (isAutoAccept) {
-      showToast(`Proposal to ${targetProfile.full_name} accepted automatically! Contact & biodata are unlocked.`);
+      showToast(
+        isAdminGroomAutoAccept
+          ? `Proposal interest for ${targetProfile.full_name} approved automatically! Contact number & biodata unlocked.`
+          : `Proposal to ${targetProfile.full_name} accepted automatically! Contact & biodata are unlocked.`
+      );
       confetti({
         particleCount: 75,
         spread: 60,
@@ -2838,7 +2907,7 @@ export default function App() {
                       onCancelInterest={handleCancelInterest}
                       isBookmarked={bookmarks.includes(profile.id)}
                       onToggleBookmark={handleToggleBookmark}
-                      interestStatus={interestsMap[profile.id]}
+                      interestStatus={interestsMap[profile.id] || (profile.member_id ? interestsMap[profile.member_id] : null)}
                       isUserPremium={effectiveIsPremium}
                       onOpenPremium={handleOpenPremium}
                       currentUserGender={currentUserProfile?.gender}
@@ -3026,7 +3095,7 @@ export default function App() {
                   onCancelInterest={handleCancelInterest}
                   isBookmarked={bookmarks.includes(profile.id)}
                   onToggleBookmark={handleToggleBookmark}
-                  interestStatus={interestsMap[profile.id]}
+                  interestStatus={interestsMap[profile.id] || (profile.member_id ? interestsMap[profile.member_id] : null)}
                   isUserPremium={effectiveIsPremium}
                   onOpenPremium={handleOpenPremium}
                   currentUserGender={currentUserProfile?.gender}
@@ -3089,7 +3158,7 @@ export default function App() {
                   onCancelInterest={handleCancelInterest}
                   isBookmarked={bookmarks.includes(profile.id)}
                   onToggleBookmark={handleToggleBookmark}
-                  interestStatus={interestsMap[profile.id]}
+                  interestStatus={interestsMap[profile.id] || (profile.member_id ? interestsMap[profile.member_id] : null)}
                   isUserPremium={effectiveIsPremium}
                   onOpenPremium={() => setIsPremiumOpen(true)}
                   currentUserGender={currentUserProfile?.gender}
@@ -3650,7 +3719,7 @@ export default function App() {
         onClose={() => setSelectedProfile(null)}
         onSendInterest={handleSendInterest}
         onCancelInterest={handleCancelInterest}
-        interestStatus={selectedProfile ? interestsMap[selectedProfile.id] : null}
+        interestStatus={selectedProfile ? (interestsMap[selectedProfile.id] || (selectedProfile.member_id ? interestsMap[selectedProfile.member_id] : null)) : null}
         isBookmarked={selectedProfile ? bookmarks.includes(selectedProfile.id) : false}
         onToggleBookmark={handleToggleBookmark}
         onOpenPremium={() => {

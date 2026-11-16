@@ -1668,6 +1668,41 @@ export function hasCompletedBiodata(p?: Partial<Profile> | null): boolean {
   return false;
 }
 
+/**
+ * Helper to identify whether a profile was added by the admin
+ * (pre-seeded verified profile, manual admin entry, CASH_ADMIN, or admin source).
+ */
+export function isAdminAddedProfile(p?: Partial<Profile> | null): boolean {
+  if (!p) return false;
+  // 1. Explicit admin flags or cash registration
+  if (p.registration_type === 'CASH_ADMIN') return true;
+  if ((p as any).source === 'admin' || (p as any).created_by === 'admin') return true;
+  // 2. Default verified profiles seeded in the system
+  if (DEFAULT_PROFILES.some((dp) => dp.id === p.id || (dp.member_id && p.member_id && dp.member_id.toUpperCase() === p.member_id.toUpperCase()))) return true;
+  // 3. Known sequential admin-added profile IDs
+  if (p.member_id && ['NCSM1004', 'NCSM1005', 'NCSM1006', 'NCSM1007', 'NCSM1008', 'NCSM1009', 'NCSM1010', 'NCSM1011', 'NCSM1012'].includes(p.member_id.toUpperCase())) return true;
+  // 4. Missing auth_user_id and no independent user email (or admin email)
+  if (!p.auth_user_id && (!p.email || p.email.toLowerCase().trim() === 'nikahcircle01@gmail.com')) return true;
+  // 5. Sequential NCSM profiles without independent auth user
+  if (p.member_id && p.member_id.toUpperCase().startsWith('NCSM') && !p.auth_user_id) return true;
+  return false;
+}
+
+/**
+ * Checks if a profile is an admin-added Groom (Male) profile with a valid contact number (mobile or guardian_mobile).
+ * Any proposal interest sent to these profiles is automatically approved so the contacting family
+ * can immediately view contact details and reach out on WhatsApp/Call.
+ */
+export function isAdminAddedGroomWithPhone(p?: Partial<Profile> | null): boolean {
+  if (!p) return false;
+  const isGroom = normalizeGender(p.gender) === 'Male';
+  if (!isGroom) return false;
+  if (!isAdminAddedProfile(p)) return false;
+  const rawPhone = p.mobile || p.guardian_mobile;
+  const cleanPhone = (rawPhone || '').replace(/\D/g, '');
+  return cleanPhone.length >= 7;
+}
+
 // Strict deduplication function to prevent duplicate user cards, tables, or ghost profiles
 export function deduplicateProfiles(inputProfiles: Profile[]): Profile[] {
   const result: Profile[] = [];

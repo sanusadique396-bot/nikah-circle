@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { Profile, Payment, PremiumRequest, IncomingInterest, normalizeGender, resolveProfilePhoto, DEFAULT_BRIDE_AVATAR } from '../types';
-import { deduplicateProfiles, ensureUniqueSequentialMemberIds, hasCompletedBiodata, DEFAULT_PROFILES } from '../lib/supabase';
+import { deduplicateProfiles, ensureUniqueSequentialMemberIds, hasCompletedBiodata, DEFAULT_PROFILES, isAdminAddedProfile, isAdminAddedGroomWithPhone } from '../lib/supabase';
 import {
   LayoutDashboard,
   Users,
@@ -178,17 +178,7 @@ export const AdminPortal: React.FC<Props> = ({
 
   // Helper to distinguish Admin-Added Profiles from self-registered user accounts
   const isAdminAdded = (p: Profile): boolean => {
-    if (!p) return false;
-    // 1. Explicit admin flags or cash registration
-    if (p.registration_type === 'CASH_ADMIN') return true;
-    if ((p as any).source === 'admin' || (p as any).created_by === 'admin') return true;
-    // 2. Default verified profiles
-    if (DEFAULT_PROFILES.some((dp) => dp.id === p.id || (dp.member_id && p.member_id && dp.member_id.toUpperCase() === p.member_id.toUpperCase()))) return true;
-    // 3. Known sequential admin-added profile IDs
-    if (p.member_id && ['NCSM1004', 'NCSM1005', 'NCSM1006', 'NCSM1007', 'NCSM1008', 'NCSM1009', 'NCSM1010', 'NCSM1011', 'NCSM1012'].includes(p.member_id)) return true;
-    // 4. Missing auth_user_id and no independent user email (or admin email)
-    if (!p.auth_user_id && (!p.email || p.email.toLowerCase().trim() === 'nikahcircle01@gmail.com')) return true;
-    return false;
+    return isAdminAddedProfile(p);
   };
 
   const adminAddedProfiles = useMemo(() => {
