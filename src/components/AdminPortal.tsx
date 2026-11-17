@@ -47,6 +47,8 @@ import {
   Inbox,
   ChevronDown,
   ChevronUp,
+  Star,
+  StarOff,
 } from 'lucide-react';
 
 interface Props {
@@ -65,6 +67,7 @@ interface Props {
   onRejectPremiumRequest: (id: string) => Promise<void>;
   onDeactivatePremium?: (profileIdOrPhone: string) => Promise<void>;
   onClearAllPremiumAccounts?: () => Promise<void>;
+  onToggleFeatured?: (profile: Profile) => Promise<void> | void;
   onExitAdmin: () => void;
   adminEmail: string;
   onRefreshData?: () => Promise<void>;
@@ -129,6 +132,7 @@ export const AdminPortal: React.FC<Props> = ({
   onRejectPremiumRequest,
   onDeactivatePremium,
   onClearAllPremiumAccounts,
+  onToggleFeatured,
   onExitAdmin,
   adminEmail,
   onRefreshData,
@@ -165,6 +169,7 @@ export const AdminPortal: React.FC<Props> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [regFilter, setRegFilter] = useState('');
+  const [featuredFilter, setFeaturedFilter] = useState<'ALL' | 'FEATURED' | 'STANDARD'>('ALL');
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
   const [viewingProfile, setViewingProfile] = useState<Profile | null>(null);
   const [previewScreenshotUrl, setPreviewScreenshotUrl] = useState<string | null>(null);
@@ -281,18 +286,35 @@ export const AdminPortal: React.FC<Props> = ({
     }
   };
 
+  const featuredCount = useMemo(() => profiles.filter((p) => p.is_featured === true).length, [profiles]);
+
+  const handleToggleFeaturedClick = async (profile: Profile) => {
+    if (onToggleFeatured) {
+      await onToggleFeatured(profile);
+    } else {
+      await onSaveProfile({
+        ...profile,
+        is_featured: profile.is_featured !== true,
+      });
+    }
+  };
+
   // Filtered Profiles
   const filteredProfiles = profiles.filter((p) => {
     const matchesSearch =
       !searchQuery ||
-      [p.full_name, p.mobile, p.guardian_mobile, p.email, p.location, p.education, p.profession]
+      [p.full_name, p.mobile, p.guardian_mobile, p.email, p.location, p.education, p.profession, p.member_id]
         .filter(Boolean)
         .join(' ')
         .toLowerCase()
         .includes(searchQuery.toLowerCase());
     const matchesStatus = !statusFilter || p.profile_status === statusFilter;
     const matchesReg = !regFilter || p.registration_type === regFilter;
-    return matchesSearch && matchesStatus && matchesReg;
+    const matchesFeatured =
+      featuredFilter === 'ALL' ||
+      (featuredFilter === 'FEATURED' && p.is_featured === true) ||
+      (featuredFilter === 'STANDARD' && p.is_featured !== true);
+    return matchesSearch && matchesStatus && matchesReg && matchesFeatured;
   });
 
   // Dedicated Full Biodata Directory Profiles (Strictly Verified Candidates & Premium Members with Completed Biodata)
@@ -1384,6 +1406,30 @@ export const AdminPortal: React.FC<Props> = ({
                                 )}
                               </div>
                             </div>
+
+                            {/* Home Featured Toggle Button */}
+                            <button
+                              type="button"
+                              onClick={() => handleToggleFeaturedClick(p)}
+                              className={`w-full py-1.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                                p.is_featured
+                                  ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 shadow-2xs'
+                                  : 'bg-stone-50 hover:bg-stone-100 text-stone-600 border border-stone-200'
+                              }`}
+                              title={p.is_featured ? 'Click to hide from Homepage Featured section' : 'Click to show on Homepage Featured section'}
+                            >
+                              {p.is_featured ? (
+                                <>
+                                  <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-600" />
+                                  <span>⭐ Featured on Home Page (Showing)</span>
+                                </>
+                              ) : (
+                                <>
+                                  <StarOff className="w-3.5 h-3.5 text-stone-400" />
+                                  <span>☆ Show in Home Featured Section</span>
+                                </>
+                              )}
+                            </button>
 
                             <div className="flex items-center gap-2">
                               <button
@@ -2918,6 +2964,16 @@ export const AdminPortal: React.FC<Props> = ({
                   <option value="PENDING">PENDING</option>
                   <option value="REJECTED">REJECTED</option>
                 </select>
+
+                <select
+                  value={featuredFilter}
+                  onChange={(e) => setFeaturedFilter(e.target.value as any)}
+                  className="px-3 py-2 text-xs rounded-xl border border-stone-300 bg-white font-medium text-stone-700"
+                >
+                  <option value="ALL">All Display Types</option>
+                  <option value="FEATURED">⭐ Featured on Home ({featuredCount})</option>
+                  <option value="STANDARD">☆ Not Featured on Home</option>
+                </select>
               </div>
 
               <button
@@ -2936,6 +2992,7 @@ export const AdminPortal: React.FC<Props> = ({
                       <th className="p-3.5">Candidate</th>
                       <th className="p-3.5">Guardian Contact</th>
                       <th className="p-3.5">Location</th>
+                      <th className="p-3.5">Featured on Home</th>
                       <th className="p-3.5">Premium</th>
                       <th className="p-3.5">Status</th>
                       <th className="p-3.5 text-right">Actions</th>
@@ -2974,6 +3031,30 @@ export const AdminPortal: React.FC<Props> = ({
                           )}
                         </td>
                         <td className="p-3.5 text-stone-600">{p.location || '-'}</td>
+                        <td className="p-3.5">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleFeaturedClick(p)}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                              p.is_featured
+                                ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 shadow-2xs'
+                                : 'bg-stone-100 hover:bg-stone-200 text-stone-600 border border-stone-200'
+                            }`}
+                            title={p.is_featured ? 'Currently showing in Home Featured section. Click to hide.' : 'Currently hidden from Home Featured section. Click to show.'}
+                          >
+                            {p.is_featured ? (
+                              <>
+                                <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-600" />
+                                <span>Featured (Showing)</span>
+                              </>
+                            ) : (
+                              <>
+                                <StarOff className="w-3.5 h-3.5 text-stone-400" />
+                                <span>Show on Home</span>
+                              </>
+                            )}
+                          </button>
+                        </td>
                         <td className="p-3.5">
                           {p.is_premium ? (
                             <span className="text-[10px] font-bold text-[#c9973e]">
@@ -3290,13 +3371,13 @@ export const AdminPortal: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* Verified & Premium Toggles */}
-              <div className="p-4 rounded-2xl bg-[#fff6fa] border border-[#eadfe4] flex items-center justify-between">
+              {/* Verified, Premium & Home Featured Toggles */}
+              <div className="p-4 rounded-2xl bg-[#fff6fa] border border-[#eadfe4] flex flex-wrap items-center justify-between gap-3">
                 <span className="font-serif font-bold text-sm text-[#4b001f]">
-                  Privilege Flags
+                  Privilege & Visibility Flags
                 </span>
-                <div className="flex items-center gap-4 text-xs font-semibold">
-                  <label className="inline-flex items-center gap-1.5 cursor-pointer">
+                <div className="flex flex-wrap items-center gap-3 text-xs font-semibold">
+                  <label className="inline-flex items-center gap-1.5 cursor-pointer bg-white px-2.5 py-1 rounded-lg border border-stone-200">
                     <input
                       type="checkbox"
                       checked={formData.is_verified || false}
@@ -3305,7 +3386,7 @@ export const AdminPortal: React.FC<Props> = ({
                     />
                     <span>Verified Badge</span>
                   </label>
-                  <label className="inline-flex items-center gap-1.5 cursor-pointer">
+                  <label className="inline-flex items-center gap-1.5 cursor-pointer bg-white px-2.5 py-1 rounded-lg border border-stone-200">
                     <input
                       type="checkbox"
                       checked={formData.is_premium || false}
@@ -3313,6 +3394,16 @@ export const AdminPortal: React.FC<Props> = ({
                       className="rounded text-[#4b001f]"
                     />
                     <span>Active Premium Member</span>
+                  </label>
+                  <label className="inline-flex items-center gap-1.5 cursor-pointer bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-300 text-amber-900">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_featured ?? false}
+                      onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
+                      className="rounded text-amber-600 focus:ring-amber-500"
+                    />
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-600" />
+                    <span>Featured on Home Page</span>
                   </label>
                 </div>
               </div>

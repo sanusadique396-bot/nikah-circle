@@ -2238,6 +2238,7 @@ export default function App() {
         ...existing!,
         ...profileData,
         gender: resolvedGender,
+        is_featured: profileData.is_featured !== undefined ? profileData.is_featured : existing?.is_featured,
         profile_photo: resolveProfilePhoto({
           gender: resolvedGender,
           profile_photo: profileData.profile_photo !== undefined ? profileData.profile_photo : existing?.profile_photo,
@@ -2343,6 +2344,32 @@ export default function App() {
         } catch {}
       }
     }
+  };
+
+  const handleToggleFeatured = async (targetProfile: Profile) => {
+    const newFeaturedState = targetProfile.is_featured !== true;
+    const updatedProfile: Profile = {
+      ...targetProfile,
+      is_featured: newFeaturedState,
+      updated_at: new Date().toISOString(),
+    };
+
+    const updated = profiles.map((p) => (p.id === updatedProfile.id ? updatedProfile : p));
+    setProfiles(updated);
+    saveStoredProfiles(updated);
+
+    try {
+      const updatePayload = prepareSupabaseProfilePayload(updatedProfile);
+      await supabase.from('profiles').update(updatePayload).eq('id', targetProfile.id);
+    } catch (e) {
+      console.warn('Saved featured state locally', e);
+    }
+
+    showToast(
+      newFeaturedState
+        ? `⭐ ${targetProfile.full_name} (${targetProfile.member_id || 'ID'}) ഹോം പേജിലെ Featured Profiles-ലേക്ക് ചേർത്തു!`
+        : `☆ ${targetProfile.full_name} (${targetProfile.member_id || 'ID'}) ഹോം പേജിലെ Featured Profiles-ൽ നിന്നും മാറ്റി.`
+    );
   };
 
   const handleDeleteProfile = async (id: string) => {
@@ -2588,6 +2615,15 @@ export default function App() {
       });
   }, [profiles, currentUserProfile, currentUser]);
 
+  // Featured Profiles for Home Page: Controlled explicitly by Admin via `is_featured`
+  const featuredProfiles = useMemo(() => {
+    const explicitFeatured = approvedProfiles.filter((p) => p.is_featured === true);
+    if (explicitFeatured.length > 0) {
+      return explicitFeatured;
+    }
+    return approvedProfiles.filter((p) => p.is_featured !== false).slice(0, 6);
+  }, [approvedProfiles]);
+
   // Filtered Approved Profiles with Advanced Multi-field filtering
   const filteredProfiles = useMemo(() => {
     return approvedProfiles.filter((profile) => {
@@ -2723,6 +2759,7 @@ export default function App() {
           onRejectPremiumRequest={handleRejectPremiumRequest}
           onDeactivatePremium={handleDeactivatePremium}
           onClearAllPremiumAccounts={handleClearAllPremiumAccounts}
+          onToggleFeatured={handleToggleFeatured}
           onExitAdmin={() => setActiveView('home')}
           adminEmail="nikahcircle01@gmail.com"
           onRefreshData={refreshAllData}
@@ -2920,15 +2957,15 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Grid with ONLY 6 Profiles */}
-              {approvedProfiles.length === 0 ? (
+              {/* Grid with Admin-Controlled Featured Profiles */}
+              {featuredProfiles.length === 0 ? (
                 <div className="bg-white rounded-3xl border border-[#eadfe4] p-10 text-center space-y-3 max-w-xl mx-auto shadow-xs">
                   <Sparkles className="w-10 h-10 text-[#c9973e] mx-auto" />
                   <h3 className="font-serif text-xl font-bold text-[#4b001f]">
                     Verified Profiles Sanctuary
                   </h3>
                   <p className="text-xs text-stone-500 leading-relaxed">
-                    No verified profiles published yet. Be the first to register and upload your biodata! Only verified candidates with active Premium Plans and completed biodata are featured here.
+                    No verified profiles selected for featured display yet. Use Admin Panel to feature candidate profiles on the homepage!
                   </p>
                   <button
                     type="button"
@@ -2941,7 +2978,7 @@ export default function App() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {approvedProfiles.slice(0, 6).map((profile) => (
+                  {featuredProfiles.map((profile) => (
                     <ProfileCard
                       key={profile.id}
                       profile={profile}

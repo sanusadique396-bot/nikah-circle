@@ -33,6 +33,7 @@ export interface Profile {
   profile_status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'INACTIVE';
   is_verified: boolean;
   is_premium: boolean;
+  is_featured?: boolean;
   premium_plan?: string | null;
   premium_start?: string | null;
   premium_end?: string | null;
