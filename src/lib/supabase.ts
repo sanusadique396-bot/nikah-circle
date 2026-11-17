@@ -1678,6 +1678,51 @@ export const DEFAULT_PROFILES: Profile[] = [
     biodata_uploaded: true,
     created_at: "2026-11-17T14:18:00.000Z",
     updated_at: "2026-11-17T14:18:00.000Z",
+  },
+  {
+    id: "ncsm1042-aysha-rosna-an",
+    member_id: "NCSM1042",
+    full_name: "Aysha Rosna A N",
+    gender: "Female",
+    age: 26,
+    date_of_birth: "1999-07-09",
+    marital_status: "Never Married",
+    religion: "Islam",
+    sect: "Sunni",
+    religious_ideation: "Sunni (സുന്നി)",
+    height: "173 cm",
+    complexion: "Fair",
+    physical_build: "Normal",
+    education: "PhD Scholar / MSc Agricultural Economics / BSc (Hons) Agriculture",
+    bouthika_education: "PhD Scholar (College of Agriculture Vellayani, TVM) / MSc Agricultural Economics (OUAT) / BSc (Hons) Agriculture",
+    religious_education: "6th Standard (6-ാം ക്ലാസ്സ് മതപഠനം)",
+    profession: "PhD Scholar (Agriculture) & Former Senior Research Fellow ICAR",
+    job_location: "Thiruvananthapuram / Kozhikode, Kerala",
+    financial_status: "Middle Class",
+    place: "Karuvannur, Naduvannur",
+    district: "Kozhikode",
+    state: "Kerala",
+    location: "Karuvannur, Naduvannur, Kozhikode",
+    preferred_districts: "Kozhikode",
+    mobile: "+91 98470 00000",
+    guardian_mobile: "+91 98470 00000",
+    guardian_name: "Muhammed Shanid A N (Brother)",
+    guardian_relation: "Brother",
+    family_members_details: "Father: Dr Abu KV (Late, Teacher). Mother: Nuzrath MK (Housewife). Brother: Muhammed Shanid A N (Married, Engineer in KSEB Thottilpalam). Sister: Anshida Rouna A N (Student at IISER Thiruvananthapuram).",
+    family_background: "Middle Class respected Sunni Muslim family originally from Karuvannur, Naduvannur, Kozhikode. Late father was an educator and teacher. Brother is a KSEB Engineer at Thottilpalam, sister pursuing studies at IISER Thiruvananthapuram. Candidate holds BSc (Hons) Agriculture, MSc in Agricultural Economics, formerly worked as Senior Research Fellow under ICAR CRIDA, currently pursuing PhD at College of Agriculture, Vellayani, Thiruvananthapuram.",
+    marriage_expectations: "Seeking a religious, well-mannered Sunni Muslim groom up to 33 years from Kozhikode district. Well-educated professional preferred.",
+    partner_preferences: "Age up to 33 years. Preferred district: Kozhikode. Well-educated Sunni groom with good character and family values.",
+    other_interests: "Agricultural economics, environmental research, reading, Islamic ethics, family life",
+    profile_photo: "/profiles/ncsm1042.jpg",
+    registration_type: "CASH_ADMIN",
+    source: "admin",
+    profile_status: "APPROVED",
+    is_verified: true,
+    is_premium: true,
+    premium_plan: "Active Premium",
+    biodata_uploaded: true,
+    created_at: "2026-11-17T14:19:00.000Z",
+    updated_at: "2026-11-17T14:19:00.000Z",
   }
 ];
 export const DEFAULT_PAYMENTS: Payment[] = [];
@@ -2050,7 +2095,7 @@ export function markReferralCodeUsed(code: string) {
 }
 
 // Sequential Auto-Increment Member ID System: NCSM1003, NCSM1004, NCSM1005...
-export const MEMBER_ID_SEQ_KEY = 'nikah_circle_member_id_seq_v10';
+export const MEMBER_ID_SEQ_KEY = 'nikah_circle_member_id_seq_v11';
 
 export function extractMemberIdNumber(idStr?: string | null): number | null {
   if (!idStr || typeof idStr !== 'string') return null;
