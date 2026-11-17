@@ -58,12 +58,15 @@ export const Hero: React.FC<Props> = ({
             </div>
 
             <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold text-[#4b001f] leading-[1.15] sm:leading-[1.1] tracking-tight break-words">
-              Nikah Circle Matrimony App <br className="hidden xs:inline" />
-              <span className="text-[#c9973e] italic">&amp; Gulf NRI Matchmaking.</span>
+              Nikah Circle <br className="hidden xs:inline" />
+              <span className="text-[#c9973e] italic">– No.1 Muslim Matrimony in Kerala</span>
+              <span className="block text-lg sm:text-2xl font-sans font-semibold text-stone-700 mt-2 tracking-normal">
+                Best Muslim Matrimony &amp; Best Free Matrimony App in Kerala
+              </span>
             </h1>
 
             <p className="text-stone-600 text-sm sm:text-lg max-w-2xl leading-relaxed mx-auto lg:mx-0">
-              A conservative Muslim matrimonial site and verified Muslim marriage bureau for Kerala and Gulf NRI families.
+              Nikah Circle is the No.1 Muslim matrimony in Kerala and the best matrimony free app in Kerala.
               Safe Islamic matchmaking in Kozhikode, Muslim matrimony Malappuram, and matrimony in Manjeri, Palakkad, Thrissur &amp; UAE / GCC with 100% verified Islamic biodata, modest photo privacy matrimony, and secure Nikah proposals Kerala.
             </p>
 

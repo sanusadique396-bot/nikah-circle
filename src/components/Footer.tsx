@@ -119,6 +119,14 @@ export const Footer: React.FC<Props> = ({
             Trending Islamic Matrimony Searches &amp; Coverage:
           </span>
           <div className="flex flex-wrap gap-2 leading-relaxed">
+            <span className="hover:text-white transition-colors font-bold text-stone-200">Nikah Circle - No.1 Muslim Matrimony in Kerala</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors font-bold text-stone-200">Best Muslim Matrimony in Kerala</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors font-bold text-stone-200">Best Matrimony App in Kerala</span>
+            <span>·</span>
+            <span className="hover:text-white transition-colors font-bold text-stone-200">Best Matrimoni Free App in Kerala</span>
+            <span>·</span>
             <span className="hover:text-white transition-colors">Islamic matrimony Kerala</span>
             <span>·</span>
             <span className="hover:text-white transition-colors">Muslim matrimony Malappuram</span>
