@@ -1767,6 +1767,50 @@ export const DEFAULT_PROFILES: Profile[] = [
     biodata_uploaded: true,
     created_at: "2026-11-17T14:20:00.000Z",
     updated_at: "2026-11-17T14:20:00.000Z",
+  },
+  {
+    id: "ncsm1044-mufeeda-edavannapara",
+    member_id: "NCSM1044",
+    full_name: "Mufeeda",
+    gender: "Female",
+    age: 24,
+    date_of_birth: "2002-08-05",
+    marital_status: "Never Married",
+    religion: "Islam",
+    sect: "Sunni",
+    religious_ideation: "EK Sunni (Open to Jamaat)",
+    height: "160 cm",
+    complexion: "Fair",
+    physical_build: "Slim",
+    education: "MA in Applied Psychology",
+    bouthika_education: "MA in Applied Psychology (Postgraduate)",
+    profession: "Preparing for Competitive Exams (Psychologist Aspirant)",
+    job_location: "Malappuram, Kerala",
+    financial_status: "Middle Class",
+    place: "Cheekode, Edavannapara",
+    district: "Malappuram",
+    state: "Kerala",
+    location: "Cheekode, Edavannapara, Malappuram",
+    preferred_districts: "Malappuram",
+    mobile: "+91 98470 00000",
+    guardian_mobile: "+91 98470 00000",
+    guardian_name: "Family Guardian",
+    guardian_relation: "Family",
+    family_members_details: "Father: (Late) Ali (Retired Teacher). Mother: (Late) Asmabi. 3 Sisters (all Married). Middle class respected Sunni family.",
+    family_background: "Middle class respected EK Sunni Muslim family from Cheekode, Edavannapara, Malappuram. Late father was a retired teacher. Candidate completed MA in Applied Psychology and is currently preparing for competitive exams. 3 elder sisters are married and settled.",
+    marriage_expectations: "Looking for a well-educated groom (Postgraduate preferred, Graduates also welcome) aged 26-29 from Malappuram (Kondotty, Tirurangadi, Eranad taluk). Must be Deeni, caring, respectful, family-oriented, and supportive of career aspirations. Family belongs to EK Sunni, also open to suitable proposals from Jamaat families.",
+    partner_preferences: "Age 26-29. Malappuram district (Kondotty, Tirurangadi, Eranad areas). Postgraduate / Graduate. Deeni, caring, respectful, career-supportive groom. EK Sunni or Jamaat.",
+    other_interests: "Applied psychology, competitive exam preparation, reading, child development, Islamic values, family life",
+    profile_photo: "/profiles/ncsm1044.jpg",
+    registration_type: "CASH_ADMIN",
+    source: "admin",
+    profile_status: "APPROVED",
+    is_verified: true,
+    is_premium: true,
+    premium_plan: "Active Premium",
+    biodata_uploaded: true,
+    created_at: "2026-11-17T14:21:00.000Z",
+    updated_at: "2026-11-17T14:21:00.000Z",
   }
 ];
 export const DEFAULT_PAYMENTS: Payment[] = [];
@@ -2139,7 +2183,7 @@ export function markReferralCodeUsed(code: string) {
 }
 
 // Sequential Auto-Increment Member ID System: NCSM1003, NCSM1004, NCSM1005...
-export const MEMBER_ID_SEQ_KEY = 'nikah_circle_member_id_seq_v12';
+export const MEMBER_ID_SEQ_KEY = 'nikah_circle_member_id_seq_v13';
 
 export function extractMemberIdNumber(idStr?: string | null): number | null {
   if (!idStr || typeof idStr !== 'string') return null;
