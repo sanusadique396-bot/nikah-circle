@@ -1659,8 +1659,6 @@ export const DEFAULT_PROFILES: Profile[] = [
     state: "Kerala",
     location: "Ayyotichira, Veliyamcode, Ponnani, Malappuram",
     preferred_districts: "Malappuram",
-    mobile: "+91 98470 00000",
-    guardian_mobile: "+91 98470 00000",
     guardian_name: "NP Moidutty Haji (Father)",
     guardian_relation: "Father",
     family_members_details: "Father: NP Moidutty Haji (Building Business, Ex Gulf - Abu Dhabi, Retired). Mother: Remla Beegam (Ex Arabic Teacher, Abu Dhabi & Kerala). 3 Brothers: 1 in Dubai (Married), 1 pursuing PhD at IIT Palakkad, 1 working at Bangalore Airport (Married). 1 Sister (Married).",
@@ -1704,8 +1702,6 @@ export const DEFAULT_PROFILES: Profile[] = [
     state: "Kerala",
     location: "Karuvannur, Naduvannur, Kozhikode",
     preferred_districts: "Kozhikode",
-    mobile: "+91 98470 00000",
-    guardian_mobile: "+91 98470 00000",
     guardian_name: "Muhammed Shanid A N (Brother)",
     guardian_relation: "Brother",
     family_members_details: "Father: Dr Abu KV (Late, Teacher). Mother: Nuzrath MK (Housewife). Brother: Muhammed Shanid A N (Married, Engineer in KSEB Thottilpalam). Sister: Anshida Rouna A N (Student at IISER Thiruvananthapuram).",
@@ -1748,8 +1744,6 @@ export const DEFAULT_PROFILES: Profile[] = [
     state: "Kerala",
     location: "Vengara, Malappuram",
     preferred_districts: "Malappuram, Ernakulam, Kozhikode, Wayanad",
-    mobile: "+91 98470 00000",
-    guardian_mobile: "+91 98470 00000",
     guardian_name: "Family Guardian",
     guardian_relation: "Parent (Guardian)",
     family_members_details: "Middle class respected Sunni Muslim family residing at Vengara, Malappuram.",
@@ -1792,8 +1786,6 @@ export const DEFAULT_PROFILES: Profile[] = [
     state: "Kerala",
     location: "Cheekode, Edavannapara, Malappuram",
     preferred_districts: "Malappuram",
-    mobile: "+91 98470 00000",
-    guardian_mobile: "+91 98470 00000",
     guardian_name: "Family Guardian",
     guardian_relation: "Family",
     family_members_details: "Father: (Late) Ali (Retired Teacher). Mother: (Late) Asmabi. 3 Sisters (all Married). Middle class respected Sunni family.",
@@ -1816,7 +1808,7 @@ export const DEFAULT_PROFILES: Profile[] = [
 export const DEFAULT_PAYMENTS: Payment[] = [];
 
 // Offline & Hybrid Data Layer
-const PROFILES_STORAGE_KEY = "nikah_circle_profiles_v2";
+export const PROFILES_STORAGE_KEY = "nikah_circle_profiles_v4";
 const PAYMENTS_STORAGE_KEY = "nikah_circle_payments_v2";
 const BOOKMARKS_STORAGE_KEY = "nikah_circle_bookmarks_v2";
 const INTERESTS_MAP_KEY = "nikah_circle_interests_map_v3";
@@ -1881,6 +1873,15 @@ export function isAdminAddedGroomWithPhone(p?: Partial<Profile> | null): boolean
   return cleanPhone.length >= 7;
 }
 
+export function isDummyPhoneNumber(phoneStr?: string | null): boolean {
+  if (!phoneStr) return true;
+  const digits = phoneStr.replace(/\D/g, '');
+  if (digits.length < 7) return true;
+  if (/^0+$/.test(digits)) return true;
+  if (digits.endsWith('00000000') || digits.endsWith('000000') || digits === '9847000000' || digits === '9000000000') return true;
+  return false;
+}
+
 // Strict deduplication function to prevent duplicate user cards, tables, or ghost profiles
 export function deduplicateProfiles(inputProfiles: Profile[]): Profile[] {
   const result: Profile[] = [];
@@ -1895,22 +1896,50 @@ export function deduplicateProfiles(inputProfiles: Profile[]): Profile[] {
     const pName = (prof.full_name || '').toLowerCase().trim();
 
     const existingIdx = result.findIndex((existing) => {
+      // 1. Exact ID match
       if (pId && existing.id && pId === existing.id) return true;
-      if (pEmail && existing.email && pEmail === existing.email.toLowerCase().trim()) return true;
+
+      // Never match two profiles with different non-empty IDs if they have different member IDs or both are distinct pre-seeded IDs
+      if (pId && existing.id && pId !== existing.id) {
+        if (pMemberId && existing.member_id && pMemberId !== existing.member_id.trim().toUpperCase()) {
+          return false;
+        }
+        if (pId.toLowerCase().startsWith('ncsm') && existing.id.toLowerCase().startsWith('ncsm')) {
+          return false;
+        }
+      }
+
+      // Check genuine email match (ignore default/shared system email)
+      if (
+        pEmail &&
+        existing.email &&
+        pEmail !== 'nikahcircle01@gmail.com' &&
+        pEmail === existing.email.toLowerCase().trim()
+      ) {
+        return true;
+      }
+
+      // Check genuine phone match (ignore dummy/placeholder phones)
       const exMobile = existing.mobile ? existing.mobile.replace(/\D/g, '').slice(-8) : '';
-      if (pMobile && exMobile && pMobile.length >= 7 && pMobile === exMobile) return true;
-      if (pName && existing.full_name && pName.length >= 3 && pName === existing.full_name.toLowerCase().trim() && (pMobile === exMobile || (pEmail && pEmail === (existing.email || '').toLowerCase().trim()))) return true;
-      // Never match purely by member_id unless name, phone or email also matches
+      const isPDummy = isDummyPhoneNumber(prof.mobile);
+      const isExDummy = isDummyPhoneNumber(existing.mobile);
+
+      if (!isPDummy && !isExDummy && pMobile && exMobile && pMobile.length >= 7 && pMobile === exMobile) {
+        return true;
+      }
+
+      // Match by exact member_id AND name match
       if (
         pMemberId &&
         existing.member_id &&
         pMemberId === existing.member_id.trim().toUpperCase() &&
-        (pName === (existing.full_name || '').toLowerCase().trim() ||
-          (pMobile && exMobile && pMobile === exMobile) ||
-          (pEmail && pEmail === (existing.email || '').toLowerCase().trim()))
+        pName &&
+        existing.full_name &&
+        pName === existing.full_name.toLowerCase().trim()
       ) {
         return true;
       }
+
       return false;
     });
 
@@ -1919,9 +1948,7 @@ export function deduplicateProfiles(inputProfiles: Profile[]): Profile[] {
     } else {
       const existing = result[existingIdx];
 
-      const nExisting = extractMemberIdNumber(existing.member_id);
-      const nProf = extractMemberIdNumber(prof.member_id);
-      const bestMemberId = nProf && nProf >= 1003 ? prof.member_id : (nExisting && nExisting >= 1003 ? existing.member_id : (prof.member_id || existing.member_id));
+      const bestMemberId = existing.member_id || prof.member_id;
 
       const isPrem = Boolean(existing.is_premium || prof.is_premium);
       const isApproved = existing.profile_status === 'APPROVED' || prof.profile_status === 'APPROVED';
@@ -2020,14 +2047,16 @@ export function getStoredProfiles(): Profile[] {
         const combined = [...DEFAULT_PROFILES];
         parsed.forEach((p) => {
           const idx = combined.findIndex(
-            (c) => (p.member_id && c.member_id && p.member_id.toUpperCase() === c.member_id.toUpperCase()) ||
-                   (c.mobile && p.mobile && c.mobile.replace(/\D/g, '').slice(-8) === p.mobile.replace(/\D/g, '').slice(-8)) ||
-                   c.id === p.id
+            (c) => (c.id && p.id && c.id === p.id) ||
+                   (p.member_id && c.member_id && p.member_id.trim().toUpperCase() === c.member_id.trim().toUpperCase())
           );
           if (idx >= 0) {
             combined[idx] = {
               ...p,
               ...combined[idx],
+              id: combined[idx].id || p.id,
+              member_id: combined[idx].member_id || p.member_id,
+              full_name: (combined[idx].full_name && combined[idx].full_name !== 'Candidate' && combined[idx].full_name !== 'Member') ? combined[idx].full_name : p.full_name,
               biodata_uploaded: true,
               is_verified: true,
               is_premium: true,
@@ -2183,7 +2212,7 @@ export function markReferralCodeUsed(code: string) {
 }
 
 // Sequential Auto-Increment Member ID System: NCSM1003, NCSM1004, NCSM1005...
-export const MEMBER_ID_SEQ_KEY = 'nikah_circle_member_id_seq_v13';
+export const MEMBER_ID_SEQ_KEY = 'nikah_circle_member_id_seq_v15';
 
 export function extractMemberIdNumber(idStr?: string | null): number | null {
   if (!idStr || typeof idStr !== 'string') return null;
@@ -2219,7 +2248,7 @@ export function getHighestExistingMemberNumber(
 
   // 2. Check local profiles cache
   try {
-    const rawProfiles = localStorage.getItem('nikah_circle_profiles_v2');
+    const rawProfiles = localStorage.getItem(PROFILES_STORAGE_KEY) || localStorage.getItem('nikah_circle_profiles_v2');
     if (rawProfiles) {
       const parsed = JSON.parse(rawProfiles);
       if (Array.isArray(parsed)) {
@@ -2455,7 +2484,7 @@ export function parseSupabaseProfile(p: any, defaultIndex?: number): Profile {
 }
 
 // Full Fresh Database and User Reset System
-const CLEAN_RESET_KEY = 'nikah_circle_clean_reset_v9000';
+const CLEAN_RESET_KEY = 'nikah_circle_clean_reset_v9002';
 
 export function performInitialResetIfRequired() {
   try {
@@ -2467,7 +2496,9 @@ export function performInitialResetIfRequired() {
       localStorage.removeItem('nikah_circle_user_is_premium');
       localStorage.removeItem('nikah_circle_is_admin');
       localStorage.removeItem('nikah_circle_deleted_records_v2');
+      localStorage.removeItem('nikah_circle_profiles_v1');
       localStorage.removeItem('nikah_circle_profiles_v2');
+      localStorage.removeItem('nikah_circle_profiles_v3');
       localStorage.removeItem('nikah_circle_payments_v2');
       localStorage.removeItem('nikah_circle_bookmarks_v2');
       localStorage.removeItem('nikah_circle_incoming_interests_v2');
@@ -2486,6 +2517,8 @@ export function performInitialResetIfRequired() {
       localStorage.removeItem('nikah_circle_member_id_seq_v7');
       localStorage.removeItem('nikah_circle_member_id_seq_v8');
       localStorage.removeItem('nikah_circle_member_id_seq_v9');
+      localStorage.removeItem('nikah_circle_member_id_seq_v13');
+      localStorage.removeItem('nikah_circle_member_id_seq_v14');
 
       // Set baseline sequence counter to 1002 so first newly registered user starts strictly from NCSM1003
       localStorage.setItem(MEMBER_ID_SEQ_KEY, '1002');

@@ -1018,6 +1018,7 @@ export default function App() {
     // Cross-tab storage change listener
     const handleStorageChange = (e: StorageEvent) => {
       if (
+        e.key === 'nikah_circle_profiles_v4' ||
         e.key === 'nikah_circle_profiles_v2' ||
         e.key === 'nikah_circle_user_profile' ||
         e.key === 'nikah_circle_premium_requests_v1' ||
