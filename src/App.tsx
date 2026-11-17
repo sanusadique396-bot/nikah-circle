@@ -2239,6 +2239,7 @@ export default function App() {
         ...profileData,
         gender: resolvedGender,
         is_featured: profileData.is_featured !== undefined ? profileData.is_featured : existing?.is_featured,
+        is_pinned: profileData.is_pinned !== undefined ? profileData.is_pinned : existing?.is_pinned,
         profile_photo: resolveProfilePhoto({
           gender: resolvedGender,
           profile_photo: profileData.profile_photo !== undefined ? profileData.profile_photo : existing?.profile_photo,
@@ -2369,6 +2370,32 @@ export default function App() {
       newFeaturedState
         ? `⭐ ${targetProfile.full_name} (${targetProfile.member_id || 'ID'}) ഹോം പേജിലെ Featured Profiles-ലേക്ക് ചേർത്തു!`
         : `☆ ${targetProfile.full_name} (${targetProfile.member_id || 'ID'}) ഹോം പേജിലെ Featured Profiles-ൽ നിന്നും മാറ്റി.`
+    );
+  };
+
+  const handleTogglePinned = async (targetProfile: Profile) => {
+    const newPinnedState = targetProfile.is_pinned !== true;
+    const updatedProfile: Profile = {
+      ...targetProfile,
+      is_pinned: newPinnedState,
+      updated_at: new Date().toISOString(),
+    };
+
+    const updated = profiles.map((p) => (p.id === updatedProfile.id ? updatedProfile : p));
+    setProfiles(updated);
+    saveStoredProfiles(updated);
+
+    try {
+      const updatePayload = prepareSupabaseProfilePayload(updatedProfile);
+      await supabase.from('profiles').update(updatePayload).eq('id', targetProfile.id);
+    } catch (e) {
+      console.warn('Saved pinned state locally', e);
+    }
+
+    showToast(
+      newPinnedState
+        ? `📌 ${targetProfile.full_name} (${targetProfile.member_id || 'ID'}) ലിസ്റ്റിൽ ഏറ്റവും മുകളിൽ PIN ചെയ്തു!`
+        : `📍 ${targetProfile.full_name} (${targetProfile.member_id || 'ID'}) Unpin ചെയ്തു.`
     );
   };
 
@@ -2611,17 +2638,23 @@ export default function App() {
         return hasCompletedBiodata(p);
       })
       .sort((a, b) => {
+        const pinA = a.is_pinned ? 1 : 0;
+        const pinB = b.is_pinned ? 1 : 0;
+        if (pinA !== pinB) return pinB - pinA;
         return (new Date(b.created_at || '').getTime() || 0) - (new Date(a.created_at || '').getTime() || 0);
       });
   }, [profiles, currentUserProfile, currentUser]);
 
-  // Featured Profiles for Home Page: Controlled explicitly by Admin via `is_featured`
+  // Featured Profiles for Home Page: Controlled explicitly by Admin via `is_featured` & `is_pinned`
   const featuredProfiles = useMemo(() => {
     const explicitFeatured = approvedProfiles.filter((p) => p.is_featured === true);
-    if (explicitFeatured.length > 0) {
-      return explicitFeatured;
-    }
-    return approvedProfiles.filter((p) => p.is_featured !== false).slice(0, 6);
+    const pool = explicitFeatured.length > 0 ? explicitFeatured : approvedProfiles.filter((p) => p.is_featured !== false);
+    return [...pool].sort((a, b) => {
+      const pinA = a.is_pinned ? 1 : 0;
+      const pinB = b.is_pinned ? 1 : 0;
+      if (pinA !== pinB) return pinB - pinA;
+      return (new Date(b.created_at || '').getTime() || 0) - (new Date(a.created_at || '').getTime() || 0);
+    }).slice(0, 12);
   }, [approvedProfiles]);
 
   // Filtered Approved Profiles with Advanced Multi-field filtering
@@ -2760,6 +2793,7 @@ export default function App() {
           onDeactivatePremium={handleDeactivatePremium}
           onClearAllPremiumAccounts={handleClearAllPremiumAccounts}
           onToggleFeatured={handleToggleFeatured}
+          onTogglePinned={handleTogglePinned}
           onExitAdmin={() => setActiveView('home')}
           adminEmail="nikahcircle01@gmail.com"
           onRefreshData={refreshAllData}

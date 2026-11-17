@@ -2006,6 +2006,7 @@ export function deduplicateProfiles(inputProfiles: Profile[]): Profile[] {
         gender: normalizeGender(existing.gender || prof.gender),
         is_premium: isPrem,
         is_featured: existing.is_featured !== undefined ? existing.is_featured : prof.is_featured,
+        is_pinned: existing.is_pinned !== undefined ? existing.is_pinned : prof.is_pinned,
         premium_plan: existing.premium_plan || prof.premium_plan || (isPrem ? 'Premium Plan' : null),
         profile_status: isApproved ? 'APPROVED' : (existing.profile_status || prof.profile_status || 'APPROVED'),
         is_verified: true,
@@ -2100,6 +2101,7 @@ export function getStoredProfiles(): Profile[] {
               member_id: combined[idx].member_id || p.member_id,
               full_name: (combined[idx].full_name && combined[idx].full_name !== 'Candidate' && combined[idx].full_name !== 'Member') ? combined[idx].full_name : p.full_name,
               is_featured: (p.is_featured !== undefined) ? p.is_featured : combined[idx].is_featured,
+              is_pinned: (p.is_pinned !== undefined) ? p.is_pinned : combined[idx].is_pinned,
               biodata_uploaded: true,
               is_verified: true,
               is_premium: true,
@@ -2423,6 +2425,7 @@ export function prepareSupabaseProfilePayload(profile: Partial<Profile>): any {
     passport_visa_status: profile.passport_visa_status,
     other_interests: profile.other_interests,
     is_featured: profile.is_featured,
+    is_pinned: profile.is_pinned,
     source: profile.source || (profile.registration_type === 'CASH_ADMIN' ? 'admin' : undefined),
     created_by: profile.created_by || undefined,
   };
@@ -2525,6 +2528,7 @@ export function parseSupabaseProfile(p: any, defaultIndex?: number): Profile {
     is_verified: p.is_verified ?? true,
     is_premium: p.is_premium ?? (meta.source === 'admin' || p.registration_type === 'CASH_ADMIN'),
     is_featured: meta.is_featured !== undefined ? meta.is_featured : (p.is_featured !== undefined ? p.is_featured : undefined),
+    is_pinned: meta.is_pinned !== undefined ? meta.is_pinned : (p.is_pinned !== undefined ? p.is_pinned : false),
   });
 }
 

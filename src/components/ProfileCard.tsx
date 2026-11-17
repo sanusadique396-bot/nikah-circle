@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Profile, normalizeGender, resolveProfilePhoto } from '../types';
-import { MapPin, Heart, ShieldCheck, Eye, EyeOff, UserCheck, Lock, Clock, FileText } from 'lucide-react';
+import { MapPin, Heart, ShieldCheck, Eye, EyeOff, UserCheck, Lock, Clock, FileText, Pin } from 'lucide-react';
 
 interface Props {
   profile: Profile;
@@ -101,12 +101,18 @@ export const ProfileCard: React.FC<Props> = ({
           </div>
         )}
 
-        {/* Top-Left: Unique Member ID Badge */}
-        <div className="absolute top-3 left-3 z-10">
+        {/* Top-Left: Unique Member ID Badge & Pinned Badge */}
+        <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 flex-wrap">
           <span className="font-mono text-[11px] font-bold bg-[#4b001f]/95 backdrop-blur-xs text-amber-200 border border-amber-400/40 px-2.5 py-1 rounded-lg shadow-xs tracking-wider flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
             <span>{profile.member_id || (profile.id?.startsWith('NCSM') ? profile.id : `NCSM${profile.id?.replace(/\D/g, '').slice(-4) || '1001'}`)}</span>
           </span>
+          {profile.is_pinned && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-extrabold bg-gradient-to-r from-purple-700 to-[#4b001f] text-white border border-purple-300/60 px-2 py-1 rounded-lg shadow-sm">
+              <Pin className="w-3 h-3 fill-amber-300 text-amber-300 rotate-45" />
+              <span>PINNED</span>
+            </span>
+          )}
         </div>
 
         {/* Top Right: Admin Verified Badge & Photo Privacy / Shortlist */}

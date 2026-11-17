@@ -34,6 +34,7 @@ export interface Profile {
   is_verified: boolean;
   is_premium: boolean;
   is_featured?: boolean;
+  is_pinned?: boolean;
   premium_plan?: string | null;
   premium_start?: string | null;
   premium_end?: string | null;

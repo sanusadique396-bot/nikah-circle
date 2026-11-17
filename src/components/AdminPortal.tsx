@@ -49,6 +49,8 @@ import {
   ChevronUp,
   Star,
   StarOff,
+  Pin,
+  PinOff,
 } from 'lucide-react';
 
 interface Props {
@@ -68,6 +70,7 @@ interface Props {
   onDeactivatePremium?: (profileIdOrPhone: string) => Promise<void>;
   onClearAllPremiumAccounts?: () => Promise<void>;
   onToggleFeatured?: (profile: Profile) => Promise<void> | void;
+  onTogglePinned?: (profile: Profile) => Promise<void> | void;
   onExitAdmin: () => void;
   adminEmail: string;
   onRefreshData?: () => Promise<void>;
@@ -133,6 +136,7 @@ export const AdminPortal: React.FC<Props> = ({
   onDeactivatePremium,
   onClearAllPremiumAccounts,
   onToggleFeatured,
+  onTogglePinned,
   onExitAdmin,
   adminEmail,
   onRefreshData,
@@ -169,7 +173,7 @@ export const AdminPortal: React.FC<Props> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [regFilter, setRegFilter] = useState('');
-  const [featuredFilter, setFeaturedFilter] = useState<'ALL' | 'FEATURED' | 'STANDARD'>('ALL');
+  const [displayFilter, setDisplayFilter] = useState<'ALL' | 'FEATURED' | 'PINNED' | 'STANDARD'>('ALL');
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
   const [viewingProfile, setViewingProfile] = useState<Profile | null>(null);
   const [previewScreenshotUrl, setPreviewScreenshotUrl] = useState<string | null>(null);
@@ -287,6 +291,7 @@ export const AdminPortal: React.FC<Props> = ({
   };
 
   const featuredCount = useMemo(() => profiles.filter((p) => p.is_featured === true).length, [profiles]);
+  const pinnedCount = useMemo(() => profiles.filter((p) => p.is_pinned === true).length, [profiles]);
 
   const handleToggleFeaturedClick = async (profile: Profile) => {
     if (onToggleFeatured) {
@@ -295,6 +300,17 @@ export const AdminPortal: React.FC<Props> = ({
       await onSaveProfile({
         ...profile,
         is_featured: profile.is_featured !== true,
+      });
+    }
+  };
+
+  const handleTogglePinnedClick = async (profile: Profile) => {
+    if (onTogglePinned) {
+      await onTogglePinned(profile);
+    } else {
+      await onSaveProfile({
+        ...profile,
+        is_pinned: profile.is_pinned !== true,
       });
     }
   };
@@ -310,11 +326,12 @@ export const AdminPortal: React.FC<Props> = ({
         .includes(searchQuery.toLowerCase());
     const matchesStatus = !statusFilter || p.profile_status === statusFilter;
     const matchesReg = !regFilter || p.registration_type === regFilter;
-    const matchesFeatured =
-      featuredFilter === 'ALL' ||
-      (featuredFilter === 'FEATURED' && p.is_featured === true) ||
-      (featuredFilter === 'STANDARD' && p.is_featured !== true);
-    return matchesSearch && matchesStatus && matchesReg && matchesFeatured;
+    const matchesDisplay =
+      displayFilter === 'ALL' ||
+      (displayFilter === 'FEATURED' && p.is_featured === true) ||
+      (displayFilter === 'PINNED' && p.is_pinned === true) ||
+      (displayFilter === 'STANDARD' && p.is_featured !== true && p.is_pinned !== true);
+    return matchesSearch && matchesStatus && matchesReg && matchesDisplay;
   });
 
   // Dedicated Full Biodata Directory Profiles (Strictly Verified Candidates & Premium Members with Completed Biodata)
@@ -1427,6 +1444,30 @@ export const AdminPortal: React.FC<Props> = ({
                                 <>
                                   <StarOff className="w-3.5 h-3.5 text-stone-400" />
                                   <span>☆ Show in Home Featured Section</span>
+                                </>
+                              )}
+                            </button>
+
+                            {/* Pin to Top Button */}
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePinnedClick(p)}
+                              className={`w-full py-1.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                                p.is_pinned
+                                  ? 'bg-purple-100 hover:bg-purple-200 text-purple-900 border border-purple-300 shadow-2xs'
+                                  : 'bg-stone-50 hover:bg-stone-100 text-stone-600 border border-stone-200'
+                              }`}
+                              title={p.is_pinned ? 'Currently pinned to the top. Click to unpin.' : 'Click to pin this profile to the top.'}
+                            >
+                              {p.is_pinned ? (
+                                <>
+                                  <Pin className="w-3.5 h-3.5 fill-purple-700 text-purple-700 rotate-45" />
+                                  <span>📌 Pinned to Top (Showing First)</span>
+                                </>
+                              ) : (
+                                <>
+                                  <PinOff className="w-3.5 h-3.5 text-stone-400" />
+                                  <span>📍 Pin to Top</span>
                                 </>
                               )}
                             </button>
@@ -2966,13 +3007,14 @@ export const AdminPortal: React.FC<Props> = ({
                 </select>
 
                 <select
-                  value={featuredFilter}
-                  onChange={(e) => setFeaturedFilter(e.target.value as any)}
+                  value={displayFilter}
+                  onChange={(e) => setDisplayFilter(e.target.value as any)}
                   className="px-3 py-2 text-xs rounded-xl border border-stone-300 bg-white font-medium text-stone-700"
                 >
                   <option value="ALL">All Display Types</option>
+                  <option value="PINNED">📌 Pinned to Top ({pinnedCount})</option>
                   <option value="FEATURED">⭐ Featured on Home ({featuredCount})</option>
-                  <option value="STANDARD">☆ Not Featured on Home</option>
+                  <option value="STANDARD">☆ Standard / Not Featured</option>
                 </select>
               </div>
 
@@ -2992,7 +3034,7 @@ export const AdminPortal: React.FC<Props> = ({
                       <th className="p-3.5">Candidate</th>
                       <th className="p-3.5">Guardian Contact</th>
                       <th className="p-3.5">Location</th>
-                      <th className="p-3.5">Featured on Home</th>
+                      <th className="p-3.5">Featured &amp; Pin</th>
                       <th className="p-3.5">Premium</th>
                       <th className="p-3.5">Status</th>
                       <th className="p-3.5 text-right">Actions</th>
@@ -3004,6 +3046,12 @@ export const AdminPortal: React.FC<Props> = ({
                         <td className="p-3.5 font-semibold text-stone-900">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span>{p.full_name} ({normalizeGender(p.gender)})</span>
+                            {p.is_pinned && (
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-extrabold bg-purple-700 text-white flex items-center gap-1">
+                                <Pin className="w-2.5 h-2.5 fill-amber-300 text-amber-300 rotate-45" />
+                                <span>PINNED</span>
+                              </span>
+                            )}
                             {isAdminAdded(p) ? (
                               <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-100 text-purple-900 border border-purple-200">
                                 Admin-Added
@@ -3032,28 +3080,55 @@ export const AdminPortal: React.FC<Props> = ({
                         </td>
                         <td className="p-3.5 text-stone-600">{p.location || '-'}</td>
                         <td className="p-3.5">
-                          <button
-                            type="button"
-                            onClick={() => handleToggleFeaturedClick(p)}
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                              p.is_featured
-                                ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 shadow-2xs'
-                                : 'bg-stone-100 hover:bg-stone-200 text-stone-600 border border-stone-200'
-                            }`}
-                            title={p.is_featured ? 'Currently showing in Home Featured section. Click to hide.' : 'Currently hidden from Home Featured section. Click to show.'}
-                          >
-                            {p.is_featured ? (
-                              <>
-                                <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-600" />
-                                <span>Featured (Showing)</span>
-                              </>
-                            ) : (
-                              <>
-                                <StarOff className="w-3.5 h-3.5 text-stone-400" />
-                                <span>Show on Home</span>
-                              </>
-                            )}
-                          </button>
+                          <div className="flex flex-col gap-1.5 items-start">
+                            {/* Featured Toggle */}
+                            <button
+                              type="button"
+                              onClick={() => handleToggleFeaturedClick(p)}
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                                p.is_featured
+                                  ? 'bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 shadow-2xs'
+                                  : 'bg-stone-100 hover:bg-stone-200 text-stone-600 border border-stone-200'
+                              }`}
+                              title={p.is_featured ? 'Showing on Homepage. Click to hide.' : 'Hidden from Homepage. Click to show.'}
+                            >
+                              {p.is_featured ? (
+                                <>
+                                  <Star className="w-3 h-3 fill-amber-500 text-amber-600" />
+                                  <span>Featured</span>
+                                </>
+                              ) : (
+                                <>
+                                  <StarOff className="w-3 h-3 text-stone-400" />
+                                  <span>Not Featured</span>
+                                </>
+                              )}
+                            </button>
+
+                            {/* Pin Toggle */}
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePinnedClick(p)}
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                                p.is_pinned
+                                  ? 'bg-purple-100 hover:bg-purple-200 text-purple-900 border border-purple-300 shadow-2xs'
+                                  : 'bg-stone-100 hover:bg-stone-200 text-stone-600 border border-stone-200'
+                              }`}
+                              title={p.is_pinned ? 'Pinned at the very top. Click to unpin.' : 'Click to pin this profile to the top.'}
+                            >
+                              {p.is_pinned ? (
+                                <>
+                                  <Pin className="w-3 h-3 fill-purple-700 text-purple-700 rotate-45" />
+                                  <span>Pinned (Top)</span>
+                                </>
+                              ) : (
+                                <>
+                                  <PinOff className="w-3 h-3 text-stone-400" />
+                                  <span>Pin to Top</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
                         </td>
                         <td className="p-3.5">
                           {p.is_premium ? (
@@ -3404,6 +3479,16 @@ export const AdminPortal: React.FC<Props> = ({
                     />
                     <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-600" />
                     <span>Featured on Home Page</span>
+                  </label>
+                  <label className="inline-flex items-center gap-1.5 cursor-pointer bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-300 text-purple-900">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_pinned ?? false}
+                      onChange={(e) => setFormData({ ...formData, is_pinned: e.target.checked })}
+                      className="rounded text-purple-700 focus:ring-purple-600"
+                    />
+                    <Pin className="w-3.5 h-3.5 fill-purple-700 text-purple-700 rotate-45" />
+                    <span>Pin to Top (ലിസ്റ്റിന്റെ മുകളിൽ)</span>
                   </label>
                 </div>
               </div>
