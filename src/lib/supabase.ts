@@ -4,6 +4,7 @@ import {
   Payment,
   InterestRecord,
   PremiumRequest,
+  AdminDisplayConfig,
   normalizeGender,
   autoCorrectMistakenGenders,
   DEFAULT_BRIDE_AVATAR,
@@ -2191,6 +2192,100 @@ export function saveStoredInterestsMap(map: Record<string, 'pending' | 'accepted
     localStorage.setItem(INTERESTS_MAP_KEY, JSON.stringify(map));
   } catch {
     // fallback
+  }
+}
+
+// Global Admin Display Configuration System (Pinned & Featured profiles synced to Supabase for ALL users)
+export const ADMIN_DISPLAY_CONFIG_ID = '00000000-0000-0000-0000-000000000099';
+export const ADMIN_DISPLAY_CONFIG_STORAGE_KEY = 'nikah_circle_admin_display_config_v1';
+
+export function getStoredAdminDisplayConfig(): AdminDisplayConfig {
+  try {
+    const raw = localStorage.getItem(ADMIN_DISPLAY_CONFIG_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        return {
+          pinned_member_ids: Array.isArray(parsed.pinned_member_ids)
+            ? parsed.pinned_member_ids
+            : (Array.isArray(parsed.pinned_ids) ? parsed.pinned_ids : []),
+          featured_member_ids: Array.isArray(parsed.featured_member_ids)
+            ? parsed.featured_member_ids
+            : (Array.isArray(parsed.featured_ids) ? parsed.featured_ids : []),
+          hidden_member_ids: Array.isArray(parsed.hidden_member_ids)
+            ? parsed.hidden_member_ids
+            : (Array.isArray(parsed.hidden_featured_ids) ? parsed.hidden_featured_ids : []),
+          updated_at: parsed.updated_at || new Date().toISOString(),
+        };
+      }
+    }
+  } catch {}
+  return {
+    pinned_member_ids: [],
+    featured_member_ids: [],
+    hidden_member_ids: [],
+    updated_at: new Date().toISOString(),
+  };
+}
+
+export function saveStoredAdminDisplayConfig(config: AdminDisplayConfig) {
+  try {
+    localStorage.setItem(ADMIN_DISPLAY_CONFIG_STORAGE_KEY, JSON.stringify(config));
+  } catch {}
+}
+
+export async function fetchRemoteAdminDisplayConfig(): Promise<AdminDisplayConfig | null> {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('about, updated_at')
+      .eq('id', ADMIN_DISPLAY_CONFIG_ID)
+      .maybeSingle();
+
+    if (!error && data?.about) {
+      const parsed = JSON.parse(data.about);
+      const config: AdminDisplayConfig = {
+        pinned_member_ids: Array.isArray(parsed.pinned_member_ids)
+          ? parsed.pinned_member_ids
+          : (Array.isArray(parsed.pinned_ids) ? parsed.pinned_ids : []),
+        featured_member_ids: Array.isArray(parsed.featured_member_ids)
+          ? parsed.featured_member_ids
+          : (Array.isArray(parsed.featured_ids) ? parsed.featured_ids : []),
+        hidden_member_ids: Array.isArray(parsed.hidden_member_ids)
+          ? parsed.hidden_member_ids
+          : (Array.isArray(parsed.hidden_featured_ids) ? parsed.hidden_featured_ids : []),
+        updated_at: data.updated_at || new Date().toISOString(),
+      };
+      saveStoredAdminDisplayConfig(config);
+      return config;
+    }
+  } catch (e) {
+    console.warn('Could not fetch remote admin display config', e);
+  }
+  return null;
+}
+
+export async function syncAdminDisplayConfigToRemote(config: AdminDisplayConfig): Promise<boolean> {
+  saveStoredAdminDisplayConfig(config);
+  try {
+    const payload = {
+      id: ADMIN_DISPLAY_CONFIG_ID,
+      full_name: '__ADMIN_DISPLAY_CONFIG__',
+      email: 'admin_config@nikahcircle.internal',
+      about: JSON.stringify(config),
+      profile_status: 'INACTIVE',
+      registration_type: 'ONLINE',
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from('profiles').upsert(payload);
+    if (error) {
+      console.warn('Could not sync admin display config to Supabase', error);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.warn('Supabase sync error for admin display config', e);
+    return false;
   }
 }
 

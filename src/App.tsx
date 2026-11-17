@@ -12,7 +12,7 @@ import { UserProfileModal, UserProfileData } from './components/UserProfileModal
 import { BiodataWizardModal } from './components/BiodataWizardModal';
 import { Footer } from './components/Footer';
 import { OfflineBanner } from './components/OfflineBanner';
-import { Profile, Payment, SearchFilters, PremiumRequest, IncomingInterest } from './types';
+import { Profile, Payment, SearchFilters, PremiumRequest, IncomingInterest, AdminDisplayConfig } from './types';
 import {
   supabase,
   DEFAULT_PROFILES,
@@ -42,6 +42,10 @@ import {
   isAdminAddedGroomWithPhone,
   resolveProfilePhoto,
   DEFAULT_BRIDE_AVATAR,
+  ADMIN_DISPLAY_CONFIG_ID,
+  getStoredAdminDisplayConfig,
+  fetchRemoteAdminDisplayConfig,
+  syncAdminDisplayConfigToRemote,
 } from './lib/supabase';
 import {
   checkAndCaptureUrlReferral,
@@ -739,7 +743,9 @@ export default function App() {
 
       // A. Populate from Supabase profiles table
       if (!profileErr && dbProfiles && Array.isArray(dbProfiles)) {
-        const parsedDb: Profile[] = dbProfiles.map((p: any, idx: number) => parseSupabaseProfile(p, idx));
+        const parsedDb: Profile[] = dbProfiles
+          .filter((p: any) => p.id !== ADMIN_DISPLAY_CONFIG_ID && p.full_name !== '__ADMIN_DISPLAY_CONFIG__')
+          .map((p: any, idx: number) => parseSupabaseProfile(p, idx));
         parsedDb.forEach((dp) => {
           if (dp.id) combinedMap.set(dp.id, dp);
         });
@@ -929,11 +935,46 @@ export default function App() {
 
       // Deduplicate finalized list and guarantee unique sequential member IDs
       const finalDeduplicated = ensureUniqueSequentialMemberIds(deduplicateProfiles(finalized));
-      finalDeduplicated.sort((a, b) => (new Date(b.created_at || '').getTime() || 0) - (new Date(a.created_at || '').getTime() || 0));
 
-      setProfiles(finalDeduplicated);
-      saveStoredProfiles(finalDeduplicated);
-      syncReferralsWithProfiles(finalDeduplicated);
+      // Fetch and apply global admin display configuration (pinned & featured profiles synced via Supabase for all users)
+      const remoteConfig = await fetchRemoteAdminDisplayConfig();
+      const displayConfig = remoteConfig || getStoredAdminDisplayConfig();
+
+      const pinnedSet = new Set((displayConfig.pinned_member_ids || []).map((x) => x.trim().toUpperCase()));
+      const featuredSet = new Set((displayConfig.featured_member_ids || []).map((x) => x.trim().toUpperCase()));
+      const hiddenSet = new Set((displayConfig.hidden_member_ids || []).map((x) => x.trim().toUpperCase()));
+
+      const finalWithConfig = finalDeduplicated.map((p) => {
+        const mId = (p.member_id || p.id || '').toUpperCase();
+        const pId = (p.id || '').toUpperCase();
+
+        const isPinned = pinnedSet.has(mId) || pinnedSet.has(pId) || p.is_pinned === true;
+        let isFeatured = p.is_featured;
+
+        if (hiddenSet.has(mId) || hiddenSet.has(pId)) {
+          isFeatured = false;
+        } else if (featuredSet.has(mId) || featuredSet.has(pId)) {
+          isFeatured = true;
+        }
+
+        return {
+          ...p,
+          is_pinned: isPinned,
+          is_featured: isFeatured,
+        };
+      });
+
+      // Sort: Pinned profiles ALWAYS appear first!
+      finalWithConfig.sort((a, b) => {
+        const pinA = a.is_pinned ? 1 : 0;
+        const pinB = b.is_pinned ? 1 : 0;
+        if (pinA !== pinB) return pinB - pinA;
+        return (new Date(b.created_at || '').getTime() || 0) - (new Date(a.created_at || '').getTime() || 0);
+      });
+
+      setProfiles(finalWithConfig);
+      saveStoredProfiles(finalWithConfig);
+      syncReferralsWithProfiles(finalWithConfig);
 
       // Persist any corrected/re-assigned unique member IDs back to Supabase
       if (dbProfiles && dbProfiles.length > 0) {
@@ -2348,22 +2389,57 @@ export default function App() {
   };
 
   const handleToggleFeatured = async (targetProfile: Profile) => {
+    const key = (targetProfile.member_id || targetProfile.id || '').trim().toUpperCase();
+    const currentConfig = getStoredAdminDisplayConfig();
     const newFeaturedState = targetProfile.is_featured !== true;
+
+    let newHidden = [...(currentConfig.hidden_member_ids || [])];
+    let newFeatured = [...(currentConfig.featured_member_ids || [])];
+
+    if (newFeaturedState) {
+      newHidden = newHidden.filter((id) => id.trim().toUpperCase() !== key && id !== targetProfile.id);
+      if (!newFeatured.map((x) => x.trim().toUpperCase()).includes(key)) {
+        newFeatured.push(targetProfile.member_id || targetProfile.id);
+      }
+    } else {
+      newFeatured = newFeatured.filter((id) => id.trim().toUpperCase() !== key && id !== targetProfile.id);
+      if (!newHidden.map((x) => x.trim().toUpperCase()).includes(key)) {
+        newHidden.push(targetProfile.member_id || targetProfile.id);
+      }
+    }
+
+    const updatedConfig: AdminDisplayConfig = {
+      ...currentConfig,
+      hidden_member_ids: newHidden,
+      featured_member_ids: newFeatured,
+      updated_at: new Date().toISOString(),
+    };
+
     const updatedProfile: Profile = {
       ...targetProfile,
       is_featured: newFeaturedState,
       updated_at: new Date().toISOString(),
     };
 
-    const updated = profiles.map((p) => (p.id === updatedProfile.id ? updatedProfile : p));
+    const updated = profiles.map((p) => {
+      const pKey = (p.member_id || p.id || '').trim().toUpperCase();
+      if (pKey === key || p.id === targetProfile.id) {
+        return updatedProfile;
+      }
+      return p;
+    });
+
     setProfiles(updated);
     saveStoredProfiles(updated);
+
+    // Sync globally to Supabase so changes reflect for ALL viewers and devices immediately
+    await syncAdminDisplayConfigToRemote(updatedConfig);
 
     try {
       const updatePayload = prepareSupabaseProfilePayload(updatedProfile);
       await supabase.from('profiles').update(updatePayload).eq('id', targetProfile.id);
     } catch (e) {
-      console.warn('Saved featured state locally', e);
+      console.warn('Saved featured state', e);
     }
 
     showToast(
@@ -2374,22 +2450,58 @@ export default function App() {
   };
 
   const handleTogglePinned = async (targetProfile: Profile) => {
+    const key = (targetProfile.member_id || targetProfile.id || '').trim().toUpperCase();
+    const currentConfig = getStoredAdminDisplayConfig();
     const newPinnedState = targetProfile.is_pinned !== true;
+
+    let newPinned = [...(currentConfig.pinned_member_ids || [])];
+    if (newPinnedState) {
+      if (!newPinned.map((x) => x.trim().toUpperCase()).includes(key)) {
+        newPinned.unshift(targetProfile.member_id || targetProfile.id);
+      }
+    } else {
+      newPinned = newPinned.filter((id) => id.trim().toUpperCase() !== key && id !== targetProfile.id);
+    }
+
+    const updatedConfig: AdminDisplayConfig = {
+      ...currentConfig,
+      pinned_member_ids: newPinned,
+      updated_at: new Date().toISOString(),
+    };
+
     const updatedProfile: Profile = {
       ...targetProfile,
       is_pinned: newPinnedState,
       updated_at: new Date().toISOString(),
     };
 
-    const updated = profiles.map((p) => (p.id === updatedProfile.id ? updatedProfile : p));
+    const updated = profiles.map((p) => {
+      const pKey = (p.member_id || p.id || '').trim().toUpperCase();
+      if (pKey === key || p.id === targetProfile.id) {
+        return updatedProfile;
+      }
+      return p;
+    });
+
+    // Pinned profiles sorted to top immediately
+    updated.sort((a, b) => {
+      const pinA = a.is_pinned ? 1 : 0;
+      const pinB = b.is_pinned ? 1 : 0;
+      if (pinA !== pinB) return pinB - pinA;
+      return (new Date(b.created_at || '').getTime() || 0) - (new Date(a.created_at || '').getTime() || 0);
+    });
+
     setProfiles(updated);
     saveStoredProfiles(updated);
+
+    // Sync globally to Supabase so PINNED status reflects for ALL viewers and devices immediately
+    await syncAdminDisplayConfigToRemote(updatedConfig);
 
     try {
       const updatePayload = prepareSupabaseProfilePayload(updatedProfile);
       await supabase.from('profiles').update(updatePayload).eq('id', targetProfile.id);
     } catch (e) {
-      console.warn('Saved pinned state locally', e);
+      console.warn('Saved pinned state', e);
     }
 
     showToast(
@@ -2647,8 +2759,8 @@ export default function App() {
 
   // Featured Profiles for Home Page: Controlled explicitly by Admin via `is_featured` & `is_pinned`
   const featuredProfiles = useMemo(() => {
-    const explicitFeatured = approvedProfiles.filter((p) => p.is_featured === true);
-    const pool = explicitFeatured.length > 0 ? explicitFeatured : approvedProfiles.filter((p) => p.is_featured !== false);
+    // Exclude any profile that the admin has explicitly hidden (is_featured === false)
+    const pool = approvedProfiles.filter((p) => p.is_featured !== false);
     return [...pool].sort((a, b) => {
       const pinA = a.is_pinned ? 1 : 0;
       const pinB = b.is_pinned ? 1 : 0;

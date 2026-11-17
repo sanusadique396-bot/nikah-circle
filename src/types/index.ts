@@ -123,6 +123,13 @@ export interface IncomingInterest {
   recipient_email?: string;
 }
 
+export interface AdminDisplayConfig {
+  pinned_member_ids: string[];
+  featured_member_ids: string[];
+  hidden_member_ids: string[];
+  updated_at?: string;
+}
+
 export interface SearchFilters {
   gender: string;
   ageRange: string;
