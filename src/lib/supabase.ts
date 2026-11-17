@@ -1723,6 +1723,50 @@ export const DEFAULT_PROFILES: Profile[] = [
     biodata_uploaded: true,
     created_at: "2026-11-17T14:19:00.000Z",
     updated_at: "2026-11-17T14:19:00.000Z",
+  },
+  {
+    id: "ncsm1043-mubashira-vengara",
+    member_id: "NCSM1043",
+    full_name: "Mubashira",
+    gender: "Female",
+    age: 26,
+    date_of_birth: "2000-06-15",
+    marital_status: "Never Married",
+    religion: "Islam",
+    sect: "Sunni",
+    religious_ideation: "Sunni (സുന്നി)",
+    height: "5'3\" (160 cm)",
+    complexion: "Wheatish / Dusky",
+    physical_build: "Slim",
+    education: "MSW (Master of Social Work)",
+    bouthika_education: "MSW (Master of Social Work)",
+    profession: "High Court Assistant, High Court of Kerala, Kochi",
+    job_location: "Kochi, Kerala",
+    financial_status: "Middle Class",
+    place: "Vengara",
+    district: "Malappuram",
+    state: "Kerala",
+    location: "Vengara, Malappuram",
+    preferred_districts: "Malappuram, Ernakulam, Kozhikode, Wayanad",
+    mobile: "+91 98470 00000",
+    guardian_mobile: "+91 98470 00000",
+    guardian_name: "Family Guardian",
+    guardian_relation: "Parent (Guardian)",
+    family_members_details: "Middle class respected Sunni Muslim family residing at Vengara, Malappuram.",
+    family_background: "Middle class respected Sunni Muslim family from Vengara, Malappuram. Candidate is an MSW graduate and permanently employed as High Court Assistant at High Court of Kerala, Kochi.",
+    marriage_expectations: "31 വയസ്സ് വരെയുള്ള ദീനിബോധമുള്ള സുന്നി യുവാക്കളിൽ നിന്നും വിവാഹാലോചന ക്ഷണിക്കുന്നു. കാഴ്ചാ പരിമിതിയുള്ള പെൺകുട്ടിയാണ് (Visually Impaired), എന്നാൽ സ്വന്തം കാലിൽ നിൽക്കുന്ന കേരള ഹൈക്കോടതി അസിസ്റ്റന്റായി ജോലി ചെയ്യുന്ന മിടുക്കിയാണ്. പരിഗണിക്കുന്ന ജില്ലകൾ: മലപ്പുറം, എറണാകുളം, കോഴിക്കോട്, വയനാട്.",
+    partner_preferences: "Age up to 31 years. Preferred districts: Malappuram, Ernakulam, Kozhikode, Wayanad. Understanding, caring, and religious Sunni Muslim groom.",
+    other_interests: "Social work, judiciary administration, reading, Islamic values, family life. Note: Visually impaired (കാഴ്ചാ പരിമിതിയുണ്ട്).",
+    profile_photo: "/profiles/ncsm1043.jpg",
+    registration_type: "CASH_ADMIN",
+    source: "admin",
+    profile_status: "APPROVED",
+    is_verified: true,
+    is_premium: true,
+    premium_plan: "Active Premium",
+    biodata_uploaded: true,
+    created_at: "2026-11-17T14:20:00.000Z",
+    updated_at: "2026-11-17T14:20:00.000Z",
   }
 ];
 export const DEFAULT_PAYMENTS: Payment[] = [];
@@ -2095,7 +2139,7 @@ export function markReferralCodeUsed(code: string) {
 }
 
 // Sequential Auto-Increment Member ID System: NCSM1003, NCSM1004, NCSM1005...
-export const MEMBER_ID_SEQ_KEY = 'nikah_circle_member_id_seq_v11';
+export const MEMBER_ID_SEQ_KEY = 'nikah_circle_member_id_seq_v12';
 
 export function extractMemberIdNumber(idStr?: string | null): number | null {
   if (!idStr || typeof idStr !== 'string') return null;
