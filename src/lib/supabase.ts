@@ -1633,6 +1633,51 @@ export const DEFAULT_PROFILES: Profile[] = [
     biodata_uploaded: true,
     created_at: "2026-11-16T17:16:00.000Z",
     updated_at: "2026-11-16T17:16:00.000Z",
+  },
+  {
+    id: "ncsm1041-yusra-moidutty",
+    member_id: "NCSM1041",
+    full_name: "Yusra Moidutty",
+    gender: "Female",
+    age: 24,
+    date_of_birth: "2002-04-15",
+    marital_status: "Never Married",
+    religion: "Islam",
+    sect: "Sunni",
+    religious_ideation: "Sunni (സുന്നി)",
+    height: "160 cm",
+    complexion: "Fair",
+    physical_build: "Normal",
+    education: "B.Tech & MS (Master of Science)",
+    bouthika_education: "B.Tech & MS (Master of Science)",
+    religious_education: "7th Standard (7-ാം ക്ലാസ്സ് മതപഠനം)",
+    profession: "Research Staff at IIT Palakkad (Govt. of India)",
+    job_location: "IIT Palakkad, Kerala",
+    financial_status: "Upper Middle Class",
+    place: "Ayyotichira, Veliyamcode, Ponnani (Currently Palakkad)",
+    district: "Malappuram",
+    state: "Kerala",
+    location: "Ayyotichira, Veliyamcode, Ponnani, Malappuram",
+    preferred_districts: "Malappuram",
+    mobile: "+91 98470 00000",
+    guardian_mobile: "+91 98470 00000",
+    guardian_name: "NP Moidutty Haji (Father)",
+    guardian_relation: "Father",
+    family_members_details: "Father: NP Moidutty Haji (Building Business, Ex Gulf - Abu Dhabi, Retired). Mother: Remla Beegam (Ex Arabic Teacher, Abu Dhabi & Kerala). 3 Brothers: 1 in Dubai (Married), 1 pursuing PhD at IIT Palakkad, 1 working at Bangalore Airport (Married). 1 Sister (Married).",
+    family_background: "Upper Middle Class respected Sunni Muslim family originally from Ayyotichira, Veliyamcode, Ponnani, Malappuram (currently residing in Palakkad). Father retired businessman from Abu Dhabi, mother former Arabic teacher. Candidate holds B.Tech and MS, working as Research Staff at IIT Palakkad under Government of India.",
+    marriage_expectations: "Sunni Muslim groom up to 31 years old. Qualification strictly required: BTech / MTech / PhD. Preferred district: Malappuram. Should be religious, well-mannered, and family-oriented.",
+    partner_preferences: "Age up to 31 years. Qualification: BTech / MTech / PhD. Preferred district: Malappuram. Practicing Sunni Muslim groom.",
+    other_interests: "Scientific research, academic reading, Islamic values, family life",
+    profile_photo: "/profiles/ncsm1041.jpg",
+    registration_type: "CASH_ADMIN",
+    source: "admin",
+    profile_status: "APPROVED",
+    is_verified: true,
+    is_premium: true,
+    premium_plan: "Active Premium",
+    biodata_uploaded: true,
+    created_at: "2026-11-17T14:18:00.000Z",
+    updated_at: "2026-11-17T14:18:00.000Z",
   }
 ];
 export const DEFAULT_PAYMENTS: Payment[] = [];
@@ -2005,7 +2050,7 @@ export function markReferralCodeUsed(code: string) {
 }
 
 // Sequential Auto-Increment Member ID System: NCSM1003, NCSM1004, NCSM1005...
-export const MEMBER_ID_SEQ_KEY = 'nikah_circle_member_id_seq_v9';
+export const MEMBER_ID_SEQ_KEY = 'nikah_circle_member_id_seq_v10';
 
 export function extractMemberIdNumber(idStr?: string | null): number | null {
   if (!idStr || typeof idStr !== 'string') return null;
